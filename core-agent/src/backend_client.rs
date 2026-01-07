@@ -1,5 +1,7 @@
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use std::fs;
+use std::path::Path;
 
 #[derive(Debug, Serialize)]
 pub struct ScanFileRequest {
@@ -31,14 +33,30 @@ impl BackendClient {
     }
     
     pub async fn scan_file(&self, file_path: &str) -> Result<ScanFileResponse, String> {
-       let url = format!("{}/api/signatures/scan/file-desktop", self.base_url);
+        let url = format!("{}/api/signatures/scan/upload-desktop", self.base_url);
+        
+        // Read file content
+        let file_content = fs::read(file_path)
+            .map_err(|e| format!("Failed to read file: {}", e))?;
+        
+        // Get filename from path
+        let filename = Path::new(file_path)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("unknown")
+            .to_string();
+        
+        // Create multipart form with file upload
+        let part = reqwest::multipart::Part::bytes(file_content)
+            .file_name(filename);
+        
+        let form = reqwest::multipart::Form::new()
+            .part("file", part);
         
         let response = self.client
             .post(&url)
             .header("X-License-Key", &self.license_key)
-            .json(&ScanFileRequest {
-                file_path: file_path.to_string(),
-            })
+            .multipart(form)
             .send()
             .await
             .map_err(|e| format!("Request failed: {}", e))?;
