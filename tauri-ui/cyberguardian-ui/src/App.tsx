@@ -1,155 +1,53 @@
-import { useState, useEffect } from "react";
-import "./App.css";
+import { Routes, Route, Navigate } from "react-router-dom";
+import Layout from "./layout";
+import DashboardPage from "./dashboard/page-simple";
+import ThreatsPage from "./threats/page-simple";
+import DetectionPage from "./detection/page-simple";
+import ProtectionPage from "./protection/page-simple";
+import ScansPage from "./scans/page-simple";
+import SettingsPage from "./settings/page-simple";
 
-interface ProtectionStatus {
-  monitoring: boolean;
-  paths: string[];
-}
-
-interface FileEvent {
-  event_type: string;
-  path: string;
-  timestamp: string;
-  file_size: number | null;
-  threat_score: number | null;
-  threat_category: string | null;
-}
-
-function App() {
-  const [status, setStatus] = useState<ProtectionStatus>({
-    monitoring: false,
-    paths: [],
-  });
-  const [events, setEvents] = useState<FileEvent[]>([]);
-
-  // Poll Core Agent status every 5 seconds
-  useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const response = await fetch("http://localhost:3000/status");
-        const data = await response.json();
-        setStatus(data);
-      } catch (error) {
-        console.error("Failed to fetch status:", error);
-      }
-    };
-
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Fetch events
-  const fetchEvents = async () => {
-    try {
-      const response = await fetch("http://localhost:3000/events");
-      const data = await response.json();
-      setEvents(data);
-    } catch (error) {
-      console.error("Failed to fetch events:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchEvents();
-    const interval = setInterval(fetchEvents, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const startMonitoring = async () => {
-    try {
-      await fetch("http://localhost:3000/start-monitoring", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paths: ["C:\\Users\\admin\\Downloads"] }),
-      });
-      fetchStatus();
-    } catch (error) {
-      console.error("Failed to start monitoring:", error);
-    }
-  };
-
-  const stopMonitoring = async () => {
-    try {
-      await fetch("http://localhost:3000/stop-monitoring", {
-        method: "POST",
-      });
-      fetchStatus();
-    } catch (error) {
-      console.error("Failed to stop monitoring:", error);
-    }
-  };
-
+// Temporary placeholder for other pages
+function PlaceholderPage({ title }: { title: string }) {
   return (
-    <div className="container">
-      <h1>CyberGuardian XDR</h1>
-
-      {/* Protection Status */}
-      <div className="card">
-        <h2>Protection Status</h2>
-        <div className="status-indicator">
-          <span className={`status-dot ${status.monitoring ? "active" : ""}`}></span>
-          <span>{status.monitoring ? "MONITORING" : "STOPPED"}</span>
-        </div>
-        
-        {status.monitoring && (
-          <div className="paths-list">
-            <h3>Monitored Paths:</h3>
-            {status.paths.map((path, i) => (
-              <div key={i} className="path-item">{path}</div>
-            ))}
-          </div>
-        )}
-
-        <div className="button-group">
-          <button onClick={startMonitoring} disabled={status.monitoring}>
-            Start Protection
-          </button>
-          <button onClick={stopMonitoring} disabled={!status.monitoring}>
-            Stop Protection
-          </button>
-        </div>
-      </div>
-
-      {/* Recent Events */}
-      <div className="card">
-        <h2>Recent Events ({events.length})</h2>
-        <div className="events-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Event</th>
-                <th>File</th>
-                <th>Threat Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events.slice(0, 10).map((event, i) => (
-                <tr key={i}>
-                  <td>{new Date(event.timestamp).toLocaleTimeString()}</td>
-                  <td>{event.event_type}</td>
-                  <td className="path-cell">{event.path}</td>
-                  <td>
-                    <span className={`threat-badge threat-${getThreatLevel(event.threat_score)}`}>
-                      {event.threat_score ?? "N/A"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <div className="p-6">
+      <h1 className="text-3xl font-bold mb-2">{title}</h1>
+      <p className="text-muted-foreground">Page content coming soon...</p>
     </div>
   );
 }
 
-function getThreatLevel(score: number | null): string {
-  if (score === null) return "unknown";
-  if (score >= 70) return "high";
-  if (score >= 30) return "medium";
-  return "low";
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="threats" element={<ThreatsPage />} />
+        <Route path="detection" element={<DetectionPage />} />
+        <Route path="protection" element={<ProtectionPage />} />
+        <Route path="scans" element={<ScansPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        
+        {/* Placeholder routes */}
+        <Route path="quarantine" element={<PlaceholderPage title="Quarantine" />} />
+        <Route path="analytics" element={<PlaceholderPage title="Analytics" />} />
+        <Route path="executive" element={<PlaceholderPage title="Executive" />} />
+        <Route path="honeypots" element={<PlaceholderPage title="Honeypots" />} />
+        <Route path="insights" element={<PlaceholderPage title="Insights" />} />
+        <Route path="performance" element={<PlaceholderPage title="Performance" />} />
+        <Route path="process" element={<PlaceholderPage title="Process Protection" />} />
+        <Route path="remediation" element={<PlaceholderPage title="Remediation" />} />
+        <Route path="updates" element={<PlaceholderPage title="Updates" />} />
+        <Route path="configuration" element={<PlaceholderPage title="Configuration" />} />
+        <Route path="deception" element={<PlaceholderPage title="Deception" />} />
+        <Route path="security" element={<PlaceholderPage title="Security" />} />
+        <Route path="security/integrity" element={<PlaceholderPage title="Integrity" />} />
+        <Route path="security/tamper" element={<PlaceholderPage title="Tamper Protection" />} />
+        <Route path="admin" element={<PlaceholderPage title="Admin" />} />
+        <Route path="ml" element={<PlaceholderPage title="ML Models" />} />
+        <Route path="emails" element={<PlaceholderPage title="Email Scanner" />} />
+      </Route>
+    </Routes>
+  );
 }
-
-export default App;
