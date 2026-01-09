@@ -12,6 +12,7 @@ import IntegrityPage from "./security/integrity/page";
 import TamperProtectionPage from "./security/tamper/page";
 import RemediationPage from "./remediation/page";
 import RegistryPage from "./remediation/registry/page";
+import ServicesPage from "./remediation/services/page";
 
 // Temporary placeholder for other pages
 function PlaceholderPage({ title }: { title: string }) {
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="process" element={<PlaceholderPage title="Process Protection" />} />
         <Route path="remediation" element={<RemediationPage />} />
         <Route path="remediation/registry" element={<RegistryPage />} />
+        <Route path="remediation/services" element={<ServicesPage />} />
         <Route path="updates" element={<PlaceholderPage title="Updates" />} />
         <Route path="configuration" element={<PlaceholderPage title="Configuration" />} />
         <Route path="deception" element={<PlaceholderPage title="Deception" />} />
