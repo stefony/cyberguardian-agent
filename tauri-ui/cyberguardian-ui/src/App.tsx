@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./layout";
 import DashboardPage from "./dashboard/page";
-import ThreatsPage from "./threats/page-simple";
+import ThreatsPage from "./threats/page";
 import DetectionPage from "./detection/page-simple";
 import ProtectionPage from "./protection/page-simple";
 import ScansPage from "./scans/page-simple";
