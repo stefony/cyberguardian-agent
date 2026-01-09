@@ -26,7 +26,7 @@ import type {
 // CONFIGURATION
 // ============================================
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://cyberguardian-backend-production.up.railway.app';
 
 
  /**
@@ -36,8 +36,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
  *    using wss:// when API is https, otherwise ws://
  */
 const buildWsUrl = () => {
-  if (process.env.NEXT_PUBLIC_WS_URL) {
-    return process.env.NEXT_PUBLIC_WS_URL;
+  if (import.meta.env.VITE_WS_URL) {
+    return import.meta.env.VITE_WS_URL;
   }
   const api = API_BASE_URL;
   const wsScheme = api.startsWith('https://') ? 'wss://' : 'ws://';
