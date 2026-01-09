@@ -23,7 +23,7 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
-import ProtectedRoute from "@/components/ProtectedRoute";
+
 
 /* ===== CountUp: анимира „изкачване" на числата ===== */
 function CountUp({
@@ -219,7 +219,7 @@ function ThreatActivityChart() {
 
 /* ===== MAIN DASHBOARD PAGE WITH WEBSOCKET ===== */
 export default function DashboardPage() {
-  const router = useNavigate();
+  const navigate = useNavigate();
   const [health, setHealth] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState(true);
   // Real stats from API
@@ -310,7 +310,7 @@ export default function DashboardPage() {
     if (!token) {
       navigate("/auth/login");
     }
-  }, [router]);
+  }, [navigate]);
 
   // Initial load
   useEffect(() => {
@@ -382,19 +382,19 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <ProtectedRoute>
+      
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-slate-400">Loading dashboard...</p>
           </div>
         </div>
-      </ProtectedRoute>
+      
     );
   }
 
   return (
-    <ProtectedRoute>
+    
       <div className="p-6 space-y-6">
         {/* Hero Section - CYBER COMMAND CENTER */}
         <div className="relative overflow-hidden rounded-2xl p-1 group">
@@ -1174,6 +1174,6 @@ export default function DashboardPage() {
           onClose={() => setCurrentThreat(null)}
         />
       </div>
-    </ProtectedRoute>
+    
   );
 }
