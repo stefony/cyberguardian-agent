@@ -8,6 +8,7 @@ import ScansPage from "./scans/page";
 import SettingsPage from "./settings/page-simple";
 import ExecutivePage from "./executive/page";
 import QuarantinePage from "./quarantine/page";
+import IntegrityPage from "./security/integrity/page";
 
 // Temporary placeholder for other pages
 function PlaceholderPage({ title }: { title: string }) {
@@ -44,7 +45,7 @@ export default function App() {
         <Route path="configuration" element={<PlaceholderPage title="Configuration" />} />
         <Route path="deception" element={<PlaceholderPage title="Deception" />} />
         <Route path="security" element={<PlaceholderPage title="Security" />} />
-        <Route path="security/integrity" element={<PlaceholderPage title="Integrity" />} />
+        <Route path="security/integrity" element={<IntegrityPage />} />
         <Route path="security/tamper" element={<PlaceholderPage title="Tamper Protection" />} />
         <Route path="admin" element={<PlaceholderPage title="Admin" />} />
         <Route path="ml" element={<PlaceholderPage title="ML Models" />} />
