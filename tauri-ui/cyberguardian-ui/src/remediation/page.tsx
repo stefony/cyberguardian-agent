@@ -26,7 +26,7 @@ import {
 import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function RemediationPage() {
-  const router = useNavigate();
+  const navigate = useNavigate();
 
   const remediationModules = [
     {
