@@ -7,6 +7,7 @@ import ProtectionPage from "./protection/page";
 import ScansPage from "./scans/page";
 import SettingsPage from "./settings/page-simple";
 import ExecutivePage from "./executive/page";
+import QuarantinePage from "./quarantine/page";
 
 // Temporary placeholder for other pages
 function PlaceholderPage({ title }: { title: string }) {
@@ -31,7 +32,7 @@ export default function App() {
         <Route path="settings" element={<SettingsPage />} />
         
         {/* Placeholder routes */}
-        <Route path="quarantine" element={<PlaceholderPage title="Quarantine" />} />
+        <Route path="quarantine" element={<QuarantinePage />} />
         <Route path="analytics" element={<PlaceholderPage title="Analytics" />} />
         <Route path="executive" element={<ExecutivePage />} />
         <Route path="honeypots" element={<PlaceholderPage title="Honeypots" />} />
