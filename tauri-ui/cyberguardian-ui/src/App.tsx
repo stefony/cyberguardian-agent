@@ -2,9 +2,9 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./layout";
 import DashboardPage from "./dashboard/page";
 import ThreatsPage from "./threats/page";
-import DetectionPage from "./detection/page-simple";
-import ProtectionPage from "./protection/page-simple";
-import ScansPage from "./scans/page-simple";
+import DetectionPage from "./detection/page";
+import ProtectionPage from "./protection/page";
+import ScansPage from "./scans/page";
 import SettingsPage from "./settings/page-simple";
 
 // Temporary placeholder for other pages
