@@ -15,6 +15,7 @@ import RegistryPage from "./remediation/registry/page";
 import ServicesPage from "./remediation/services/page";
 import TasksPage from "./remediation/tasks/page";
 import DeepQuarantinePage from "./remediation/quarantine/page";
+import DeceptionPage from "./deception/page";
 
 // Temporary placeholder for other pages
 function PlaceholderPage({ title }: { title: string }) {
@@ -53,7 +54,7 @@ export default function App() {
         <Route path="remediation/quarantine" element={<DeepQuarantinePage />} />
         <Route path="updates" element={<PlaceholderPage title="Updates" />} />
         <Route path="configuration" element={<PlaceholderPage title="Configuration" />} />
-        <Route path="deception" element={<PlaceholderPage title="Deception" />} />
+        <Route path="deception" element={<DeceptionPage />} />
         <Route path="security" element={<PlaceholderPage title="Security" />} />
         <Route path="security/integrity" element={<IntegrityPage />} />
         <Route path="security/tamper" element={<TamperProtectionPage />} />
