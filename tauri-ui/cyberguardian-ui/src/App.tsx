@@ -17,6 +17,7 @@ import TasksPage from "./remediation/tasks/page";
 import DeepQuarantinePage from "./remediation/quarantine/page";
 import DeceptionPage from "./deception/page";
 import InsightsPage from "./insights/page";
+import MLModelsPage from "./ml/page";
 
 
 // Temporary placeholder for other pages
@@ -61,7 +62,7 @@ export default function App() {
         <Route path="security/integrity" element={<IntegrityPage />} />
         <Route path="security/tamper" element={<TamperProtectionPage />} />
         <Route path="admin" element={<PlaceholderPage title="Admin" />} />
-        <Route path="ml" element={<PlaceholderPage title="ML Models" />} />
+        <Route path="ml" element={<MLModelsPage />} />
         <Route path="emails" element={<PlaceholderPage title="Email Scanner" />} />
       </Route>
     </Routes>
