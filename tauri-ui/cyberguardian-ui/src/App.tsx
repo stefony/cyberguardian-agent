@@ -18,6 +18,7 @@ import DeepQuarantinePage from "./remediation/quarantine/page";
 import DeceptionPage from "./deception/page";
 import InsightsPage from "./insights/page";
 import MLModelsPage from "./ml/page";
+import AnalyticsPage from "./analytics/page";
 
 
 // Temporary placeholder for other pages
@@ -44,7 +45,7 @@ export default function App() {
         
         {/* Placeholder routes */}
         <Route path="quarantine" element={<QuarantinePage />} />
-        <Route path="analytics" element={<PlaceholderPage title="Analytics" />} />
+        <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="executive" element={<ExecutivePage />} />
         <Route path="honeypots" element={<PlaceholderPage title="Honeypots" />} />
         <Route path="insights" element={<InsightsPage />} />
