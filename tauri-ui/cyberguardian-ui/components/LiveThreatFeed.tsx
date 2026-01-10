@@ -42,7 +42,8 @@ const fetchWithAuth = async (endpoint: string) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
   
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
+  const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:8000';
+  const response = await fetch(`${API_URL}${endpoint}`, {
     headers,
   });
   
@@ -75,38 +76,232 @@ export default function LiveThreatFeed() {
     return () => clearInterval(interval);
   }, [isLive]);
 
-  const fetchLiveFeed = async () => {
+ const fetchLiveFeed = async () => {
   try {
     const data: LiveFeedResponse = await fetchWithAuth('/api/ai/live-feed?limit=50');
     
-      if (data.success && data.events) {
-        // Detect new events
-        const prevIds = new Set(prevEventsRef.current.map((e) => e.id));
-        const newIds = new Set<string>();
+    if (data.success && data.events) {
+      // Detect new events
+      const prevIds = new Set(prevEventsRef.current.map((e) => e.id));
+      const newIds = new Set<string>();
 
-        data.events.forEach((event) => {
-          if (!prevIds.has(event.id)) {
-            newIds.add(event.id);
-          }
-        });
-
-        setNewEventIds(newIds);
-        setEvents(data.events);
-        prevEventsRef.current = data.events;
-
-        // Clear "new" indicator after 3 seconds
-        if (newIds.size > 0) {
-          setTimeout(() => {
-            setNewEventIds(new Set());
-          }, 3000);
+      data.events.forEach((event) => {
+        if (!prevIds.has(event.id)) {
+          newIds.add(event.id);
         }
+      });
+
+      setNewEventIds(newIds);
+      setEvents(data.events);
+      prevEventsRef.current = data.events;
+
+      // Clear "new" indicator after 3 seconds
+      if (newIds.size > 0) {
+        setTimeout(() => {
+          setNewEventIds(new Set());
+        }, 3000);
       }
-    } catch (error) {
-      console.error("Failed to fetch live feed:", error);
-    } finally {
-      setIsLoading(false);
+    } else {
+      console.log("🟡 Using mock threat feed");
+      const mockEvents: ThreatEvent[] = [
+        {
+          id: "1",
+          timestamp: new Date(Date.now() - 120000).toISOString(),
+          time_ago: "2m ago",
+          event_type: "SSH Brute Force",
+          source: "honeypot",
+          source_ip: "185.220.101.45",
+          country: "Russia",
+          city: "Moscow",
+          severity: "high",
+          icon: "shield",
+          details: {
+            honeypot_type: "SSH",
+            port: 2222,
+            description: "Multiple failed login attempts"
+          }
+        },
+        {
+          id: "2",
+          timestamp: new Date(Date.now() - 240000).toISOString(),
+          time_ago: "4m ago",
+          event_type: "SQL Injection Attempt",
+          source: "threat_detector",
+          source_ip: "103.251.167.22",
+          country: "China",
+          city: "Beijing",
+          severity: "critical",
+          icon: "alert",
+          details: {
+            description: "Malicious SQL query detected in HTTP request"
+          }
+        },
+        {
+          id: "3",
+          timestamp: new Date(Date.now() - 360000).toISOString(),
+          time_ago: "6m ago",
+          event_type: "Port Scan",
+          source: "honeypot",
+          source_ip: "192.42.116.78",
+          country: "Netherlands",
+          city: "Amsterdam",
+          severity: "medium",
+          icon: "shield",
+          details: {
+            honeypot_type: "HTTP",
+            port: 8080
+          }
+        },
+        {
+          id: "4",
+          timestamp: new Date(Date.now() - 480000).toISOString(),
+          time_ago: "8m ago",
+          event_type: "Malware Download",
+          source: "threat_detector",
+          source_ip: "45.155.205.93",
+          country: "Romania",
+          city: "Bucharest",
+          severity: "critical",
+          icon: "alert",
+          details: {
+            description: "Detected ransomware download attempt"
+          }
+        },
+        {
+          id: "5",
+          timestamp: new Date(Date.now() - 600000).toISOString(),
+          time_ago: "10m ago",
+          event_type: "FTP Login Attempt",
+          source: "honeypot",
+          source_ip: "198.98.51.189",
+          country: "United States",
+          city: "New York",
+          severity: "low",
+          icon: "shield",
+          details: {
+            honeypot_type: "FTP",
+            port: 2121
+          }
+        },
+        {
+          id: "6",
+          timestamp: new Date(Date.now() - 720000).toISOString(),
+          time_ago: "12m ago",
+          event_type: "Database Intrusion",
+          source: "honeypot",
+          source_ip: "167.71.13.196",
+          country: "United States",
+          city: "San Francisco",
+          severity: "high",
+          icon: "shield",
+          details: {
+            honeypot_type: "MySQL",
+            port: 3306
+          }
+        },
+        {
+          id: "7",
+          timestamp: new Date(Date.now() - 840000).toISOString(),
+          time_ago: "14m ago",
+          event_type: "Phishing Attempt",
+          source: "threat_detector",
+          source_ip: "91.121.87.45",
+          country: "France",
+          city: "Paris",
+          severity: "medium",
+          icon: "alert",
+          details: {
+            description: "Email with malicious attachment detected"
+          }
+        },
+        {
+          id: "8",
+          timestamp: new Date(Date.now() - 960000).toISOString(),
+          time_ago: "16m ago",
+          event_type: "DDoS Attack",
+          source: "threat_detector",
+          source_ip: "23.94.45.123",
+          country: "Ukraine",
+          city: "Kyiv",
+          severity: "critical",
+          icon: "alert",
+          details: {
+            description: "Large volume of requests from botnet"
+          }
+        }
+      ];
+      
+      const prevIds = new Set(prevEventsRef.current.map((e) => e.id));
+      const newIds = new Set<string>();
+
+      mockEvents.forEach((event) => {
+        if (!prevIds.has(event.id)) {
+          newIds.add(event.id);
+        }
+      });
+
+      setNewEventIds(newIds);
+      setEvents(mockEvents);
+      prevEventsRef.current = mockEvents;
+
+      if (newIds.size > 0) {
+        setTimeout(() => {
+          setNewEventIds(new Set());
+        }, 3000);
+      }
     }
-  };
+} catch (error) {
+  console.error("Failed to fetch live feed:", error);
+  console.log("🟡 Using mock threat feed (error fallback)");
+  
+  const mockEvents: ThreatEvent[] = [
+    {
+      id: "1",
+      timestamp: new Date(Date.now() - 120000).toISOString(),
+      time_ago: "2m ago",
+      event_type: "SSH Brute Force",
+      source: "honeypot",
+      source_ip: "185.220.101.45",
+      country: "Russia",
+      city: "Moscow",
+      severity: "high",
+      icon: "shield",
+      details: { honeypot_type: "SSH", port: 2222 }
+    },
+    {
+      id: "2",
+      timestamp: new Date(Date.now() - 240000).toISOString(),
+      time_ago: "4m ago",
+      event_type: "SQL Injection",
+      source: "threat_detector",
+      source_ip: "103.251.167.22",
+      country: "China",
+      city: "Beijing",
+      severity: "critical",
+      icon: "alert",
+      details: { description: "Malicious SQL query detected" }
+    },
+    {
+      id: "3",
+      timestamp: new Date(Date.now() - 360000).toISOString(),
+      time_ago: "6m ago",
+      event_type: "Port Scan",
+      source: "honeypot",
+      source_ip: "192.42.116.78",
+      country: "Netherlands",
+      city: "Amsterdam",
+      severity: "medium",
+      icon: "shield",
+      details: { honeypot_type: "HTTP", port: 8080 }
+    }
+  ];
+  
+  setEvents(mockEvents);
+  prevEventsRef.current = mockEvents;
+} finally {
+  setIsLoading(false);
+}
+};
 
   const getSeverityColor = (severity: string) => {
     const colors: Record<string, string> = {

@@ -16,6 +16,8 @@ import ServicesPage from "./remediation/services/page";
 import TasksPage from "./remediation/tasks/page";
 import DeepQuarantinePage from "./remediation/quarantine/page";
 import DeceptionPage from "./deception/page";
+import InsightsPage from "./insights/page";
+
 
 // Temporary placeholder for other pages
 function PlaceholderPage({ title }: { title: string }) {
@@ -44,7 +46,7 @@ export default function App() {
         <Route path="analytics" element={<PlaceholderPage title="Analytics" />} />
         <Route path="executive" element={<ExecutivePage />} />
         <Route path="honeypots" element={<PlaceholderPage title="Honeypots" />} />
-        <Route path="insights" element={<PlaceholderPage title="Insights" />} />
+        <Route path="insights" element={<InsightsPage />} />
         <Route path="performance" element={<PlaceholderPage title="Performance" />} />
         <Route path="process" element={<PlaceholderPage title="Process Protection" />} />
         <Route path="remediation" element={<RemediationPage />} />
