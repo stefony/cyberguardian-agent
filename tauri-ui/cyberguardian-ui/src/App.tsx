@@ -22,6 +22,7 @@ import AnalyticsPage from "./analytics/page";
 import PerformancePage from "./performance/page";
 import EmailsPage from "./emails/page";
 import HoneypotsPage from "./honeypots/page";
+import ProcessPage from "./process/page"
 
 // Temporary placeholder for other pages
 function PlaceholderPage({ title }: { title: string }) {
@@ -52,7 +53,7 @@ export default function App() {
         <Route path="honeypots" element={<HoneypotsPage />} />
         <Route path="insights" element={<InsightsPage />} />
         <Route path="performance" element={<PerformancePage />} />
-        <Route path="process" element={<PlaceholderPage title="Process Protection" />} />
+        <Route path="process" element={<ProcessPage />} />
         <Route path="remediation" element={<RemediationPage />} />
         <Route path="remediation/registry" element={<RegistryPage />} />
         <Route path="remediation/services" element={<ServicesPage />} />
