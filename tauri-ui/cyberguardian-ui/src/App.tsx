@@ -5,7 +5,6 @@ import ThreatsPage from "./threats/page";
 import DetectionPage from "./detection/page";
 import ProtectionPage from "./protection/page";
 import ScansPage from "./scans/page";
-import SettingsPage from "./settings/page-simple";
 import ExecutivePage from "./executive/page";
 import QuarantinePage from "./quarantine/page";
 import IntegrityPage from "./security/integrity/page";
@@ -25,7 +24,7 @@ import HoneypotsPage from "./honeypots/page";
 import ProcessPage from "./process/page"
 import UpdatesPage from "./updates/page";
 import ConfigurationPage from "./configuration/page";
-
+import SettingsPage from "./settings/page";
 
 // Temporary placeholder for other pages
 function PlaceholderPage({ title }: { title: string }) {
