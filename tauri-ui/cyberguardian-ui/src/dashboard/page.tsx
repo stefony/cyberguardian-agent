@@ -278,7 +278,7 @@ export default function DashboardPage() {
     <ProtectedRoute>
       <div className="p-6 space-y-6">
     
-        {/* Hero Section - CYBER COMMAND CENTER */}
+{/* Hero Section - CYBER COMMAND CENTER */}
 <div className="relative overflow-hidden rounded-2xl p-1 group">
   {/* Animated border gradient */}
   <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-cyan-500 to-purple-600 opacity-75 blur-xl group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
@@ -291,101 +291,97 @@ export default function DashboardPage() {
       <div className="absolute bottom-1/4 left-3/4 w-56 h-56 bg-blue-500/20 rounded-full blur-3xl animate-float-slow"></div>
     </div>
 
-    <div className="relative z-10">
-      <div className="flex items-center justify-between mb-6">
-        {/* Logo + Title with GIANT gradient text */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Shield className="w-16 h-16 text-purple-400 animate-pulse" />
-              <div className="absolute inset-0 bg-purple-500/30 blur-2xl rounded-full animate-ping"></div>
-            </div>
-            <div>
-              <h1 className="text-6xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-500 bg-clip-text text-transparent">
-                CyberGuardian AI
-              </h1>
-              <p className="text-base text-cyan-400 font-medium tracking-wide">
-                Security Operations Center
-              </p>
-            </div>
-          </div>
+  <div className="relative z-10">
+  <div className="flex items-center justify-between mb-4">
+    {/* Logo + Title */}
+    <div className="space-y-1">
+      <div className="flex items-center gap-4">
+        <div className="relative">
+          <Shield className="w-20 h-20 text-purple-400 animate-pulse" />
+          <div className="absolute inset-0 bg-purple-500/40 blur-2xl rounded-full animate-ping"></div>
         </div>
-        
-        {/* Enhanced LIVE Status with STRONG Glow & Pulse */}
-        <div className="relative group">
-          <div className="absolute inset-0 blur-2xl rounded-full bg-green-500/60 animate-pulse"></div>
-          <div className="absolute inset-0 blur-3xl rounded-full bg-green-400/40 animate-ping"></div>
-          <div className="relative flex items-center gap-3 px-6 py-4 rounded-full backdrop-blur-sm border-2 bg-green-500/20 border-green-400/60 hover:border-green-300 hover:shadow-2xl hover:shadow-green-500/70 transition-all duration-300 animate-pulse">
-            <div className="relative">
-              <Wifi className="w-6 h-6 text-green-300 animate-pulse" />
-              <div className="absolute inset-0 bg-green-300/50 blur-lg rounded-full animate-ping"></div>
-            </div>
-            <div>
-              <span className="text-base text-white font-bold">LIVE</span>
-              <p className="text-xs text-green-200">Real-time Protection</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Enhanced Tagline */}
-      <div className="mb-8 max-w-4xl">
-        <p className="text-lg text-slate-200 leading-relaxed">
-          Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 font-bold">advanced, AI-powered</span> security operations center — combining{" "}
-          <span className="text-cyan-400 font-bold">real-time threat detection</span>,{" "}
-          <span className="text-purple-400 font-bold">behavioral analytics</span>,{" "}
-          <span className="text-blue-400 font-bold">deception layers</span>, and{" "}
-          <span className="text-green-400 font-bold">predictive defense</span>.
-        </p>
-      </div>
-
-      {/* Enhanced CTA Buttons */}
-      <div className="flex flex-wrap gap-4 mb-8">
-        <button className="group relative px-8 py-4 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl font-bold text-white overflow-hidden transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-purple-500/50">
-          <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <div className="relative flex items-center gap-2">
-            <Activity className="w-5 h-5 animate-pulse" />
-            <span>Get Started</span>
-          </div>
-        </button>
-
-        <button className="group relative px-8 py-4 bg-slate-800/50 backdrop-blur-sm border-2 border-purple-500/40 rounded-xl font-bold text-slate-200 overflow-hidden transition-all duration-300 hover:scale-110 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/40">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-cyan-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <span className="relative">Learn More</span>
-        </button>
-
-        <button className="group relative px-8 py-4 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border-2 border-green-500/60 rounded-xl font-bold text-green-300 overflow-hidden transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-green-500/50">
-          <div className="absolute inset-0 bg-gradient-to-r from-green-500/30 to-emerald-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <div className="relative flex items-center gap-2">
-            <Shield className="w-5 h-5 animate-pulse" />
-            <span>Live Beta</span>
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-300 rounded-full animate-ping"></span>
-          </div>
-        </button>
-      </div>
-
-      {/* Quick Stats Bar - LARGE & BRIGHT */}
-      <div className="grid grid-cols-3 gap-8 pt-8 border-t border-slate-600/50">
-        <div className="text-center group hover:scale-110 transition-transform duration-300">
-          <div className="text-5xl font-bold text-green-400 mb-2">
-            99.8%
-          </div>
-          <div className="text-sm text-slate-300 font-semibold">Detection Rate</div>
-        </div>
-        <div className="text-center group hover:scale-110 transition-transform duration-300">
-          <div className="text-5xl font-bold text-blue-400 mb-2">
-            &lt;100ms
-          </div>
-          <div className="text-sm text-slate-300 font-semibold">Response Time</div>
-        </div>
-        <div className="text-center group hover:scale-110 transition-transform duration-300">
-          <div className="text-5xl font-bold text-purple-400 mb-2">
-            24/7
-          </div>
-          <div className="text-sm text-slate-300 font-semibold">Active Protection</div>
+        <div>
+          <h1 className="text-6xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent leading-tight">
+            CyberGuardian AI
+          </h1>
+          <p className="text-lg text-cyan-300/80 font-medium tracking-wide mt-1">
+            Security Operations Center
+          </p>
         </div>
       </div>
     </div>
+    
+    {/* LIVE Badge - TRIPLE STRONG GLOW */}
+    <div className="relative">
+      <div className="absolute inset-0 blur-3xl rounded-full bg-green-500/80 animate-pulse"></div>
+      <div className="absolute inset-0 blur-2xl rounded-full bg-green-400/60 animate-ping"></div>
+      <div className="absolute inset-0 blur-xl rounded-full bg-green-300/50 animate-pulse"></div>
+      
+      <div className="relative flex items-center gap-3 px-6 py-3 rounded-full bg-green-500/20 border-2 border-green-400/70 backdrop-blur-sm hover:border-green-300 hover:bg-green-500/30 transition-all duration-300">
+        <div className="relative">
+          <Wifi className="w-6 h-6 text-green-300 animate-pulse" />
+          <div className="absolute inset-0 bg-green-300/60 blur-lg rounded-full animate-ping"></div>
+        </div>
+        <div>
+          <span className="text-lg text-white font-bold tracking-wide">LIVE</span>
+          <p className="text-xs text-green-200/90 font-medium">Real-time Protection</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  {/* Enhanced Tagline */}
+  <div className="mb-6 max-w-4xl">
+    <p className="text-base text-slate-300 leading-relaxed">
+      Your <span className="text-purple-300 font-bold">advanced, AI-powered</span> security operations center — combining{" "}
+      <span className="text-cyan-300 font-bold">real-time threat detection</span>,{" "}
+      <span className="text-purple-300 font-bold">behavioral analytics</span>,{" "}
+      <span className="text-blue-300 font-bold">deception layers</span>, and{" "}
+      <span className="text-green-300 font-bold">predictive defense</span>.
+    </p>
+  </div>
+
+  {/* Enhanced CTA Buttons */}
+  <div className="flex flex-wrap gap-3 mb-6">
+    <button className="group relative px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl font-bold text-white overflow-hidden transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-purple-500/50">
+      <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div className="relative flex items-center gap-2">
+        <Activity className="w-5 h-5 animate-pulse" />
+        <span>Get Started</span>
+      </div>
+    </button>
+
+    <button className="group relative px-6 py-3 bg-slate-800/50 backdrop-blur-sm border-2 border-purple-500/40 rounded-xl font-bold text-slate-200 overflow-hidden transition-all duration-300 hover:scale-110 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/40">
+      <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-cyan-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <span className="relative">Learn More</span>
+    </button>
+
+    <button className="group relative px-6 py-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border-2 border-green-500/60 rounded-xl font-bold text-green-300 overflow-hidden transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-green-500/50">
+      <div className="absolute inset-0 bg-gradient-to-r from-green-500/30 to-emerald-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div className="relative flex items-center gap-2">
+        <Shield className="w-5 h-5 animate-pulse" />
+        <span>Live Beta</span>
+        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-300 rounded-full animate-ping"></span>
+      </div>
+    </button>
+  </div>
+
+  {/* Quick Stats Bar */}
+  <div className="grid grid-cols-3 gap-8 pt-6 border-t border-slate-600/50">
+    <div className="text-center group hover:scale-110 transition-transform duration-300">
+      <div className="text-4xl font-bold text-green-400 mb-1">99.8%</div>
+      <div className="text-xs text-slate-300 font-semibold">Detection Rate</div>
+    </div>
+    <div className="text-center group hover:scale-110 transition-transform duration-300">
+      <div className="text-4xl font-bold text-blue-400 mb-1">&lt;100ms</div>
+      <div className="text-xs text-slate-300 font-semibold">Response Time</div>
+    </div>
+    <div className="text-center group hover:scale-110 transition-transform duration-300">
+      <div className="text-4xl font-bold text-purple-400 mb-1">24/7</div>
+      <div className="text-xs text-slate-300 font-semibold">Active Protection</div>
+    </div>
+  </div>
+</div>
   </div>
 </div>
 
