@@ -24,6 +24,8 @@ import EmailsPage from "./emails/page";
 import HoneypotsPage from "./honeypots/page";
 import ProcessPage from "./process/page"
 import UpdatesPage from "./updates/page";
+import ConfigurationPage from "./configuration/page";
+
 
 // Temporary placeholder for other pages
 function PlaceholderPage({ title }: { title: string }) {
@@ -61,7 +63,7 @@ export default function App() {
         <Route path="remediation/tasks" element={<TasksPage />} />
         <Route path="remediation/quarantine" element={<DeepQuarantinePage />} />
         <Route path="updates" element={<UpdatesPage />} />
-        <Route path="configuration" element={<PlaceholderPage title="Configuration" />} />
+        <Route path="configuration" element={<ConfigurationPage />} />
         <Route path="deception" element={<DeceptionPage />} />
         <Route path="security" element={<PlaceholderPage title="Security" />} />
         <Route path="security/integrity" element={<IntegrityPage />} />
