@@ -25,6 +25,8 @@ import ProcessPage from "./process/page"
 import UpdatesPage from "./updates/page";
 import ConfigurationPage from "./configuration/page";
 import SettingsPage from "./settings/page";
+import IOCsPage from "./threats/iocs/page";
+
 
 // Temporary placeholder for other pages
 function PlaceholderPage({ title }: { title: string }) {
@@ -35,7 +37,6 @@ function PlaceholderPage({ title }: { title: string }) {
     </div>
   );
 }
-
 export default function App() {
   return (
     <Routes>
@@ -43,6 +44,7 @@ export default function App() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="threats" element={<ThreatsPage />} />
+	<Route path="threats/iocs" element={<IOCsPage />} />
         <Route path="detection" element={<DetectionPage />} />
         <Route path="protection" element={<ProtectionPage />} />
         <Route path="scans" element={<ScansPage />} />
