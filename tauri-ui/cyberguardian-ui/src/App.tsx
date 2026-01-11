@@ -26,6 +26,7 @@ import UpdatesPage from "./updates/page";
 import ConfigurationPage from "./configuration/page";
 import SettingsPage from "./settings/page";
 import IOCsPage from "./threats/iocs/page";
+import MITREPage from "./threats/mitre/page";
 
 
 // Temporary placeholder for other pages
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="threats" element={<ThreatsPage />} />
 	<Route path="threats/iocs" element={<IOCsPage />} />
+        <Route path="threats/mitre" element={<MITREPage />} />
         <Route path="detection" element={<DetectionPage />} />
         <Route path="protection" element={<ProtectionPage />} />
         <Route path="scans" element={<ScansPage />} />
