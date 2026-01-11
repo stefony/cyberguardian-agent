@@ -21,7 +21,7 @@ import MLModelsPage from "./ml/page";
 import AnalyticsPage from "./analytics/page";
 import PerformancePage from "./performance/page";
 import EmailsPage from "./emails/page";
-
+import HoneypotsPage from "./honeypots/page";
 
 // Temporary placeholder for other pages
 function PlaceholderPage({ title }: { title: string }) {
@@ -49,7 +49,7 @@ export default function App() {
         <Route path="quarantine" element={<QuarantinePage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="executive" element={<ExecutivePage />} />
-        <Route path="honeypots" element={<PlaceholderPage title="Honeypots" />} />
+        <Route path="honeypots" element={<HoneypotsPage />} />
         <Route path="insights" element={<InsightsPage />} />
         <Route path="performance" element={<PerformancePage />} />
         <Route path="process" element={<PlaceholderPage title="Process Protection" />} />
