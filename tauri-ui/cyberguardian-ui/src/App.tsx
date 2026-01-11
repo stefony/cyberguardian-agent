@@ -20,6 +20,7 @@ import InsightsPage from "./insights/page";
 import MLModelsPage from "./ml/page";
 import AnalyticsPage from "./analytics/page";
 import PerformancePage from "./performance/page";
+import EmailsPage from "./emails/page";
 
 
 // Temporary placeholder for other pages
@@ -65,7 +66,7 @@ export default function App() {
         <Route path="security/tamper" element={<TamperProtectionPage />} />
         <Route path="admin" element={<PlaceholderPage title="Admin" />} />
         <Route path="ml" element={<MLModelsPage />} />
-        <Route path="emails" element={<PlaceholderPage title="Email Scanner" />} />
+        <Route path="emails" element={<EmailsPage />} />
       </Route>
     </Routes>
   );
