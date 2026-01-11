@@ -562,3 +562,39 @@
     transform: translateY(0);
   }
 }
+
+/* ============================================
+   STAT CARDS - Premium Styling
+   ============================================ */
+.stat-card {
+  position: relative;
+  border-radius: 18px;
+  background: rgb(var(--card) / 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+/* ============================================
+   ANIMATIONS - Enhanced
+   ============================================ */
+@keyframes fillBar {
+  0% { width: 0%; }
+  100% { width: 99.8%; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s ease-in-out infinite;
+}

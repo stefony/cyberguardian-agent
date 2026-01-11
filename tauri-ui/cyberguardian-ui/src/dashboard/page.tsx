@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import ProtectedRoute from '@/components/ProtectedRoute';
 
+
 /* ===== CountUp Animation ===== */
 function CountUp({
   end,
@@ -397,96 +398,112 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <CardTilt>
-            <div className="group relative card-premium p-6 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-green-500/20">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/0 to-green-500/0 group-hover:from-green-500/10 group-hover:to-transparent transition-all duration-500 rounded-xl"></div>
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="relative">
-                    <div className="p-3 bg-green-500/20 rounded-xl group-hover:bg-green-500/30 transition-all duration-300 group-hover:scale-110">
-                      <Shield className="w-6 h-6 text-green-400 group-hover:animate-pulse" />
-                    </div>
-                    <div className="absolute inset-0 bg-green-500/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 animate-pulse"></div>
-                  </div>
-                  <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">System</span>
-                </div>
-                <h3 className="text-2xl font-bold mb-1 group-hover:text-green-400 transition-colors duration-300">
-                  {health?.status === "healthy" ? "Protected" : "Warning"}
-                </h3>
-                <p className="text-sm text-slate-400">{health?.platform || "Linux"}</p>
-              </div>
-              <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-green-500/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        {/* Stats Grid - Enhanced */}
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+  {/* Protected Card */}
+  <CardTilt>
+    <div className="group relative stat-card p-6 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-green-500/20">
+      <div className="absolute inset-0 bg-gradient-to-br from-green-500/0 to-green-500/0 group-hover:from-green-500/10 group-hover:to-transparent transition-all duration-500 rounded-xl"></div>
+      
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="relative">
+            <div className="p-3 bg-green-500/20 rounded-xl group-hover:bg-green-500/30 transition-all duration-300 group-hover:scale-110">
+              <Shield className="w-6 h-6 text-green-400 group-hover:animate-pulse" />
             </div>
-          </CardTilt>
-
-          <CardTilt>
-            <div className="group relative card-premium p-6 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/20">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-blue-500/0 group-hover:from-blue-500/10 group-hover:to-transparent transition-all duration-500 rounded-xl"></div>
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="relative">
-                    <div className="p-3 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-all duration-300 group-hover:scale-110">
-                      <Activity className="w-6 h-6 text-blue-400 group-hover:animate-pulse" />
-                    </div>
-                    <div className="absolute inset-0 bg-blue-500/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 animate-pulse"></div>
-                  </div>
-                  <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Monitors</span>
-                </div>
-                <h3 className="text-2xl font-bold mb-1 group-hover:text-blue-400 transition-colors duration-300">
-                  <CountUp end={monitorCount} />
-                </h3>
-                <p className="text-sm text-slate-400">Real-time scanning</p>
-              </div>
-              <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            </div>
-          </CardTilt>
-
-          <CardTilt>
-            <div className="group relative card-premium p-6 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-red-500/20">
-              <div className="absolute inset-0 bg-gradient-to-br from-red-500/0 to-red-500/0 group-hover:from-red-500/10 group-hover:to-transparent transition-all duration-500 rounded-xl"></div>
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="relative">
-                    <div className="p-3 bg-red-500/20 rounded-xl group-hover:bg-red-500/30 transition-all duration-300 group-hover:scale-110">
-                      <AlertTriangle className="w-6 h-6 text-red-400 group-hover:animate-pulse" />
-                    </div>
-                    <div className="absolute inset-0 bg-red-500/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 animate-pulse"></div>
-                  </div>
-                  <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Threats</span>
-                </div>
-                <h3 className="text-2xl font-bold mb-1 group-hover:text-red-400 transition-colors duration-300">
-                  <CountUp end={threatCount} />
-                </h3>
-                <p className="text-sm text-slate-400">Last 24 hours</p>
-              </div>
-              <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-red-500/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            </div>
-          </CardTilt>
-
-          <CardTilt>
-            <div className="group relative card-premium p-6 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-purple-500/20">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/0 to-purple-500/0 group-hover:from-purple-500/10 group-hover:to-transparent transition-all duration-500 rounded-xl"></div>
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="relative">
-                    <div className="p-3 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-all duration-300 group-hover:scale-110">
-                      <Eye className="w-6 h-6 text-purple-400 group-hover:animate-pulse" />
-                    </div>
-                    <div className="absolute inset-0 bg-purple-500/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 animate-pulse"></div>
-                  </div>
-                  <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Honeypots</span>
-                </div>
-                <h3 className="text-2xl font-bold mb-1 group-hover:text-purple-400 transition-colors duration-300">
-                  <CountUp end={honeypotCount} />
-                </h3>
-                <p className="text-sm text-slate-400">Deception layer ready</p>
-              </div>
-              <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-purple-500/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            </div>
-          </CardTilt>
+            <div className="absolute inset-0 bg-green-500/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 animate-pulse"></div>
+          </div>
+          <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">System</span>
         </div>
+        
+        <h3 className="text-2xl font-bold mb-1 group-hover:text-green-400 transition-colors duration-300">
+          Protected
+        </h3>
+        <p className="text-sm text-slate-400">Linux</p>
+      </div>
+      
+      <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-green-500/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+    </div>
+  </CardTilt>
+
+  {/* Monitors Card */}
+  <CardTilt>
+    <div className="group relative stat-card p-6 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/20">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-blue-500/0 group-hover:from-blue-500/10 group-hover:to-transparent transition-all duration-500 rounded-xl"></div>
+      
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="relative">
+            <div className="p-3 bg-blue-500/20 rounded-xl group-hover:bg-blue-500/30 transition-all duration-300 group-hover:scale-110">
+              <Activity className="w-6 h-6 text-blue-400 group-hover:animate-pulse" />
+            </div>
+            <div className="absolute inset-0 bg-blue-500/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 animate-pulse"></div>
+          </div>
+          <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Monitors</span>
+        </div>
+        
+        <h3 className="text-2xl font-bold mb-1 group-hover:text-blue-400 transition-colors duration-300">
+          <CountUp end={5} />
+        </h3>
+        <p className="text-sm text-slate-400">Real-time scanning</p>
+      </div>
+      
+      <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-blue-500/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+    </div>
+  </CardTilt>
+
+  {/* Threats Card */}
+  <CardTilt>
+    <div className="group relative stat-card p-6 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-red-500/20">
+      <div className="absolute inset-0 bg-gradient-to-br from-red-500/0 to-red-500/0 group-hover:from-red-500/10 group-hover:to-transparent transition-all duration-500 rounded-xl"></div>
+      
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="relative">
+            <div className="p-3 bg-red-500/20 rounded-xl group-hover:bg-red-500/30 transition-all duration-300 group-hover:scale-110">
+              <AlertTriangle className="w-6 h-6 text-red-400 group-hover:animate-pulse" />
+            </div>
+            <div className="absolute inset-0 bg-red-500/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 animate-pulse"></div>
+          </div>
+          <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Threats</span>
+        </div>
+        
+        <h3 className="text-2xl font-bold mb-1 group-hover:text-red-400 transition-colors duration-300">
+          <CountUp end={3} />
+        </h3>
+        <p className="text-sm text-slate-400">Last 24 hours</p>
+      </div>
+      
+      <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-red-500/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+    </div>
+  </CardTilt>
+
+  {/* Honeypots Card */}
+  <CardTilt>
+    <div className="group relative stat-card p-6 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-purple-500/20">
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/0 to-purple-500/0 group-hover:from-purple-500/10 group-hover:to-transparent transition-all duration-500 rounded-xl"></div>
+      
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="relative">
+            <div className="p-3 bg-purple-500/20 rounded-xl group-hover:bg-purple-500/30 transition-all duration-300 group-hover:scale-110">
+              <Eye className="w-6 h-6 text-purple-400 group-hover:animate-pulse" />
+            </div>
+            <div className="absolute inset-0 bg-purple-500/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 animate-pulse"></div>
+          </div>
+          <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Honeypots</span>
+        </div>
+        
+        <h3 className="text-2xl font-bold mb-1 group-hover:text-purple-400 transition-colors duration-300">
+          <CountUp end={4} />
+        </h3>
+        <p className="text-sm text-slate-400">Deception layer ready</p>
+      </div>
+      
+      <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-purple-500/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+    </div>
+  </CardTilt>
+</div>
 
         {/* Dashboard Connected */}
         <div className="flex items-center justify-center p-4 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-xl border border-green-500/20">
@@ -526,7 +543,7 @@ export default function DashboardPage() {
                 <circle cx="96" cy="96" r="88" stroke="#10b981" strokeWidth="12" fill="none" strokeDasharray="459 552.92" strokeLinecap="round" className="transition-all duration-1000" />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center flex-col">
-                <div className="text-5xl font-bold"><CountUp end={83} /></div>
+               <div className="text-6xl font-bold" style={{ fontSize: '4rem' }}><CountUp end={83} /></div>
                 <div className="text-sm text-slate-400 mt-1">out of 100</div>
               </div>
             </div>
@@ -607,56 +624,95 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* System Metrics - САМО ВЕДНЪЖ НА КРАЯ */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="group card-premium p-6 hover:shadow-2xl hover:shadow-green-500/20 transition-all duration-300">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              Detection Rate
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-slate-400 text-sm">Success Rate</span>
-                <span className="font-bold text-2xl text-green-400">100%</span>
-              </div>
-              <div className="w-full h-3 bg-slate-700/50 rounded-full">
-                <div className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full w-full shadow-lg shadow-green-500/50"></div>
-              </div>
-            </div>
-          </div>
+     {/* System Metrics - Enhanced */}
+<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  {/* Detection Rate Card */}
+  <div className="group stat-card p-6 hover:shadow-2xl hover:shadow-green-500/20 transition-all duration-300">
+    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+      Detection Rate
+    </h3>
+    <div className="space-y-3">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-slate-400 text-sm">Success Rate</span>
+        <span className="font-bold text-2xl text-green-400">100%</span>
+      </div>
+      <div style={{ 
+        width: '100%', 
+        height: '12px', 
+        backgroundColor: 'rgba(51, 65, 85, 0.5)', 
+        borderRadius: '9999px',
+        overflow: 'hidden'
+      }}>
+        <div style={{
+          height: '100%',
+          width: '100%',
+          background: 'linear-gradient(to right, #10b981, #059669)',
+          borderRadius: '9999px',
+          boxShadow: '0 0 20px rgba(16, 185, 129, 0.5)'
+        }}></div>
+      </div>
+    </div>
+  </div>
 
-          <div className="group card-premium p-6 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-              Response Time
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-slate-400 text-sm">Average</span>
-                <span className="font-bold text-2xl text-blue-400">&lt; 100ms</span>
-              </div>
-              <div className="w-full h-3 bg-slate-700/50 rounded-full">
-                <div className="h-full bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full w-full shadow-lg shadow-blue-500/50"></div>
-              </div>
-            </div>
-          </div>
+  {/* Response Time Card */}
+  <div className="group stat-card p-6 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300">
+    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+      <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+      Response Time
+    </h3>
+    <div className="space-y-3">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-slate-400 text-sm">Average</span>
+        <span className="font-bold text-2xl text-blue-400">&lt; 100ms</span>
+      </div>
+      <div style={{ 
+        width: '100%', 
+        height: '12px', 
+        backgroundColor: 'rgba(51, 65, 85, 0.5)', 
+        borderRadius: '9999px',
+        overflow: 'hidden'
+      }}>
+        <div style={{
+          height: '100%',
+          width: '100%',
+          background: 'linear-gradient(to right, #3b82f6, #06b6d4)',
+          borderRadius: '9999px',
+          boxShadow: '0 0 20px rgba(59, 130, 246, 0.5)'
+        }}></div>
+      </div>
+    </div>
+  </div>
 
-          <div className="group card-premium p-6 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-              Protection
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-slate-400 text-sm">24/7 Active</span>
-                <span className="font-bold text-2xl text-purple-400">Online</span>
-              </div>
-              <div className="w-full h-3 bg-slate-700/50 rounded-full">
-                <div className="h-full bg-gradient-to-r from-purple-400 to-pink-500 rounded-full w-full shadow-lg shadow-purple-500/50"></div>
-              </div>
-            </div>
-          </div>
-        </div>
+  {/* Protection Card */}
+  <div className="group stat-card p-6 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300">
+    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+      <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+      Protection
+    </h3>
+    <div className="space-y-3">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-slate-400 text-sm">24/7 Active</span>
+        <span className="font-bold text-2xl text-purple-400">Online</span>
+      </div>
+      <div style={{ 
+        width: '100%', 
+        height: '12px', 
+        backgroundColor: 'rgba(51, 65, 85, 0.5)', 
+        borderRadius: '9999px',
+        overflow: 'hidden'
+      }}>
+        <div style={{
+          height: '100%',
+          width: '100%',
+          background: 'linear-gradient(to right, #a855f7, #ec4899)',
+          borderRadius: '9999px',
+          boxShadow: '0 0 20px rgba(168, 85, 247, 0.5)'
+        }}></div>
+      </div>
+    </div>
+  </div>
+</div>
       </div>
     </ProtectedRoute>
   );
