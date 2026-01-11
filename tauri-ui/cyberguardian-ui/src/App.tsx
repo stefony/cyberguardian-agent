@@ -19,6 +19,7 @@ import DeceptionPage from "./deception/page";
 import InsightsPage from "./insights/page";
 import MLModelsPage from "./ml/page";
 import AnalyticsPage from "./analytics/page";
+import PerformancePage from "./performance/page";
 
 
 // Temporary placeholder for other pages
@@ -49,7 +50,7 @@ export default function App() {
         <Route path="executive" element={<ExecutivePage />} />
         <Route path="honeypots" element={<PlaceholderPage title="Honeypots" />} />
         <Route path="insights" element={<InsightsPage />} />
-        <Route path="performance" element={<PlaceholderPage title="Performance" />} />
+        <Route path="performance" element={<PerformancePage />} />
         <Route path="process" element={<PlaceholderPage title="Process Protection" />} />
         <Route path="remediation" element={<RemediationPage />} />
         <Route path="remediation/registry" element={<RegistryPage />} />
