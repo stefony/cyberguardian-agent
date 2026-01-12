@@ -747,20 +747,22 @@ const toggleHoneypot = async (honeypot: HoneypotResponse) => {
                       <td className="text-sm">{formatTime(log.timestamp)}</td>
                       <td className="font-mono text-sm text-blue-400">{log.source_ip}</td>
                       <td>
-                        <span className="badge badge--warn">{log.action}</span>
+                      <span className="badge badge--warn">{log.event_type || log.action}</span>
                       </td>
-                      <td className="text-sm text-muted-foreground">
-                        {log.details ? (
-                          <span>
-                            {log.details.username && `User: ${log.details.username}`}
-                            {log.details.attempts && ` (${log.details.attempts} attempts)`}
-                            {log.details.method && `Method: ${log.details.method}`}
-                            {log.details.credentials_tried && ` (${log.details.credentials_tried} credentials)`}
-                          </span>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
+                     <td className="text-sm text-muted-foreground">
+  {typeof log.details === 'string' ? (
+    log.details
+  ) : log.details ? (
+    <span>
+      {log.details.username && `User: ${log.details.username}`}
+      {log.details.attempts && ` (${log.details.attempts} attempts)`}
+      {log.details.method && `Method: ${log.details.method}`}
+      {log.details.credentials_tried && ` (${log.details.credentials_tried} credentials)`}
+    </span>
+  ) : (
+    "—"
+  )}
+</td>
                     </tr>
                   ))
                 )}

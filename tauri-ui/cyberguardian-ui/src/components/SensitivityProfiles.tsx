@@ -1,7 +1,5 @@
 'use client'
 
-
-
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import { Shield, Zap, AlertTriangle, CheckCircle2 } from 'lucide-react'
@@ -34,18 +32,6 @@ export default function SensitivityProfiles() {
       color: 'red'
     }
   })
-
-  // ADD ALERT - това ЩЕ излезе ако компонента се mount-ва!
-  alert('🔴 SENSITIVITYPROFILES LOADED! Profiles count: ' + Object.keys(profiles).length);
-  
-  console.log('🔴 COMPONENT MOUNTED - PROFILES:', profiles);
-  console.log('🔴 PROFILES KEYS:', Object.keys(profiles));
-  
-  // 🔴 DEBUG CONSOLE LOGS
-  console.log('🔴 COMPONENT MOUNTED - PROFILES:', profiles);
-  console.log('🔴 PROFILES KEYS:', Object.keys(profiles));
-  console.log('🔴 PROFILES ENTRIES:', Object.entries(profiles));
-  console.log('🔴 WILL RENDER', Object.entries(profiles).length, 'CARDS');
   
   const [activeProfile, setActiveProfile] = useState<string>('medium')
   const [loading, setLoading] = useState(false)
@@ -137,9 +123,6 @@ export default function SensitivityProfiles() {
     }
   }
 
-  // 🔴 DEBUG LOG BEFORE RETURN
-  console.log('🔴 RENDERING COMPONENT - About to return JSX');
-
   return (
     <div className="space-y-6">
       {/* Success/Error Message */}
@@ -163,7 +146,6 @@ export default function SensitivityProfiles() {
       {/* Profile Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {Object.entries(profiles).map(([key, profile]) => {
-          console.log('🔵 RENDERING CARD:', key, profile); // Debug log inside map
           const isActive = key === activeProfile
           
           return (

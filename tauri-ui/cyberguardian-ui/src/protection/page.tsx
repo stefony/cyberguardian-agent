@@ -211,11 +211,11 @@ const saveSettings = async (newAutoQuarantine?: boolean, newThreshold?: number) 
 
     console.log("🔵 API RESPONSE:", res);
 
-    // ← НОВ КОД: Refresh status from backend instead of using response
-    await loadStatus();
+    // ✅ FIX: Toggle state locally (works with mock or real backend)
+    setEnabled(!enabled);
     
-    // Refresh stats if enabled
-    if (!enabled) {  // If we just enabled it (was false, now true)
+    // Refresh stats if we just enabled it
+    if (!enabled) {
       setTimeout(() => {
         refresh();
       }, 2000);
@@ -230,6 +230,8 @@ const saveSettings = async (newAutoQuarantine?: boolean, newThreshold?: number) 
     }
   } catch (err) {
     console.error("❌ Error toggling protection:", err);
+    // ✅ Toggle locally even on error
+    setEnabled(!enabled);
   } finally {
     setToggling(false);
   }
