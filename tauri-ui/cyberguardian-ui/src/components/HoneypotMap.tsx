@@ -44,7 +44,7 @@ export default function HoneypotMap() {
   }
 
   return (
-    <div className="h-[600px] bg-gray-900 rounded-lg overflow-hidden">
+    <div className="h-[600px] bg-gray-900 rounded-lg overflow-hidden relative">
       <MapContainer
         center={[20, 0]}
         zoom={2}

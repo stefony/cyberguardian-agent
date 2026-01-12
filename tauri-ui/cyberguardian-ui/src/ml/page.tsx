@@ -114,28 +114,36 @@ const fetchStatus = async () => {
       setError(null)
     } else {
       console.log("🟡 Using mock ML status");
-      setStatus({
-        model_trained: true,
-        training_date: new Date(Date.now() - 86400000).toISOString(),
-        training_samples: 15847,
-        anomaly_detector_available: true,
-        behavior_clusterer_available: true,
-        feature_count: 12,
-        features: [
-          'source_ip_entropy',
-          'payload_length',
-          'request_frequency',
-          'suspicious_patterns',
-          'sql_injection_score',
-          'xss_score',
-          'command_injection_score',
-          'path_traversal_score',
-          'hour_of_day',
-          'day_of_week',
-          'response_time',
-          'error_rate'
-        ]
-      });
+     setStatus({
+  model_trained: true,
+  training_date: new Date(Date.now() - 86400000).toISOString(),
+  training_samples: 15847,
+  anomaly_detector_available: true,
+  behavior_clusterer_available: true,
+  feature_count: 20,
+  features: [
+    'payload_len',
+    'payload_entropy',
+    'ratio_digits',
+    'ratio_specials',
+    'ratio_uppercase',
+    'has_sql',
+    'has_xss',
+    'has_lfi',
+    'has_admin',
+    'has_cmd',
+    'has_base64',
+    'has_hex',
+    'port_bin',
+    'req_type',
+    'geo_risk',
+    'hour_sin',
+    'hour_cos',
+    'suspicious_port',
+    'payload_url_encoded',
+    'consecutive_specials'
+  ]
+});
       setError(null);
     }
   } catch (err) {
