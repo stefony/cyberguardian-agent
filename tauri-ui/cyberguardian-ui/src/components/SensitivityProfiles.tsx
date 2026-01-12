@@ -1,5 +1,7 @@
 'use client'
 
+
+
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import { Shield, Zap, AlertTriangle, CheckCircle2 } from 'lucide-react'
@@ -12,7 +14,39 @@ type Profile = {
 }
 
 export default function SensitivityProfiles() {
-  const [profiles, setProfiles] = useState<Record<string, Profile>>({})
+  const [profiles, setProfiles] = useState<Record<string, Profile>>({
+    low: {
+      name: 'Low Sensitivity',
+      description: 'Minimal false positives, catches only obvious threats',
+      threshold: 90,
+      color: 'green'
+    },
+    medium: {
+      name: 'Medium Sensitivity',
+      description: 'Balance between security and usability',
+      threshold: 75,
+      color: 'orange'
+    },
+    high: {
+      name: 'High Sensitivity',
+      description: 'Maximum protection, aggressive detection',
+      threshold: 50,
+      color: 'red'
+    }
+  })
+
+  // ADD ALERT - това ЩЕ излезе ако компонента се mount-ва!
+  alert('🔴 SENSITIVITYPROFILES LOADED! Profiles count: ' + Object.keys(profiles).length);
+  
+  console.log('🔴 COMPONENT MOUNTED - PROFILES:', profiles);
+  console.log('🔴 PROFILES KEYS:', Object.keys(profiles));
+  
+  // 🔴 DEBUG CONSOLE LOGS
+  console.log('🔴 COMPONENT MOUNTED - PROFILES:', profiles);
+  console.log('🔴 PROFILES KEYS:', Object.keys(profiles));
+  console.log('🔴 PROFILES ENTRIES:', Object.entries(profiles));
+  console.log('🔴 WILL RENDER', Object.entries(profiles).length, 'CARDS');
+  
   const [activeProfile, setActiveProfile] = useState<string>('medium')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -25,11 +59,12 @@ export default function SensitivityProfiles() {
   const loadProfiles = async () => {
     try {
       const response = await api.profiles.getProfiles()
+      
       if (response.success && response.data) {
         setProfiles(response.data.profiles)
       }
     } catch (error) {
-      console.error('Failed to load profiles:', error)
+      console.error('Error loading profiles:', error)
     }
   }
 
@@ -39,7 +74,6 @@ export default function SensitivityProfiles() {
       if (response.success && response.data) {
         const threshold = response.data.threat_threshold || response.data.threatThreshold || 75
         
-        // Detect which profile matches the threshold
         if (threshold >= 90) setActiveProfile('low')
         else if (threshold >= 70) setActiveProfile('medium')
         else setActiveProfile('high')
@@ -87,30 +121,33 @@ export default function SensitivityProfiles() {
 
   const getProfileGradient = (profileKey: string) => {
     switch (profileKey) {
-      case 'low': return 'from-green-500 to-emerald-500'
-      case 'medium': return 'from-yellow-500 to-orange-500'
-      case 'high': return 'from-red-500 to-pink-500'
+      case 'low': return 'from-green-500 to-emerald-600'
+      case 'medium': return 'from-yellow-500 to-orange-600'
+      case 'high': return 'from-red-500 to-pink-600'
       default: return 'from-gray-500 to-gray-600'
     }
   }
 
-  const getProfileBorderColor = (profileKey: string) => {
+  const getBorderColor = (profileKey: string) => {
     switch (profileKey) {
-      case 'low': return 'border-green-500/50'
-      case 'medium': return 'border-yellow-500/50'
-      case 'high': return 'border-red-500/50'
-      default: return 'border-gray-500/50'
+      case 'low': return 'border-green-500'
+      case 'medium': return 'border-yellow-500'
+      case 'high': return 'border-red-500'
+      default: return 'border-gray-500'
     }
   }
+
+  // 🔴 DEBUG LOG BEFORE RETURN
+  console.log('🔴 RENDERING COMPONENT - About to return JSX');
 
   return (
     <div className="space-y-6">
       {/* Success/Error Message */}
       {message && (
-        <div className={`p-4 rounded-xl border-2 backdrop-blur-sm animate-in slide-in-from-top-2 duration-300 ${
+        <div className={`p-4 rounded-xl border-2 ${
           message.type === 'success' 
-            ? 'bg-green-500/10 border-green-500/30 text-green-400' 
-            : 'bg-red-500/10 border-red-500/30 text-red-400'
+            ? 'bg-green-900/20 border-green-500 text-green-400' 
+            : 'bg-red-900/20 border-red-500 text-red-400'
         }`}>
           <div className="flex items-center gap-2">
             {message.type === 'success' ? (
@@ -126,6 +163,7 @@ export default function SensitivityProfiles() {
       {/* Profile Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {Object.entries(profiles).map(([key, profile]) => {
+          console.log('🔵 RENDERING CARD:', key, profile); // Debug log inside map
           const isActive = key === activeProfile
           
           return (
@@ -139,13 +177,9 @@ export default function SensitivityProfiles() {
               } blur transition duration-300`} />
               
               {/* Card */}
-              <div className={`relative p-6 bg-dark-card/90 backdrop-blur-xl border-2 ${
-                isActive ? getProfileBorderColor(key) : 'border-dark-border/50 hover:border-dark-border'
-              } rounded-xl shadow-2xl transition-all duration-300 ${
-                isActive ? 'ring-2 ring-offset-2 ring-offset-dark-bg' : ''
-              }`}
-              
-              >
+              <div className={`relative p-6 bg-gray-900/90 backdrop-blur-xl border-2 ${
+                isActive ? getBorderColor(key) : 'border-gray-700 hover:border-gray-600'
+              } rounded-xl shadow-2xl transition-all duration-300`}>
                 {/* Active Badge */}
                 {isActive && (
                   <div className="absolute -top-3 -right-3">
@@ -163,7 +197,7 @@ export default function SensitivityProfiles() {
                 </div>
 
                 {/* Title */}
-                <h3 className="text-xl font-bold mb-2 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                <h3 className="text-xl font-bold mb-2 text-white">
                   {profile.name}
                 </h3>
 
@@ -173,7 +207,7 @@ export default function SensitivityProfiles() {
                 </p>
 
                 {/* Threshold */}
-                <div className="flex items-center justify-between mb-4 p-3 bg-dark-bg/50 rounded-lg border border-dark-border/50">
+                <div className="flex items-center justify-between mb-4 p-3 bg-gray-800/50 rounded-lg border border-gray-700">
                   <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
                     Threshold
                   </span>
@@ -186,19 +220,13 @@ export default function SensitivityProfiles() {
                 <button
                   onClick={() => handleSetProfile(key)}
                   disabled={loading || isActive}
-                  className={`group/btn relative w-full px-4 py-3 rounded-xl font-bold text-white shadow-lg transition-all duration-300 transform overflow-hidden ${
+                  className={`relative w-full px-4 py-3 rounded-xl font-bold text-white shadow-lg transition-all duration-300 ${
                     isActive
                       ? `bg-gradient-to-r ${getProfileGradient(key)} cursor-default`
-                      : `bg-gradient-to-r ${getProfileGradient(key)} hover:scale-[1.02] active:scale-[0.98] cursor-pointer`
+                      : `bg-gradient-to-r ${getProfileGradient(key)} hover:scale-105 active:scale-95 cursor-pointer`
                   } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  style={{ position: 'relative', zIndex: 10 }}
                 >
-                  {/* Shine Effect */}
-                  {!isActive && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover/btn:translate-x-[200%] transition-transform duration-1000" />
-                  )}
-                  
-                  <div className="relative flex items-center justify-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     {isActive ? (
                       <>
                         <CheckCircle2 className="w-5 h-5" />
@@ -219,7 +247,7 @@ export default function SensitivityProfiles() {
       </div>
 
       {/* Info Box */}
-      <div className="p-6 bg-blue-500/10 border-2 border-blue-500/30 rounded-xl backdrop-blur-sm">
+      <div className="p-6 bg-blue-900/20 border-2 border-blue-500 rounded-xl backdrop-blur-sm">
         <div className="flex items-start gap-3">
           <div className="p-2 bg-blue-500/20 rounded-lg flex-shrink-0">
             <Zap className="w-5 h-5 text-blue-400" />
