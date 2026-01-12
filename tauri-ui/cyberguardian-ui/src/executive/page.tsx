@@ -261,11 +261,11 @@ export default function ExecutiveDashboardPage() {
     <ProtectedRoute>
     <main className="pb-12">
       {/* Hero */}
-      <div className="page-container page-hero pt-12 md:pt-16">
+      <div className="page-container page-hero pt-12 md:pt-16 px-6">
         <div>
-          <h1 className="heading-accent gradient-cyber text-3xl md:text-4xl font-bold tracking-tight">
-            Executive Dashboard
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
+  Executive Dashboard
+</h1>
           <p className="mt-2 text-muted-foreground">
             High-level security overview and KPIs for decision makers
           </p>
@@ -273,21 +273,21 @@ export default function ExecutiveDashboardPage() {
       </div>
 
       {/* Main Content */}
-      <div className="section">
-        <div className="page-container space-y-8">
+<div className="section">
+  <div className="page-container space-y-6 px-6">
 
           {/* KPI Cards Grid */}
           {kpis && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               
               {/* Security Score */}
-              <div className="card-premium p-6 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/30">
-                <div className="flex items-center justify-between mb-4">
-                  <Shield className="h-8 w-8 text-blue-500" />
-                  <div className={`text-4xl font-bold ${getScoreColor(kpis.security_score)}`}>
-                    {kpis.security_score}
-                  </div>
-                </div>
+<div className="card-premium p-6 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/30">
+  <div className="flex items-center justify-between mb-4">
+    <Shield className="h-8 w-8 text-blue-500" />
+    <div className={`text-5xl font-bold ${getScoreColor(kpis.security_score)}`}>
+  {kpis.security_score}
+</div>
+  </div>
                 <div className="text-sm text-muted-foreground">Security Score</div>
                 <div className="mt-2 h-2 bg-card rounded-full overflow-hidden">
                   <div 
@@ -298,37 +298,37 @@ export default function ExecutiveDashboardPage() {
               </div>
 
               {/* Threats Blocked */}
-              <div className="card-premium p-6 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-green-500/30">
-                <div className="flex items-center justify-between mb-4">
-                  <CheckCircle2 className="h-8 w-8 text-green-500" />
-                  <div className="text-4xl font-bold text-green-500">
-                    {kpis.threats_blocked}
-                  </div>
-                </div>
+<div className="card-premium p-6 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-green-500/30">
+  <div className="flex items-center justify-between mb-4">
+    <CheckCircle2 className="h-8 w-8 text-green-500" />
+   <div className="text-5xl font-bold text-green-500">
+  {kpis.threats_blocked}
+</div>
+  </div>
                 <div className="text-sm text-muted-foreground">Threats Blocked</div>
                 <div className="text-xs text-green-400 mt-2">Last 30 days</div>
               </div>
 
-              {/* Money Saved */}
-              <div className="card-premium p-6 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-yellow-500/30">
-                <div className="flex items-center justify-between mb-4">
-                  <DollarSign className="h-8 w-8 text-yellow-500" />
-                  <div className="text-3xl font-bold text-yellow-500">
-                    {formatCurrency(kpis.money_saved)}
-                  </div>
-                </div>
+            {/* Money Saved */}
+<div className="card-premium p-6 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-yellow-500/30">
+  <div className="flex items-center justify-between mb-4">
+    <DollarSign className="h-8 w-8 text-yellow-500" />
+   <div className="text-5xl font-bold text-yellow-500">
+  {formatCurrency(kpis.money_saved)}
+</div>
+  </div>
                 <div className="text-sm text-muted-foreground">Money Saved</div>
                 <div className="text-xs text-yellow-400 mt-2">Estimated ROI</div>
               </div>
 
               {/* AI Accuracy */}
-              <div className="card-premium p-6 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/30">
-                <div className="flex items-center justify-between mb-4">
-                  <Target className="h-8 w-8 text-purple-500" />
-                  <div className="text-4xl font-bold text-purple-500">
-                    {kpis.ai_accuracy}%
-                  </div>
-                </div>
+<div className="card-premium p-6 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/30">
+  <div className="flex items-center justify-between mb-4">
+    <Target className="h-8 w-8 text-purple-500" />
+   <div className="text-5xl font-bold text-purple-500">
+  {kpis.ai_accuracy}%
+</div>
+  </div>
                 <div className="text-sm text-muted-foreground">AI Accuracy</div>
                 <div className="text-xs text-purple-400 mt-2">Prediction success rate</div>
               </div>
@@ -341,52 +341,51 @@ export default function ExecutiveDashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               
               {/* MTTD */}
-              <div className="card-premium p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <Clock className="h-6 w-6 text-cyan-500" />
-                  <div className="text-sm text-muted-foreground">Mean Time to Detect</div>
-                </div>
-                <div className="text-3xl font-bold text-cyan-500">
-                  {kpis.mttd_minutes} min
-                </div>
-                <div className="text-xs text-muted-foreground mt-2">Average detection time</div>
-              </div>
+<div className="card-premium p-6">
+  <div className="flex items-center gap-3 mb-3">
+    <Clock className="h-6 w-6 text-cyan-500" />
+    <div className="text-sm text-muted-foreground">Mean Time to Detect</div>
+  </div>
+ <div className="text-4xl font-bold text-cyan-500">
+  {kpis.mttd_minutes} min
+</div>
+  <div className="text-xs text-muted-foreground mt-2">Average detection time</div>
+</div>
 
-              {/* MTTR */}
-              <div className="card-premium p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <TrendingUp className="h-6 w-6 text-orange-500" />
-                  <div className="text-sm text-muted-foreground">Mean Time to Respond</div>
-                </div>
-                <div className="text-3xl font-bold text-orange-500">
-                  {kpis.mttr_minutes} min
-                </div>
-                <div className="text-xs text-muted-foreground mt-2">Average response time</div>
-              </div>
+             {/* MTTR */}
+<div className="card-premium p-6">
+  <div className="flex items-center gap-3 mb-3">
+    <TrendingUp className="h-6 w-6 text-orange-500" />
+    <div className="text-sm text-muted-foreground">Mean Time to Respond</div>
+  </div>
+<div className="text-4xl font-bold text-orange-500">
+  {kpis.mttr_minutes} min
+</div>
+  <div className="text-xs text-muted-foreground mt-2">Average response time</div>
+</div>
 
-              {/* Active Honeypots */}
-              <div className="card-premium p-6">
-                <div className="flex items-center gap-3 mb-3">
-                  <Activity className="h-6 w-6 text-pink-500" />
-                  <div className="text-sm text-muted-foreground">Active Honeypots</div>
-                </div>
-                <div className="text-3xl font-bold text-pink-500">
-                  {kpis.active_honeypots}
-                </div>
-                <div className="text-xs text-muted-foreground mt-2">Deception layers active</div>
-              </div>
+          {/* Active Honeypots */}
+<div className="card-premium p-6">
+  <div className="flex items-center gap-3 mb-3">
+    <Activity className="h-6 w-6 text-pink-500" />
+    <div className="text-sm text-muted-foreground">Active Honeypots</div>
+  </div>
+ <div className="text-4xl font-bold text-pink-500">
+  {kpis.active_honeypots}
+</div>
+  <div className="text-xs text-muted-foreground mt-2">Deception layers active</div>
+</div>
 
             </div>
           )}
 
-          {/* Charts Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
+         {/* Charts Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Threat Distribution */}
             {threatDistribution.length > 0 && (
               <div className="card-premium p-6">
                 <h2 className="text-xl font-semibold mb-6">Threat Distribution</h2>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="95%" height={300}>
                   <PieChart>
                     <Pie
                       data={threatDistribution}
@@ -412,7 +411,7 @@ export default function ExecutiveDashboardPage() {
             {severityDistribution.length > 0 && (
               <div className="card-premium p-6">
                 <h2 className="text-xl font-semibold mb-6">Severity Distribution</h2>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="95%" height={300}>
                   <BarChart data={severityDistribution}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                     <XAxis dataKey="severity" stroke="#9ca3af" />
@@ -420,11 +419,11 @@ export default function ExecutiveDashboardPage() {
                     <Tooltip 
                       contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }}
                     />
-                    <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-                      {severityDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={SEVERITY_COLORS[entry.severity] || COLORS.primary} />
+                   <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                    {severityDistribution.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={SEVERITY_COLORS[entry.severity.toLowerCase()] || COLORS.primary} />
                       ))}
-                    </Bar>
+                        </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -436,11 +435,22 @@ export default function ExecutiveDashboardPage() {
           {riskAnalysis && (
             <div className="card-premium p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold">Risk Analysis</h2>
-                <span className={getRiskBadgeColor(riskAnalysis.risk_level)}>
-                  {riskAnalysis.risk_level.toUpperCase()} RISK
-                </span>
-              </div>
+  <h2 className="text-xl font-semibold">Risk Analysis</h2>
+  <div className="relative">
+    {riskAnalysis.risk_level.toLowerCase() === 'low' && (
+      <div className="absolute inset-0 blur-xl rounded-full bg-green-500/60 animate-pulse"></div>
+    )}
+    {riskAnalysis.risk_level.toLowerCase() === 'medium' && (
+      <div className="absolute inset-0 blur-xl rounded-full bg-yellow-500/60 animate-pulse"></div>
+    )}
+    {riskAnalysis.risk_level.toLowerCase() === 'high' && (
+      <div className="absolute inset-0 blur-xl rounded-full bg-red-500/60 animate-pulse"></div>
+    )}
+    <span className={`relative ${getRiskBadgeColor(riskAnalysis.risk_level.toLowerCase())}`}>
+      {riskAnalysis.risk_level.toUpperCase()} RISK
+    </span>
+  </div>
+</div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <div>
