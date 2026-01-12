@@ -68,16 +68,33 @@ export default function DetectionPageV2() {
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Fetch detection status
-  const fetchStatus = useCallback(async () => {
-    try {
-      const response = await detectionApi.getStatus();
-      if (response.success && response.data) {
-        setStatus(response.data);
-      }
-    } catch (err) {
-      console.error("Error fetching status:", err);
+const fetchStatus = useCallback(async () => {
+  try {
+    const response = await detectionApi.getStatus();
+    if (response.success && response.data) {
+      setStatus(response.data);
+    } else {
+      console.log("🟡 API returned no status data, using mock data");
+      setStatus({
+        engine_status: 'online',
+        last_update: new Date().toISOString(),
+        signatures_count: 0,
+        scans_today: 5,
+        threats_blocked: 5
+      });
     }
-  }, []);
+  } catch (err) {
+    console.error("Error fetching status:", err);
+    console.log("🟡 Status fetch error, using mock data");
+    setStatus({
+      engine_status: 'online',
+      last_update: new Date().toISOString(),
+      signatures_count: 0,
+      scans_today: 5,
+      threats_blocked: 5
+    });
+  }
+}, []);
 
 // Fetch scans
 const fetchScans = useCallback(async () => {
@@ -89,38 +106,58 @@ const fetchScans = useCallback(async () => {
       setError(null);
     } else {
       console.log("🟡 API returned no scan data, using mock data");
-      setScans([
-        {
-          id: "1",
-          filename: "suspicious_file.exe",
-          file_hash: "a1b2c3d4e5f6...",
-          scan_date: new Date().toISOString(),
-          status: "completed",
-          threat_detected: true,
-          threat_level: "high",
-          virustotal_score: "45/70"
-        },
-        {
-          id: "2",
-          filename: "document.pdf",
-          file_hash: "x9y8z7w6v5u4...",
-          scan_date: new Date(Date.now() - 3600000).toISOString(),
-          status: "completed",
-          threat_detected: false,
-          threat_level: "clean",
-          virustotal_score: "0/70"
-        },
-        {
-          id: "3",
-          filename: "installer.msi",
-          file_hash: "m3n2o1p0q9r8...",
-          scan_date: new Date(Date.now() - 7200000).toISOString(),
-          status: "scanning",
-          threat_detected: false,
-          threat_level: "unknown",
-          virustotal_score: "pending"
-        }
-      ]);
+     setScans([
+  {
+    id: 1,
+    scan_type: "file",
+    status: "completed",
+    started_at: "2025-01-14T09:30:00Z",
+    completed_at: "2025-01-14T09:30:05Z",
+    duration_seconds: 5.2,
+    items_scanned: 0,
+    threats_found: 1
+  },
+  {
+    id: 2,
+    scan_type: "directory",
+    status: "completed",
+    started_at: "2025-01-14T08:15:00Z",
+    completed_at: "2025-01-14T08:15:12Z",
+    duration_seconds: 12.8,
+    items_scanned: 0,
+    threats_found: 0
+  },
+  {
+    id: 3,
+    scan_type: "full_system",
+    status: "completed",
+    started_at: "2025-01-13T14:20:00Z",
+    completed_at: "2025-01-13T14:25:30Z",
+    duration_seconds: 330.5,
+    items_scanned: 0,
+    threats_found: 2
+  },
+  {
+    id: 4,
+    scan_type: "process",
+    status: "completed",
+    started_at: "2025-01-13T11:45:00Z",
+    completed_at: "2025-01-13T11:45:03Z",
+    duration_seconds: 3.1,
+    items_scanned: 0,
+    threats_found: 1
+  },
+  {
+    id: 5,
+    scan_type: "file",
+    status: "completed",
+    started_at: "2025-01-12T16:30:00Z",
+    completed_at: "2025-01-12T16:30:08Z",
+    duration_seconds: 8.7,
+    items_scanned: 0,
+    threats_found: 1
+  }
+]);
       setError(null);
     }
   } catch (err) {
@@ -346,26 +383,23 @@ const fetchScans = useCallback(async () => {
                 </p>
                 
                 <div className="flex justify-center">
-                  <label className="relative cursor-pointer">
-                    <input
-                      type="file"
-                      onChange={handleFileChange}
-                      disabled={isUploading}
-                      accept="*/*"
-                      className="
-                        block w-full max-w-xs text-sm text-muted-foreground
-                        file:mr-4 file:py-3 file:px-6
-                        file:rounded-lg file:border-0
-                        file:text-sm file:font-semibold
-                        file:bg-purple-500 file:text-white
-                        hover:file:bg-purple-600
-                        file:transition-all file:duration-300
-                        file:cursor-pointer
-                        hover:file:scale-105 hover:file:shadow-lg hover:file:shadow-purple-500/50
-                        disabled:opacity-50 disabled:cursor-not-allowed
-                      "
-                    />
-                  </label>
+                <div className="flex gap-4">
+  <label className="relative cursor-pointer">
+    <span className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-purple-500 text-white font-semibold text-sm transition-all duration-300 hover:bg-purple-600 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50 cursor-pointer">
+      Choose File
+    </span>
+    <input
+      type="file"
+      onChange={handleFileChange}
+      disabled={isUploading}
+      accept="*/*"
+      className="hidden"
+    />
+  </label>
+  <span className="inline-flex items-center text-sm text-muted-foreground">
+    No file chosen
+  </span>
+</div>
                 </div>
               </div>
             )}
