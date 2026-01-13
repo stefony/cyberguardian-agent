@@ -84,79 +84,23 @@ const fetchData = useCallback(async (showRefreshIndicator = false) => {
 
     if (overviewRes.success) {
       setOverview(overviewRes.data || null);
-    } else {
-      console.log("🟡 Using mock overview data");
-      setOverview({
-        total_threats: 1247,
-        active_threats: 23,
-        blocked_threats: 1189,
-        total_scans: 8934,
-        successful_scans: 8901,
-        total_honeypots: 9,
-        active_honeypots: 7,
-        total_interactions: 342,
-        threats_today: 47,
-        scans_today: 156
-      });
-    }
+    } 
 
     if (timelineRes.success) {
       setThreatsTimeline(timelineRes.data || []);
-    } else {
-      console.log("🟡 Using mock threats timeline");
-      const mockTimeline: TimelinePoint[] = [];
-      for (let i = timeRange - 1; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        mockTimeline.push({
-          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          count: Math.floor(Math.random() * 50) + 20
-        });
-      }
-      setThreatsTimeline(mockTimeline);
-    }
+    } 
 
     if (detectionRes.success) {
       setDetectionStats(detectionRes.data || []);
-    } else {
-      console.log("🟡 Using mock detection stats");
-      setDetectionStats([
-        { method: "AI Detection", count: 487, percentage: 39 },
-        { method: "Signature", count: 356, percentage: 29 },
-        { method: "Behavioral", count: 245, percentage: 20 },
-        { method: "Heuristic", count: 98, percentage: 8 },
-        { method: "Honeypot", count: 61, percentage: 4 }
-      ]);
-    }
+    } else 
 
     if (honeypotRes.success) {
       setHoneypotActivity(honeypotRes.data || []);
-    } else {
-      console.log("🟡 Using mock honeypot activity");
-      const mockHoneypot: TimelinePoint[] = [];
-      for (let i = timeRange - 1; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        mockHoneypot.push({
-          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          count: Math.floor(Math.random() * 30) + 10
-        });
-      }
-      setHoneypotActivity(mockHoneypot);
-    }
+    } 
 
     if (threatsRes.success) {
       setTopThreats(threatsRes.data || []);
-    } else {
-      console.log("🟡 Using mock top threats");
-      setTopThreats([
-        { category: "Malware", count: 342, severity: "critical" },
-        { category: "Phishing", count: 289, severity: "high" },
-        { category: "SQL Injection", count: 167, severity: "high" },
-        { category: "XSS", count: 134, severity: "medium" },
-        { category: "DDoS", count: 98, severity: "critical" }
-      ]);
-    }
+    } 
 
     setError(null);
   } catch (err) {
@@ -214,7 +158,7 @@ const fetchData = useCallback(async (showRefreshIndicator = false) => {
       { category: "DDoS", count: 98, severity: "critical" }
     ]);
 
-    setError("Could not load analytics data - using mock data");
+    setError("Could not load analytics data");
   } finally {
     setIsLoading(false);
     setIsRefreshing(false);
@@ -371,7 +315,7 @@ const fetchData = useCallback(async (showRefreshIndicator = false) => {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={(entry) => `${entry.method}: ${entry.percentage}%`}
+                      label={(entry) => `${entry.method}: ${entry.percent}%`}
                       outerRadius={100}
                       fill="#8884d8"
                       dataKey="count"
