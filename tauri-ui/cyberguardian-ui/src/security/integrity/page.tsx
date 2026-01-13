@@ -87,6 +87,7 @@ interface ManifestInfo {
 }
 
 export default function IntegrityMonitoringPage() {
+  const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<IntegrityStats | null>(null);
   const [logs, setLogs] = useState<IntegrityLog[]>([]);
   const [alerts, setAlerts] = useState<IntegrityAlert[]>([]);
@@ -146,15 +147,7 @@ export default function IntegrityMonitoringPage() {
 
     if (manifestData.success && manifestData.manifest) {
       setManifest(manifestData.manifest);
-    } else {
-      console.log("🟡 Using mock manifest");
-      setManifest({
-        id: 1,
-        version: "v2.1.0",
-        created_at: new Date(Date.now() - 86400000).toISOString(),
-        total_files: 1247
-      });
-    }
+        }
 
     if (logsData.success) {
       setLogs(logsData.logs);
@@ -228,89 +221,10 @@ export default function IntegrityMonitoringPage() {
         }
       ]);
     }
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    console.log("🟡 Using mock integrity data");
-    setStats({
-      total_checks: 1247,
-      status_counts: {
-        OK: 1200,
-        MODIFIED: 15,
-        MISSING: 2,
-        ERROR: 30
-      },
-      active_alerts: 3,
-      recent_compromised: 17,
-      total_manifests: 5
-    });
-    setManifest({
-      id: 1,
-      version: "v2.1.0",
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-      total_files: 1247
-    });
-    setLogs([
-      {
-        id: 1,
-        file_path: "C:\\Windows\\System32\\kernel32.dll",
-        expected_checksum: "a1b2c3d4e5f6",
-        actual_checksum: "a1b2c3d4e5f6",
-        status: "OK",
-        timestamp: new Date(Date.now() - 300000).toISOString(),
-        details: null
-      },
-      {
-        id: 2,
-        file_path: "C:\\Program Files\\App\\config.json",
-        expected_checksum: "x9y8z7w6v5u4",
-        actual_checksum: "DIFFERENT123",
-        status: "MODIFIED",
-        timestamp: new Date(Date.now() - 600000).toISOString(),
-        details: "File content changed"
-      },
-      {
-        id: 3,
-        file_path: "C:\\Users\\Admin\\important.dat",
-        expected_checksum: "m4n3b2v1c0x9",
-        actual_checksum: null,
-        status: "MISSING",
-        timestamp: new Date(Date.now() - 900000).toISOString(),
-        details: "File not found"
-      }
-    ]);
-    setAlerts([
-      {
-        id: 1,
-        alert_type: "FILE_MODIFIED",
-        severity: "high",
-        file_path: "C:\\Program Files\\App\\config.json",
-        message: "Critical configuration file has been modified",
-        resolved: false,
-        created_at: new Date(Date.now() - 600000).toISOString(),
-        resolved_at: null
-      },
-      {
-        id: 2,
-        alert_type: "FILE_MISSING",
-        severity: "critical",
-        file_path: "C:\\Users\\Admin\\important.dat",
-        message: "Important system file is missing",
-        resolved: false,
-        created_at: new Date(Date.now() - 900000).toISOString(),
-        resolved_at: null
-      },
-      {
-        id: 3,
-        alert_type: "INTEGRITY_BREACH",
-        severity: "medium",
-        file_path: null,
-        message: "Multiple files show signs of tampering",
-        resolved: false,
-        created_at: new Date(Date.now() - 1800000).toISOString(),
-        resolved_at: null
-      }
-    ]);
-  }
+ } catch (error) {
+  console.error("Error fetching data:", error);
+  setError("Failed to load integrity data");
+}
 };
 
   const generateManifest = async () => {
