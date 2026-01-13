@@ -29,7 +29,7 @@ type DetectionStatus = {
 type UploadResult = {
   success: boolean;
   scan_id: number;
-  file_name: string;
+  path: string;
   file_size: number;
   threat_score: number;
   severity: string;
@@ -73,26 +73,10 @@ const fetchStatus = useCallback(async () => {
     const response = await detectionApi.getStatus();
     if (response.success && response.data) {
       setStatus(response.data);
-    } else {
-      console.log("🟡 API returned no status data, using mock data");
-      setStatus({
-        engine_status: 'online',
-        last_update: new Date().toISOString(),
-        signatures_count: 0,
-        scans_today: 5,
-        threats_blocked: 5
-      });
     }
   } catch (err) {
     console.error("Error fetching status:", err);
-    console.log("🟡 Status fetch error, using mock data");
-    setStatus({
-      engine_status: 'online',
-      last_update: new Date().toISOString(),
-      signatures_count: 0,
-      scans_today: 5,
-      threats_blocked: 5
-    });
+    // No mock data fallback
   }
 }, []);
 
@@ -104,87 +88,9 @@ const fetchScans = useCallback(async () => {
     if (response.success && response.data) {
       setScans(response.data);
       setError(null);
-    } else {
-      console.log("🟡 API returned no scan data, using mock data");
-     setScans([
-  {
-    id: 1,
-    scan_type: "file",
-    status: "completed",
-    started_at: "2025-01-14T09:30:00Z",
-    completed_at: "2025-01-14T09:30:05Z",
-    duration_seconds: 5.2,
-    items_scanned: 0,
-    threats_found: 1
-  },
-  {
-    id: 2,
-    scan_type: "directory",
-    status: "completed",
-    started_at: "2025-01-14T08:15:00Z",
-    completed_at: "2025-01-14T08:15:12Z",
-    duration_seconds: 12.8,
-    items_scanned: 0,
-    threats_found: 0
-  },
-  {
-    id: 3,
-    scan_type: "full_system",
-    status: "completed",
-    started_at: "2025-01-13T14:20:00Z",
-    completed_at: "2025-01-13T14:25:30Z",
-    duration_seconds: 330.5,
-    items_scanned: 0,
-    threats_found: 2
-  },
-  {
-    id: 4,
-    scan_type: "process",
-    status: "completed",
-    started_at: "2025-01-13T11:45:00Z",
-    completed_at: "2025-01-13T11:45:03Z",
-    duration_seconds: 3.1,
-    items_scanned: 0,
-    threats_found: 1
-  },
-  {
-    id: 5,
-    scan_type: "file",
-    status: "completed",
-    started_at: "2025-01-12T16:30:00Z",
-    completed_at: "2025-01-12T16:30:08Z",
-    duration_seconds: 8.7,
-    items_scanned: 0,
-    threats_found: 1
-  }
-]);
-      setError(null);
     }
   } catch (err) {
     console.error("Error fetching scans:", err);
-    console.log("🟡 Fetch error, using mock data");
-    setScans([
-      {
-        id: "1",
-        filename: "suspicious_file.exe",
-        file_hash: "a1b2c3d4e5f6...",
-        scan_date: new Date().toISOString(),
-        status: "completed",
-        threat_detected: true,
-        threat_level: "high",
-        virustotal_score: "45/70"
-      },
-      {
-        id: "2",
-        filename: "document.pdf",
-        file_hash: "x9y8z7w6v5u4...",
-        scan_date: new Date(Date.now() - 3600000).toISOString(),
-        status: "completed",
-        threat_detected: false,
-        threat_level: "clean",
-        virustotal_score: "0/70"
-      }
-    ]);
     setError(null);
   } finally {
     setIsLoading(false);
@@ -441,7 +347,7 @@ const fetchScans = useCallback(async () => {
                 <div className="mt-4 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">File:</span>
-                    <span className="font-medium">{uploadResult.file_name}</span>
+                    <span className="font-medium">"Uploaded File"</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Size:</span>
@@ -644,3 +550,10 @@ const fetchScans = useCallback(async () => {
       </ProtectedRoute>
   );
 }
+
+
+
+
+
+
+
