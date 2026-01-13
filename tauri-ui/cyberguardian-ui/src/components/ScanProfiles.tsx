@@ -27,99 +27,15 @@ export default function ScanProfiles() {
     loadProfiles()
   }, [])
 
-  const loadProfiles = async () => {
+ const loadProfiles = async () => {
   try {
     const response = await api.scans.getScanProfiles()
     if (response.success && response.data) {
       setProfiles(response.data.profiles)
-    } else {
-      console.log('🟡 API returned no profiles, using mock')
-      setProfiles({
-        quick: {
-          name: 'Quick Scan',
-          description: 'Fast scan of critical system files',
-          scan_type: 'quick',
-          threads: 2,
-          max_files: 100,
-          extensions: ['.exe', '.dll', '.bat', '.ps1'],
-          skip_archives: true,
-          recursive: false,
-          duration_estimate: '~2 minutes',
-          icon: 'zap',
-          color: 'blue'
-        },
-        standard: {
-          name: 'Standard Scan',
-          description: 'Balanced scan for regular use',
-          scan_type: 'full',
-          threads: 4,
-          max_files: 1000,
-          extensions: ['.exe', '.dll', '.bat', '.ps1', '.zip', '.rar'],
-          skip_archives: false,
-          recursive: true,
-          duration_estimate: '~10 minutes',
-          icon: 'shield',
-          color: 'purple'
-        },
-        deep: {
-          name: 'Deep Scan',
-          description: 'Comprehensive scan of entire system',
-          scan_type: 'full',
-          threads: 8,
-          max_files: 10000,
-          extensions: ['*'],
-          skip_archives: false,
-          recursive: true,
-          duration_estimate: '~30+ minutes',
-          icon: 'search',
-          color: 'red'
-        }
-      })
     }
   } catch (error) {
     console.error('Failed to load profiles:', error)
-    console.log('🟡 Using mock scan profiles')
-    setProfiles({
-      quick: {
-        name: 'Quick Scan',
-        description: 'Fast scan of critical system files',
-        scan_type: 'quick',
-        threads: 2,
-        max_files: 100,
-        extensions: ['.exe', '.dll', '.bat', '.ps1'],
-        skip_archives: true,
-        recursive: false,
-        duration_estimate: '~2 minutes',
-        icon: 'zap',
-        color: 'blue'
-      },
-      standard: {
-        name: 'Standard Scan',
-        description: 'Balanced scan for regular use',
-        scan_type: 'full',
-        threads: 4,
-        max_files: 1000,
-        extensions: ['.exe', '.dll', '.bat', '.ps1', '.zip', '.rar'],
-        skip_archives: false,
-        recursive: true,
-        duration_estimate: '~10 minutes',
-        icon: 'shield',
-        color: 'purple'
-      },
-      deep: {
-        name: 'Deep Scan',
-        description: 'Comprehensive scan of entire system',
-        scan_type: 'full',
-        threads: 8,
-        max_files: 10000,
-        extensions: ['*'],
-        skip_archives: false,
-        recursive: true,
-        duration_estimate: '~30+ minutes',
-        icon: 'search',
-        color: 'red'
-      }
-    })
+    // No mock data fallback
   }
 }
 
