@@ -1,14 +1,13 @@
 
 
 import { useState } from 'react';
-import { useNavigate } from 'next/navigation';
-import Link from 'next/link';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function LoginPage() {
   const [licenseKey, setLicenseKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const router = useNavigate();
+const navigate = useNavigate();
 
   const handleActivate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +28,7 @@ export default function LoginPage() {
       
       // Call backend API
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/license/activate`,
+  `https://cyberguardian-backend-production.up.railway.app/api/license/activate`,
         {
           method: 'POST',
           headers: {

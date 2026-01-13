@@ -28,6 +28,7 @@ import SettingsPage from "./settings/page";
 import IOCsPage from "./threats/iocs/page";
 import MITREPage from "./threats/mitre/page";
 import FeedsPage from "./threats/feeds/page";
+import LoginPage from "./auth/login/page";
 
 
 // Temporary placeholder for other pages
@@ -42,13 +43,17 @@ function PlaceholderPage({ title }: { title: string }) {
 export default function App() {
   return (
     <Routes>
+      {/* Auth routes - OUTSIDE Layout (no sidebar) */}
+      <Route path="/auth/login" element={<LoginPage />} />
+      
+      {/* App routes - INSIDE Layout (with sidebar) */}
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="threats" element={<ThreatsPage />} />
-	<Route path="threats/iocs" element={<IOCsPage />} />
+        <Route path="threats/iocs" element={<IOCsPage />} />
         <Route path="threats/mitre" element={<MITREPage />} />
-	<Route path="threats/feeds" element={<FeedsPage />} />
+        <Route path="threats/feeds" element={<FeedsPage />} />
         <Route path="detection" element={<DetectionPage />} />
         <Route path="protection" element={<ProtectionPage />} />
         <Route path="scans" element={<ScansPage />} />

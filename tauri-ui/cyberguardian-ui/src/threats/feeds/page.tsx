@@ -15,7 +15,7 @@ import {
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 // API configuration
-const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'https://cyberguardian-backend-production.up.railway.app';
 
 // Helper to make authenticated requests
 const fetchWithAuth = async (endpoint: string, options?: RequestInit) => {
