@@ -75,222 +75,39 @@ export default function LiveThreatFeed() {
     return () => clearInterval(interval);
   }, [isLive]);
 
-  const fetchLiveFeed = async () => {
+const fetchLiveFeed = async () => {
   try {
     const data: LiveFeedResponse = await fetchWithAuth('/api/ai/live-feed?limit=50');
     
-      if (data.success && data.events) {
-        // Detect new events
-        const prevIds = new Set(prevEventsRef.current.map((e) => e.id));
-        const newIds = new Set<string>();
+    if (data.success && data.events) {
+      // Detect new events
+      const prevIds = new Set(prevEventsRef.current.map((e) => e.id));
+      const newIds = new Set<string>();
 
-        data.events.forEach((event) => {
-          if (!prevIds.has(event.id)) {
-            newIds.add(event.id);
-          }
-        });
-
-        setNewEventIds(newIds);
-        setEvents(data.events);
-        prevEventsRef.current = data.events;
-
-        // Clear "new" indicator after 3 seconds
-        if (newIds.size > 0) {
-          setTimeout(() => {
-            setNewEventIds(new Set());
-          }, 3000);
+      data.events.forEach((event) => {
+        if (!prevIds.has(event.id)) {
+          newIds.add(event.id);
         }
+      });
+
+      setNewEventIds(newIds);
+      setEvents(data.events);
+      prevEventsRef.current = data.events;
+
+      // Clear "new" indicator after 3 seconds
+      if (newIds.size > 0) {
+        setTimeout(() => {
+          setNewEventIds(new Set());
+        }, 3000);
       }
-    } catch (error) {
-      console.error("Failed to fetch live feed:", error);
-      console.log("🟡 Using mock live feed data");
-      
-      // Mock data fallback
-      const mockEvents: ThreatEvent[] = [
-        {
-          id: "1",
-          timestamp: new Date(Date.now() - 180000).toISOString(),
-          time_ago: "3m ago",
-          event_type: "connection_attempt",
-          source: "honeypot",
-          source_ip: "203.0.113.125",
-          country: "United States",
-          city: "New York",
-          severity: "low",
-          icon: "shield",
-          details: {
-            honeypot_type: "database",
-            port: 3306
-          }
-        },
-        {
-          id: "2",
-          timestamp: new Date(Date.now() - 240000).toISOString(),
-          time_ago: "4m ago",
-          event_type: "authentication_failed",
-          source: "honeypot",
-          source_ip: "198.51.100.209",
-          country: "Romania",
-          city: "Bucharest",
-          severity: "low",
-          icon: "alert",
-          details: {
-            honeypot_type: "http",
-            port: 8080
-          }
-        },
-        {
-          id: "3",
-          timestamp: new Date(Date.now() - 300000).toISOString(),
-          time_ago: "5m ago",
-          event_type: "connection_attempt",
-          source: "honeypot",
-          source_ip: "203.0.113.210",
-          country: "United States",
-          city: "New York",
-          severity: "low",
-          icon: "shield",
-          details: {
-            honeypot_type: "http",
-            port: 8080
-          }
-        },
-        {
-          id: "4",
-          timestamp: new Date(Date.now() - 360000).toISOString(),
-          time_ago: "6m ago",
-          event_type: "authentication_failed",
-          source: "honeypot",
-          source_ip: "198.51.100.230",
-          country: "Romania",
-          city: "Bucharest",
-          severity: "low",
-          icon: "alert",
-          details: {
-            honeypot_type: "ftp",
-            port: 21
-          }
-        },
-        {
-          id: "5",
-          timestamp: new Date(Date.now() - 420000).toISOString(),
-          time_ago: "7m ago",
-          event_type: "connection_attempt",
-          source: "honeypot",
-          source_ip: "203.0.113.213",
-          country: "United States",
-          city: "New York",
-          severity: "low",
-          icon: "shield",
-          details: {
-            honeypot_type: "ssh",
-            port: 22
-          }
-        },
-        {
-          id: "6",
-          timestamp: new Date(Date.now() - 480000).toISOString(),
-          time_ago: "8m ago",
-          event_type: "authentication_failed",
-          source: "honeypot",
-          source_ip: "198.51.100.150",
-          country: "Romania",
-          city: "Bucharest",
-          severity: "low",
-          icon: "alert",
-          details: {
-            honeypot_type: "ssh",
-            port: 22
-          }
-        },
-        {
-          id: "7",
-          timestamp: new Date(Date.now() - 540000).toISOString(),
-          time_ago: "9m ago",
-          event_type: "connection_attempt",
-          source: "honeypot",
-          source_ip: "203.0.113.7",
-          country: "United States",
-          city: "New York",
-          severity: "low",
-          icon: "shield",
-          details: {
-            honeypot_type: "http",
-            port: 80
-          }
-        },
-        {
-          id: "8",
-          timestamp: new Date(Date.now() - 600000).toISOString(),
-          time_ago: "10m ago",
-          event_type: "authentication_failed",
-          source: "honeypot",
-          source_ip: "185.220.101.45",
-          country: "Germany",
-          city: "Frankfurt",
-          severity: "medium",
-          icon: "alert",
-          details: {
-            honeypot_type: "ssh",
-            port: 22
-          }
-        },
-        {
-          id: "9",
-          timestamp: new Date(Date.now() - 660000).toISOString(),
-          time_ago: "11m ago",
-          event_type: "connection_attempt",
-          source: "honeypot",
-          source_ip: "192.42.116.78",
-          country: "Netherlands",
-          city: "Amsterdam",
-          severity: "low",
-          icon: "shield",
-          details: {
-            honeypot_type: "http",
-            port: 8888
-          }
-        },
-        {
-          id: "10",
-          timestamp: new Date(Date.now() - 720000).toISOString(),
-          time_ago: "12m ago",
-          event_type: "authentication_failed",
-          source: "honeypot",
-          source_ip: "103.251.167.22",
-          country: "China",
-          city: "Beijing",
-          severity: "high",
-          icon: "alert",
-          details: {
-            honeypot_type: "database",
-            port: 3306
-          }
-        },
-        {
-          id: "11",
-          timestamp: new Date(Date.now() - 780000).toISOString(),
-          time_ago: "13m ago",
-          event_type: "connection_attempt",
-          source: "honeypot",
-          source_ip: "45.155.205.93",
-          country: "Russia",
-          city: "Moscow",
-          severity: "medium",
-          icon: "shield",
-          details: {
-            honeypot_type: "ftp",
-            port: 21
-          }
-        }
-      ];
-      
-      setEvents(mockEvents);
-      prevEventsRef.current = mockEvents;
-    } finally {
-      setIsLoading(false);
     }
-  };
+  } catch (error) {
+    console.error("Failed to fetch live feed:", error);
+    // No mock data fallback
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const getSeverityColor = (severity: string) => {
     const colors: Record<string, string> = {
