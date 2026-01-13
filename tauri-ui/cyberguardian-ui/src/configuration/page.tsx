@@ -79,31 +79,13 @@ const fetchBackups = async () => {
     
     if (data.success && data.backups) {
       setBackups(data.backups);
-    } else {
-      console.log('🟡 Using mock backups data');
-      const mockBackups: ConfigBackup[] = [
-        { filename: 'backup_2025-01-11_10-30.json', path: '/backups/backup_2025-01-11_10-30.json', size_bytes: 45678, created_at: new Date(Date.now() - 3600000).toISOString() },
-        { filename: 'backup_2025-01-10_15-45.json', path: '/backups/backup_2025-01-10_15-45.json', size_bytes: 43210, created_at: new Date(Date.now() - 86400000).toISOString() },
-        { filename: 'backup_2025-01-09_09-00.json', path: '/backups/backup_2025-01-09_09-00.json', size_bytes: 41234, created_at: new Date(Date.now() - 172800000).toISOString() },
-        { filename: 'backup_2025-01-08_14-20.json', path: '/backups/backup_2025-01-08_14-20.json', size_bytes: 39876, created_at: new Date(Date.now() - 259200000).toISOString() },
-        { filename: 'backup_2025-01-07_11-30.json', path: '/backups/backup_2025-01-07_11-30.json', size_bytes: 38456, created_at: new Date(Date.now() - 345600000).toISOString() }
-      ];
-      setBackups(mockBackups);
     }
   } catch (error) {
     console.error('Error fetching backups:', error);
-    console.log('🟡 Using mock backups data (error fallback)');
-    const mockBackups: ConfigBackup[] = [
-      { filename: 'backup_2025-01-11_10-30.json', path: '/backups/backup_2025-01-11_10-30.json', size_bytes: 45678, created_at: new Date(Date.now() - 3600000).toISOString() },
-      { filename: 'backup_2025-01-10_15-45.json', path: '/backups/backup_2025-01-10_15-45.json', size_bytes: 43210, created_at: new Date(Date.now() - 86400000).toISOString() },
-      { filename: 'backup_2025-01-09_09-00.json', path: '/backups/backup_2025-01-09_09-00.json', size_bytes: 41234, created_at: new Date(Date.now() - 172800000).toISOString() },
-      { filename: 'backup_2025-01-08_14-20.json', path: '/backups/backup_2025-01-08_14-20.json', size_bytes: 39876, created_at: new Date(Date.now() - 259200000).toISOString() },
-      { filename: 'backup_2025-01-07_11-30.json', path: '/backups/backup_2025-01-07_11-30.json', size_bytes: 38456, created_at: new Date(Date.now() - 345600000).toISOString() }
-    ];
-    setBackups(mockBackups);
+    // No mock data fallback
   }
 };
- const exportConfiguration = async () => {
+const exportConfiguration = async () => {
   setExporting(true);
   try {
     const response = await fetchWithAuth('/api/configuration/export');
@@ -124,71 +106,11 @@ const fetchBackups = async () => {
       
       alert('Configuration exported successfully!');
     } else {
-      console.log('🟡 Using mock export config');
-      const mockConfig: ExportConfig = {
-        config_version: '1.0',
-        exported_at: new Date().toISOString(),
-        cyberguardian_version: '2.1.4',
-        sections: {
-          protection: { enabled: true, real_time: true, cloud_protection: true },
-          exclusions: [
-            { path: 'C:\\Program Files\\TrustedApp', type: 'folder' },
-            { path: 'C:\\Dev\\project.exe', type: 'file' }
-          ],
-          scan_schedules: [
-            { name: 'Daily Quick Scan', frequency: 'daily', time: '02:00', type: 'quick' },
-            { name: 'Weekly Full Scan', frequency: 'weekly', day: 'Sunday', time: '03:00', type: 'full' }
-          ],
-          update_settings: { auto_update: true, check_frequency: 'daily', download_automatically: true }
-        }
-      };
-      setLastExport(mockConfig);
-      
-      const blob = new Blob([JSON.stringify(mockConfig, null, 2)], { type: 'application/json' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `cyberguardian_config_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      alert('Configuration exported successfully (using mock data)!');
+      alert('Failed to export configuration');
     }
   } catch (error) {
     console.error('Error exporting configuration:', error);
-    console.log('🟡 Using mock export config (error fallback)');
-    const mockConfig: ExportConfig = {
-      config_version: '1.0',
-      exported_at: new Date().toISOString(),
-      cyberguardian_version: '2.1.4',
-      sections: {
-        protection: { enabled: true, real_time: true, cloud_protection: true },
-        exclusions: [
-          { path: 'C:\\Program Files\\TrustedApp', type: 'folder' },
-          { path: 'C:\\Dev\\project.exe', type: 'file' }
-        ],
-        scan_schedules: [
-          { name: 'Daily Quick Scan', frequency: 'daily', time: '02:00', type: 'quick' },
-          { name: 'Weekly Full Scan', frequency: 'weekly', day: 'Sunday', time: '03:00', type: 'full' }
-        ],
-        update_settings: { auto_update: true, check_frequency: 'daily', download_automatically: true }
-      }
-    };
-    setLastExport(mockConfig);
-    
-    const blob = new Blob([JSON.stringify(mockConfig, null, 2)], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `cyberguardian_config_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-    
-    alert('Configuration exported successfully (using mock data)!');
+    alert('Error exporting configuration');
   } finally {
     setExporting(false);
   }
