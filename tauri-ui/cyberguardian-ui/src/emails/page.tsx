@@ -19,129 +19,71 @@ export default function EmailsPage() {
   const [loading, setLoading] = useState(true);
 
   // Fetch email accounts
- const fetchEmailAccounts = async () => {
-    console.log('🔵 Fetching email accounts...');
-    try {
-      const response = await emailsApi.getAccounts();
-      console.log('🔵 API Response:', response);
-      
-      if (response.success && response.data) {
-        console.log('✅ Setting email accounts:', response.data);
-        setEmailAccounts(response.data);
-        if (response.data.length > 0 && !selectedAccountId) {
-          console.log('✅ Setting selected account ID:', response.data[0].id);
-          setSelectedAccountId(response.data[0].id);
-        }
-      } else {
-        console.log('🟡 Using mock email accounts');
-        const mockAccounts = [
-          { id: 1, email_address: 'security@company.com', total_scanned: 1247, phishing_detected: 23 },
-          { id: 2, email_address: 'admin@company.com', total_scanned: 856, phishing_detected: 12 }
-        ];
-        setEmailAccounts(mockAccounts);
-        setSelectedAccountId(mockAccounts[0].id);
+const fetchEmailAccounts = async () => {
+  console.log('🔵 Fetching email accounts...');
+  try {
+    const response = await emailsApi.getAccounts();
+    console.log('🔵 API Response:', response);
+    
+    if (response.success && response.data) {
+      console.log('✅ Setting email accounts:', response.data);
+      setEmailAccounts(response.data);
+      if (response.data.length > 0 && !selectedAccountId) {
+        console.log('✅ Setting selected account ID:', response.data[0].id);
+        setSelectedAccountId(response.data[0].id);
       }
-    } catch (err) {
-      console.error("❌ Error fetching email accounts:", err);
-      console.log('🟡 Using mock email accounts (error fallback)');
-      const mockAccounts = [
-        { id: 1, email_address: 'security@company.com', total_scanned: 1247, phishing_detected: 23 },
-        { id: 2, email_address: 'admin@company.com', total_scanned: 856, phishing_detected: 12 }
-      ];
-      setEmailAccounts(mockAccounts);
-      setSelectedAccountId(mockAccounts[0].id);
-    } finally {
-      console.log('🔵 Setting loading to false');
-      setLoading(false);
     }
-  };
+  } catch (err) {
+    console.error("❌ Error fetching email accounts:", err);
+    // No mock data fallback
+  } finally {
+    console.log('🔵 Setting loading to false');
+    setLoading(false);
+  }
+};
 
   // Fetch status
 const fetchStatus = async () => {
-    try {
-      const response = await emailsApi.getStatus();
-      if (response.success && response.data) {
-        setStatus(response.data);
-      } else {
-        console.log('🟡 Using mock status');
-        setStatus({
-          configured: true,
-          total_scanned: 1247,
-          phishing_detected: 23,
-          safe_emails: 1224
-        });
-      }
-    } catch (err) {
-      console.error("Error fetching status:", err);
-      console.log('🟡 Using mock status (error fallback)');
-      setStatus({
-        configured: true,
-        total_scanned: 1247,
-        phishing_detected: 23,
-        safe_emails: 1224
-      });
+  try {
+    const response = await emailsApi.getStatus();
+    if (response.success && response.data) {
+      setStatus(response.data);
     }
-  };
+  } catch (err) {
+    console.error("Error fetching status:", err);
+    // No mock data fallback
+  }
+};
 
   // Scan emails
- const scanEmails = async () => {
-    if (!selectedAccountId) {
-      setError("Please select an email account first");
-      return;
+const scanEmails = async () => {
+  if (!selectedAccountId) {
+    setError("Please select an email account first");
+    return;
+  }
+
+  setIsScanning(true);
+  setError(null);
+
+  try {
+    const response = await emailsApi.scan({ 
+      account_id: selectedAccountId,
+      folder, 
+      limit 
+    });
+
+    if (response.success && response.data) {
+      setEmails(response.data || []);
+      await fetchEmailAccounts();
+      await fetchStatus();
     }
-
-    setIsScanning(true);
-    setError(null);
-
-    try {
-      const response = await emailsApi.scan({ 
-        account_id: selectedAccountId,
-        folder, 
-        limit 
-      });
-
-      if (response.success && response.data) {
-        setEmails(response.data || []);
-        await fetchEmailAccounts();
-        await fetchStatus();
-      } else {
-        console.log('🟡 Using mock scan results');
-        const mockEmails = [
-          { subject: 'URGENT: Verify Your Account Now!', sender: 'no-reply@suspicious-bank.com', date: new Date(Date.now() - 3600000).toLocaleString(), threat_level: 'dangerous' },
-          { subject: 'You have won $1,000,000!', sender: 'winner@lottery-scam.net', date: new Date(Date.now() - 7200000).toLocaleString(), threat_level: 'dangerous' },
-          { subject: 'Suspicious login attempt detected', sender: 'security@paypal-verify.info', date: new Date(Date.now() - 10800000).toLocaleString(), threat_level: 'suspicious' },
-          { subject: 'Your package is waiting', sender: 'delivery@fedex-tracking.com', date: new Date(Date.now() - 14400000).toLocaleString(), threat_level: 'suspicious' },
-          { subject: 'Weekly Security Report', sender: 'security@company.com', date: new Date(Date.now() - 86400000).toLocaleString(), threat_level: 'safe' },
-          { subject: 'Team Meeting Tomorrow', sender: 'manager@company.com', date: new Date(Date.now() - 172800000).toLocaleString(), threat_level: 'safe' },
-          { subject: 'Q4 Financial Report', sender: 'finance@company.com', date: new Date(Date.now() - 259200000).toLocaleString(), threat_level: 'safe' },
-          { subject: 'Project Update - CyberGuardian', sender: 'dev-team@company.com', date: new Date(Date.now() - 345600000).toLocaleString(), threat_level: 'safe' },
-          { subject: 'Password Reset Request', sender: 'noreply@microsoft-account.tk', date: new Date(Date.now() - 432000000).toLocaleString(), threat_level: 'suspicious' },
-          { subject: 'System Maintenance Notice', sender: 'admin@company.com', date: new Date(Date.now() - 518400000).toLocaleString(), threat_level: 'safe' }
-        ];
-        setEmails(mockEmails.slice(0, limit));
-        await fetchEmailAccounts();
-        await fetchStatus();
-      }
-    } catch (err) {
-      console.error("Error scanning emails:", err);
-      console.log('🟡 Using mock scan results (error fallback)');
-      const mockEmails = [
-        { subject: 'URGENT: Verify Your Account Now!', sender: 'no-reply@suspicious-bank.com', date: new Date(Date.now() - 3600000).toLocaleString(), threat_level: 'dangerous' },
-        { subject: 'You have won $1,000,000!', sender: 'winner@lottery-scam.net', date: new Date(Date.now() - 7200000).toLocaleString(), threat_level: 'dangerous' },
-        { subject: 'Suspicious login attempt detected', sender: 'security@paypal-verify.info', date: new Date(Date.now() - 10800000).toLocaleString(), threat_level: 'suspicious' },
-        { subject: 'Your package is waiting', sender: 'delivery@fedex-tracking.com', date: new Date(Date.now() - 14400000).toLocaleString(), threat_level: 'suspicious' },
-        { subject: 'Weekly Security Report', sender: 'security@company.com', date: new Date(Date.now() - 86400000).toLocaleString(), threat_level: 'safe' },
-        { subject: 'Team Meeting Tomorrow', sender: 'manager@company.com', date: new Date(Date.now() - 172800000).toLocaleString(), threat_level: 'safe' },
-        { subject: 'Q4 Financial Report', sender: 'finance@company.com', date: new Date(Date.now() - 259200000).toLocaleString(), threat_level: 'safe' },
-        { subject: 'Project Update - CyberGuardian', sender: 'dev-team@company.com', date: new Date(Date.now() - 345600000).toLocaleString(), threat_level: 'safe' },
-        { subject: 'Password Reset Request', sender: 'noreply@microsoft-account.tk', date: new Date(Date.now() - 432000000).toLocaleString(), threat_level: 'suspicious' },
-        { subject: 'System Maintenance Notice', sender: 'admin@company.com', date: new Date(Date.now() - 518400000).toLocaleString(), threat_level: 'safe' }
-      ];
-      setEmails(mockEmails.slice(0, limit));
-    } finally {
-      setIsScanning(false);
-    }
-  };
+  } catch (err) {
+    console.error("Error scanning emails:", err);
+    setError("Failed to scan emails");
+  } finally {
+    setIsScanning(false);
+  }
+};
 
   useEffect(() => {
     fetchEmailAccounts();
