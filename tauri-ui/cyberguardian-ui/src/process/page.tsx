@@ -22,7 +22,7 @@ import {
 import { processProtectionApi, processMonitorApi } from '@/lib/api';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
-const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = (import.meta as any).env.VITE_API_URL || 'https://cyberguardian-backend-production.up.railway.app';
 
 interface ProtectionStatus {
   platform: string;

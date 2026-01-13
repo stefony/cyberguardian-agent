@@ -18,7 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
-const API_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = (import.meta as any).env.VITE_API_URL || 'https://cyberguardian-backend-production.up.railway.app';
 // Helper to make authenticated requests
 const fetchWithAuth = async (endpoint: string, options?: RequestInit) => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
