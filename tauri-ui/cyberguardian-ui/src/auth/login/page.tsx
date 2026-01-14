@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { shell } from '@tauri-apps/api'; 
 
 export default function LoginPage() {
   const [licenseKey, setLicenseKey] = useState('');
@@ -131,14 +132,18 @@ const navigate = useNavigate();
 <div className="text-center">
   <p className="text-sm text-gray-300">
     Don't have a license key?{' '}
-    <button
-      onClick={() => {
-        window.open('https://cyberguardian-dashboard.vercel.app/pricing', '_blank');
-      }}
-      className="font-medium text-cyan-400 hover:text-cyan-300 cursor-pointer underline"
-    >
-      Buy Now
-    </button>
+<button
+  onClick={async () => {
+    try {
+      await shell.open('https://cyberguardian-dashboard.vercel.app/pricing');
+    } catch (error) {
+      console.error('Failed to open URL:', error);
+    }
+  }}
+  className="font-medium text-cyan-400 hover:text-cyan-300 cursor-pointer underline"
+>
+  Buy Now
+</button>
   </p>
 </div>
         </form>
