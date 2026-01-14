@@ -127,14 +127,20 @@ const navigate = useNavigate();
           </div>
 
           {/* Links */}
-          <div className="text-center">
-            <p className="text-sm text-gray-300">
-              Don't have a license key?{' '}
-              <Link to="/pricing" className="font-medium text-cyan-400 hover:text-cyan-300">
-                Buy Now
-              </Link>
-            </p>
-          </div>
+       {/* Links */}
+<div className="text-center">
+  <p className="text-sm text-gray-300">
+    Don't have a license key?{' '}
+    <button
+      onClick={() => {
+        window.open('https://cyberguardian-dashboard.vercel.app/pricing', '_blank');
+      }}
+      className="font-medium text-cyan-400 hover:text-cyan-300 cursor-pointer underline"
+    >
+      Buy Now
+    </button>
+  </p>
+</div>
         </form>
       </div>
     </div>
