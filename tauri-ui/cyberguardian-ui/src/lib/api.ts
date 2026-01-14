@@ -1214,7 +1214,7 @@ export const quarantineApi = {
    * Get all quarantined files
    */
   getFiles: async (): Promise<ApiResponse<any[]>> => {
-    return client.get<any[]>('/api/quarantine')
+    return client.get<any[]>('/api/quarantine/')
   },
 
   /**

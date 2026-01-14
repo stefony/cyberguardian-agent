@@ -33,25 +33,29 @@ interface LiveFeedResponse {
 // Helper to make authenticated requests
 const fetchWithAuth = async (endpoint: string) => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-  
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
+
+  // Взимаме базовия URL от Vite env
+  const API_URL = import.meta.env.VITE_API_URL || "";
+
+  const response = await fetch(`${API_URL}${endpoint}`, {
     headers,
   });
-  
+
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
-  
+
   return response.json();
 };
+
 
 
 

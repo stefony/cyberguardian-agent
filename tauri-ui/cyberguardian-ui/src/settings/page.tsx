@@ -71,168 +71,101 @@
     });
 
     // Fetch settings
- const fetchSettings = async () => {
+const fetchSettings = async () => {
   try {
     setIsLoading(true);
     const response = await settingsApi.getSettings();
+
     if (response.success && response.data) {
       setSettings(response.data);
       setError(null);
     } else {
-      console.log('🟡 Using mock settings');
-      const mockSettings: Settings = {
-        notifications: {
-          email_alerts: true,
-          desktop_alerts: true,
-          critical_only: false,
-          alert_sound: true
-        },
-        appearance: {
-          theme: 'dark',
-          compact_mode: false,
-          animations_enabled: true
-        },
-        last_updated: new Date().toISOString()
-      };
-      setSettings(mockSettings);
-      setError(null);
+      console.warn("🟡 settingsApi.getSettings() returned no data:", response);
+      setSettings(null);
+      setError("Could not load settings");
     }
   } catch (err) {
     console.error("Error fetching settings:", err);
-    console.log('🟡 Using mock settings (error fallback)');
-    const mockSettings: Settings = {
-      notifications: {
-        email_alerts: true,
-        desktop_alerts: true,
-        critical_only: false,
-        alert_sound: true
-      },
-      appearance: {
-        theme: 'dark',
-        compact_mode: false,
-        animations_enabled: true
-      },
-      last_updated: new Date().toISOString()
-    };
-    setSettings(mockSettings);
+    setSettings(null);
     setError("Could not load settings");
   } finally {
     setIsLoading(false);
   }
 };
 
+
     // Fetch system info
 const fetchSystemInfo = async () => {
   try {
     const response = await settingsApi.getSystemInfo();
+
     if (response.success && response.data) {
       setSystemInfo(response.data);
     } else {
-      console.log('🟡 Using mock system info');
-      const mockSystemInfo: SystemInfo = {
-        os: 'Windows',
-        os_version: '10.0.19045',
-        python_version: '3.11.5',
-        cpu_count: 8,
-        total_memory_gb: 16,
-        hostname: 'DESKTOP-CG-01'
-      };
-      setSystemInfo(mockSystemInfo);
+      console.warn("🟡 settingsApi.getSystemInfo() returned no data:", response);
+      setSystemInfo(null);
     }
   } catch (err) {
     console.error("Error fetching system info:", err);
-    console.log('🟡 Using mock system info (error fallback)');
-    const mockSystemInfo: SystemInfo = {
-      os: 'Windows',
-      os_version: '10.0.19045',
-      python_version: '3.11.5',
-      cpu_count: 8,
-      total_memory_gb: 16,
-      hostname: 'DESKTOP-CG-01'
-    };
-    setSystemInfo(mockSystemInfo);
+    setSystemInfo(null);
   }
 };
 
+
     // Fetch license info
-   const fetchLicenseInfo = async () => {
+ const fetchLicenseInfo = async () => {
   try {
-    // Read from localStorage
-    const licenseKey = localStorage.getItem('license_key');
-    const licensePlan = localStorage.getItem('license_plan');
-    const licenseExpires = localStorage.getItem('license_expires');
-    
+    const licenseKey = localStorage.getItem("license_key");
+    const licensePlan = localStorage.getItem("license_plan");
+    const licenseExpires = localStorage.getItem("license_expires");
+
     if (licenseKey && licensePlan) {
       setLicenseInfo({
         license_type: licensePlan.toUpperCase(),
-        status: 'active',
+        status: "active",
         expires_at: licenseExpires,
         features: [
-          'Real-time threat detection',
-          'Advanced AI analysis',
-          'Honeypot deception layer',
-          licensePlan === 'business' || licensePlan === 'enterprise' ? 'Unlimited scans' : 'Limited scans',
-          licensePlan === 'business' || licensePlan === 'enterprise' ? 'Priority support' : 'Basic support',
-          licensePlan === 'enterprise' ? 'Custom alerts' : ''
-        ].filter(Boolean)
+          "Real-time threat detection",
+          "Advanced AI analysis",
+          "Honeypot deception layer",
+          licensePlan === "business" || licensePlan === "enterprise"
+            ? "Unlimited scans"
+            : "Limited scans",
+          licensePlan === "business" || licensePlan === "enterprise"
+            ? "Priority support"
+            : "Basic support",
+          licensePlan === "enterprise" ? "Custom alerts" : "",
+        ].filter(Boolean),
       });
     } else {
-      console.log('🟡 Using mock license info');
-      setLicenseInfo({
-        license_type: 'BUSINESS',
-        status: 'active',
-        expires_at: '2027-01-07T00:00:00Z',
-        features: [
-          'Real-time threat detection',
-          'Advanced AI analysis',
-          'Honeypot deception layer',
-          'Unlimited scans',
-          'Priority support'
-        ]
-      });
+      console.warn("🟡 No license info found in localStorage");
+      // Няма лиценз – оставяме null или някакво "inactive" състояние
+      setLicenseInfo(null);
     }
   } catch (err) {
     console.error("Error fetching license info:", err);
-    console.log('🟡 Using mock license info (error fallback)');
-    setLicenseInfo({
-      license_type: 'BUSINESS',
-      status: 'active',
-      expires_at: '2027-01-07T00:00:00Z',
-      features: [
-        'Real-time threat detection',
-        'Advanced AI analysis',
-        'Honeypot deception layer',
-        'Unlimited scans',
-        'Priority support'
-      ]
-    });
+    setLicenseInfo(null);
   }
 };
+
 
   // Fetch email accounts
 const fetchEmailAccounts = async () => {
   try {
     const response = await emailsApi.getAccounts();
+
     if (response.success && Array.isArray(response.data)) {
       setEmailAccounts(response.data);
     } else {
-      console.log('🟡 Using mock email accounts');
-      const mockEmailAccounts = [
-        { id: 1, email_address: 'security@company.com', provider: 'Gmail', auto_scan_enabled: true, scan_interval_hours: 24, total_scanned: 1247, phishing_detected: 23 },
-        { id: 2, email_address: 'admin@company.com', provider: 'Outlook', auto_scan_enabled: false, scan_interval_hours: 48, total_scanned: 856, phishing_detected: 12 }
-      ];
-      setEmailAccounts(mockEmailAccounts);
+      console.warn("🟡 emailsApi.getAccounts() returned no data or wrong format:", response);
+      setEmailAccounts([]);
     }
   } catch (err) {
     console.error("Error fetching email accounts:", err);
-    console.log('🟡 Using mock email accounts (error fallback)');
-    const mockEmailAccounts = [
-      { id: 1, email_address: 'security@company.com', provider: 'Gmail', auto_scan_enabled: true, scan_interval_hours: 24, total_scanned: 1247, phishing_detected: 23 },
-      { id: 2, email_address: 'admin@company.com', provider: 'Outlook', auto_scan_enabled: false, scan_interval_hours: 48, total_scanned: 856, phishing_detected: 12 }
-    ];
-    setEmailAccounts(mockEmailAccounts);
+    setEmailAccounts([]);
   }
 };
+
 
     // Add email account
     const handleAddEmailAccount = async () => {

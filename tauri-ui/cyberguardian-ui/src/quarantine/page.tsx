@@ -40,96 +40,20 @@ const loadFiles = async () => {
     const res = await quarantineApi.getFiles();
     if (res.success && res.data) {
       setFiles(Array.isArray(res.data) ? res.data : []);
-    } else {
-      console.log("🟡 Using mock quarantine files");
-      setFiles([
-        {
-          id: "1",
-          name: "suspicious_malware.exe",
-          original_path: "C:\\Users\\Downloads\\suspicious_malware.exe",
-          quarantined_at: new Date(Date.now() - 3600000).toISOString(),
-          threat_type: "Trojan.Generic",
-          size: 2456789,
-          threat_level: "critical"
-        },
-        {
-          id: "2",
-          name: "ransomware_variant.dll",
-          original_path: "C:\\Windows\\System32\\ransomware_variant.dll",
-          quarantined_at: new Date(Date.now() - 7200000).toISOString(),
-          threat_type: "Ransomware",
-          size: 1234567,
-          threat_level: "high"
-        },
-        {
-          id: "3",
-          name: "phishing_payload.js",
-          original_path: "C:\\Users\\Documents\\phishing_payload.js",
-          quarantined_at: new Date(Date.now() - 86400000).toISOString(),
-          threat_type: "Phishing",
-          size: 45678,
-          threat_level: "medium"
-        }
-      ]);
     }
   } catch (err) {
     console.error("Error loading files:", err);
-    console.log("🟡 Using mock quarantine files");
-    setFiles([
-      {
-        id: "1",
-        name: "suspicious_malware.exe",
-        original_path: "C:\\Users\\Downloads\\suspicious_malware.exe",
-        quarantined_at: new Date(Date.now() - 3600000).toISOString(),
-        threat_type: "Trojan.Generic",
-        size: 2456789,
-        threat_level: "critical"
-      },
-      {
-        id: "2",
-        name: "ransomware_variant.dll",
-        original_path: "C:\\Windows\\System32\\ransomware_variant.dll",
-        quarantined_at: new Date(Date.now() - 7200000).toISOString(),
-        threat_type: "Ransomware",
-        size: 1234567,
-        threat_level: "high"
-      },
-      {
-        id: "3",
-        name: "phishing_payload.js",
-        original_path: "C:\\Users\\Documents\\phishing_payload.js",
-        quarantined_at: new Date(Date.now() - 86400000).toISOString(),
-        threat_type: "Phishing",
-        size: 45678,
-        threat_level: "medium"
-      }
-    ]);
   }
 };
 
- const loadStats = async () => {
+const loadStats = async () => {
   try {
     const res = await quarantineApi.getStats();
     if (res.success && res.data) {
       setStats(res.data);
-    } else {
-      console.log("🟡 Using mock quarantine stats");
-      setStats({
-        total_files: 3,
-        total_size: 3737034,
-        threats_blocked: 127,
-        oldest_file_days: 1
-      });
     }
   } catch (err) {
     console.error("Error loading stats:", err);
-    console.log("🟡 Using mock quarantine stats");
-    setStats({
-      total_files: 3,
-      total_size: 3737034,
-      threats_blocked: 127,
-      oldest_file_days: 1
-    });
   }
 };
 

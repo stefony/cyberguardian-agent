@@ -77,175 +77,57 @@ export default function ServicesCleanupPage() {
     loadBackups()
   }, [])
 
- const handleScan = async () => {
-  setScanning(true)
+const handleScan = async () => {
+  setScanning(true);
   try {
-    const response = await remediationApi.scanServices()
-    if (response.success && response.data) {
-      setServices(response.data.services)
-      setStats(response.data.statistics)
-    toast.success("...", { description: "..." })
-    } else {
-      console.log("🟡 Using mock services data");
-      setServices([
-        {
-          id: "1",
-          service_name: "SuspiciousUpdater",
-          display_name: "Windows Update Helper",
-          binary_path: "C:\\Windows\\System32\\suspicious.exe",
-          startup_type: "Automatic",
-          status: "Running",
-          description: "Unauthorized update service",
-          risk_score: 85,
-          indicators: ["Hidden autostart", "Suspicious binary location", "No digital signature"],
-          dependencies: [],
-          scanned_at: new Date().toISOString()
-        },
-        {
-          id: "2",
-          service_name: "MalwareService",
-          display_name: "System Service Manager",
-          binary_path: "C:\\ProgramData\\malware\\service.exe",
-          startup_type: "Automatic",
-          status: "Running",
-          description: "Malicious persistence mechanism",
-          risk_score: 95,
-          indicators: ["Known malware signature", "Network activity", "Registry modifications"],
-          dependencies: [],
-          scanned_at: new Date().toISOString()
-        },
-        {
-          id: "3",
-          service_name: "FakeAntivirus",
-          display_name: "Security Update Service",
-          binary_path: "C:\\Program Files\\FakeAV\\svc.exe",
-          startup_type: "Manual",
-          status: "Stopped",
-          description: "Rogue antivirus service",
-          risk_score: 70,
-          indicators: ["Suspicious name", "Unknown publisher"],
-          dependencies: [],
-          scanned_at: new Date().toISOString()
-        }
-      ]);
-      setStats({
-        total_suspicious: 3,
-        critical_risk: 1,
-        high_risk: 1,
-        medium_risk: 1,
-        low_risk: 0,
-        by_status: { Running: 2, Stopped: 1 },
-        by_startup_type: { Automatic: 2, Manual: 1 }
-      });
-   toast.success("...", { description: "..." })
-    }
-  } catch (error) {
-    console.log("🟡 Using mock services data");
-    setServices([
-      {
-        id: "1",
-        service_name: "SuspiciousUpdater",
-        display_name: "Windows Update Helper",
-        binary_path: "C:\\Windows\\System32\\suspicious.exe",
-        startup_type: "Automatic",
-        status: "Running",
-        description: "Unauthorized update service",
-        risk_score: 85,
-        indicators: ["Hidden autostart", "Suspicious binary location", "No digital signature"],
-        dependencies: [],
-        scanned_at: new Date().toISOString()
-      },
-      {
-        id: "2",
-        service_name: "MalwareService",
-        display_name: "System Service Manager",
-        binary_path: "C:\\ProgramData\\malware\\service.exe",
-        startup_type: "Automatic",
-        status: "Running",
-        description: "Malicious persistence mechanism",
-        risk_score: 95,
-        indicators: ["Known malware signature", "Network activity", "Registry modifications"],
-        dependencies: [],
-        scanned_at: new Date().toISOString()
-      },
-      {
-        id: "3",
-        service_name: "FakeAntivirus",
-        display_name: "Security Update Service",
-        binary_path: "C:\\Program Files\\FakeAV\\svc.exe",
-        startup_type: "Manual",
-        status: "Stopped",
-        description: "Rogue antivirus service",
-        risk_score: 70,
-        indicators: ["Suspicious name", "Unknown publisher"],
-        dependencies: [],
-        scanned_at: new Date().toISOString()
-      }
-    ]);
-    setStats({
-      total_suspicious: 3,
-      critical_risk: 1,
-      high_risk: 1,
-      medium_risk: 1,
-      low_risk: 0,
-      by_status: { Running: 2, Stopped: 1 },
-      by_startup_type: { Automatic: 2, Manual: 1 }
-    });
-   toast.error("...", { description: "..." })
-  } finally {
-    setScanning(false)
-  }
-}
+    const response = await remediationApi.scanServices();
 
- const loadBackups = async () => {
-  try {
-    const response = await remediationApi.listServiceBackups()
     if (response.success && response.data) {
-      setBackups(response.data.backups)
+      setServices(response.data.services || []);
+      setStats(response.data.statistics || null);
+
+      toast.success("Service scan completed", {
+        description: "Suspicious services have been analyzed successfully.",
+      });
     } else {
-      console.log("🟡 Using mock service backups");
-      setBackups([
-        {
-          filename: "service_backup_SuspiciousUpdater_2026-01-09.json",
-          filepath: "C:\\ProgramData\\CyberGuardian\\backups\\service_backup_SuspiciousUpdater_2026-01-09.json",
-          service_name: "SuspiciousUpdater",
-          binary_path: "C:\\Windows\\System32\\suspicious.exe",
-          startup_type: "Automatic",
-          backed_up_at: new Date(Date.now() - 3600000).toISOString()
-        },
-        {
-          filename: "service_backup_MalwareService_2026-01-08.json",
-          filepath: "C:\\ProgramData\\CyberGuardian\\backups\\service_backup_MalwareService_2026-01-08.json",
-          service_name: "MalwareService",
-          binary_path: "C:\\ProgramData\\malware\\service.exe",
-          startup_type: "Automatic",
-          backed_up_at: new Date(Date.now() - 86400000).toISOString()
-        }
-      ]);
+      console.warn("🟡 remediationApi.scanServices() returned no data:", response);
+      setServices([]);
+      setStats(null);
+
+      toast.error("Service scan did not return data", {
+        description: "No results were received from the service scan API.",
+      });
     }
   } catch (error) {
-    console.error("Failed to load backups:", error)
-    console.log("🟡 Using mock service backups");
-    setBackups([
-      {
-        filename: "service_backup_SuspiciousUpdater_2026-01-09.json",
-        filepath: "C:\\ProgramData\\CyberGuardian\\backups\\service_backup_SuspiciousUpdater_2026-01-09.json",
-        service_name: "SuspiciousUpdater",
-        binary_path: "C:\\Windows\\System32\\suspicious.exe",
-        startup_type: "Automatic",
-        backed_up_at: new Date(Date.now() - 3600000).toISOString()
-      },
-      {
-        filename: "service_backup_MalwareService_2026-01-08.json",
-        filepath: "C:\\ProgramData\\CyberGuardian\\backups\\service_backup_MalwareService_2026-01-08.json",
-        service_name: "MalwareService",
-        binary_path: "C:\\ProgramData\\malware\\service.exe",
-        startup_type: "Automatic",
-        backed_up_at: new Date(Date.now() - 86400000).toISOString()
-      }
-    ]);
+    console.error("Error scanning services:", error);
+    setServices([]);
+    setStats(null);
+
+    toast.error("Service scan failed", {
+      description: "An error occurred while scanning services. Check logs or backend.",
+    });
+  } finally {
+    setScanning(false);
   }
-}
+};
+
+
+const loadBackups = async () => { 
+  try {
+    const response = await remediationApi.listServiceBackups();
+
+    if (response.success && response.data?.backups) {
+      setBackups(response.data.backups);
+    } else {
+      console.warn("🟡 remediationApi.listServiceBackups() returned no backups:", response);
+      setBackups([]);
+    }
+  } catch (error) {
+    console.error("Failed to load service backups:", error);
+    setBackups([]);
+  }
+};
+
 
   const handleStop = async (service: Service) => {
     if (!confirm(`Stop this service?\n\n${service.display_name}\n\nThe service will be stopped but not deleted.`)) {

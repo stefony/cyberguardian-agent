@@ -1209,7 +1209,7 @@ export const scansApi = {
 // QUARANTINE API
 // ============================================
 
-export const quarantineApi = {
+export const quarantineApi = {  
   /**
    * Get all quarantined files
    */

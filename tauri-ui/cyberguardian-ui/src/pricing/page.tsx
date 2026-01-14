@@ -1,11 +1,11 @@
 
 
 import { useState } from 'react';
-import { useNavigate } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { Shield, Check, ArrowLeft } from 'lucide-react';
 
 export default function PricingPage() {
-  const router = useNavigate();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
 
   const plans = {

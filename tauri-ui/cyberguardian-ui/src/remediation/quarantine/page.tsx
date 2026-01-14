@@ -99,59 +99,22 @@ export default function DeepQuarantinePage() {
     loadBackups()
   }, [])
 
- const loadBackups = async () => {
+const loadBackups = async () => {
   try {
-    const response = await remediationApi.listDeepBackups()
-    if (response.success && response.data) {
-      setBackups(response.data.backups)
+    const response = await remediationApi.listDeepBackups();
+
+    if (response.success && response.data?.backups) {
+      setBackups(response.data.backups);
     } else {
-      console.log("🟡 Using mock backups");
-      setBackups([
-        {
-          filename: "backup_malware_2026-01-09_15-30-45.zip",
-          filepath: "C:\\ProgramData\\CyberGuardian\\backups\\backup_malware_2026-01-09_15-30-45.zip",
-          analysis_id: "analysis_001",
-          target_path: "C:\\Users\\Admin\\Downloads\\suspicious.exe",
-          threat_level: "high",
-          risk_score: 85,
-          backed_up_at: new Date(Date.now() - 3600000).toISOString()
-        },
-        {
-          filename: "backup_trojan_2026-01-08_10-15-20.zip",
-          filepath: "C:\\ProgramData\\CyberGuardian\\backups\\backup_trojan_2026-01-08_10-15-20.zip",
-          analysis_id: "analysis_002",
-          target_path: "C:\\Program Files\\Suspicious\\malware.dll",
-          threat_level: "critical",
-          risk_score: 95,
-          backed_up_at: new Date(Date.now() - 86400000).toISOString()
-        }
-      ]);
+      console.warn("🟡 remediationApi.listDeepBackups() returned no backups");
+      setBackups([]);
     }
   } catch (error) {
-    console.error("Failed to load backups:", error)
-    console.log("🟡 Using mock backups");
-    setBackups([
-      {
-        filename: "backup_malware_2026-01-09_15-30-45.zip",
-        filepath: "C:\\ProgramData\\CyberGuardian\\backups\\backup_malware_2026-01-09_15-30-45.zip",
-        analysis_id: "analysis_001",
-        target_path: "C:\\Users\\Admin\\Downloads\\suspicious.exe",
-        threat_level: "high",
-        risk_score: 85,
-        backed_up_at: new Date(Date.now() - 3600000).toISOString()
-      },
-      {
-        filename: "backup_trojan_2026-01-08_10-15-20.zip",
-        filepath: "C:\\ProgramData\\CyberGuardian\\backups\\backup_trojan_2026-01-08_10-15-20.zip",
-        analysis_id: "analysis_002",
-        target_path: "C:\\Program Files\\Suspicious\\malware.dll",
-        threat_level: "critical",
-        risk_score: 95,
-        backed_up_at: new Date(Date.now() - 86400000).toISOString()
-      }
-    ]);
+    console.error("Failed to load backups:", error);
+    setBackups([]);
   }
-}
+};
+
 
   const handleAnalyze = async () => {
     if (!selectedFile && !targetPath.trim()) {

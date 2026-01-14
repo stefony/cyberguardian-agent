@@ -218,6 +218,7 @@ function ThreatActivityChart() {
 
 /* ===== MAIN DASHBOARD PAGE WITH WEBSOCKET ===== */
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const router = useNavigate();
   const [health, setHealth] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1069,3 +1070,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

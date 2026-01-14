@@ -118,114 +118,56 @@ export default function IntegrityMonitoringPage() {
     }
   }, [stats]);
 
-  const fetchData = async () => {
+const fetchData = async () => {
   try {
     const [statsData, manifestData, logsData, alertsData] = await Promise.all([
       fetchWithAuth('/api/integrity/statistics'),
       fetchWithAuth('/api/integrity/manifest/latest'),
       fetchWithAuth('/api/integrity/logs?limit=20'),
-      fetchWithAuth('/api/integrity/alerts?resolved=false')
+      fetchWithAuth('/api/integrity/alerts?resolved=false'),
     ]);
 
-    if (statsData.success) {
+    // Stats
+    if (statsData.success && statsData.statistics) {
       setStats(statsData.statistics);
     } else {
-      console.log("🟡 Using mock integrity stats");
-      setStats({
-        total_checks: 1247,
-        status_counts: {
-          OK: 1200,
-          MODIFIED: 15,
-          MISSING: 2,
-          ERROR: 30
-        },
-        active_alerts: 3,
-        recent_compromised: 17,
-        total_manifests: 5
-      });
+      console.warn("🟡 /api/integrity/statistics returned no stats:", statsData);
+      setStats(null);
     }
 
+    // Manifest
     if (manifestData.success && manifestData.manifest) {
       setManifest(manifestData.manifest);
-        }
+    } else {
+      console.warn("🟡 /api/integrity/manifest/latest returned no manifest:", manifestData);
+      setManifest(null);
+    }
 
-    if (logsData.success) {
+    // Logs
+    if (logsData.success && Array.isArray(logsData.logs)) {
       setLogs(logsData.logs);
     } else {
-      console.log("🟡 Using mock integrity logs");
-      setLogs([
-        {
-          id: 1,
-          file_path: "C:\\Windows\\System32\\kernel32.dll",
-          expected_checksum: "a1b2c3d4e5f6",
-          actual_checksum: "a1b2c3d4e5f6",
-          status: "OK",
-          timestamp: new Date(Date.now() - 300000).toISOString(),
-          details: null
-        },
-        {
-          id: 2,
-          file_path: "C:\\Program Files\\App\\config.json",
-          expected_checksum: "x9y8z7w6v5u4",
-          actual_checksum: "DIFFERENT123",
-          status: "MODIFIED",
-          timestamp: new Date(Date.now() - 600000).toISOString(),
-          details: "File content changed"
-        },
-        {
-          id: 3,
-          file_path: "C:\\Users\\Admin\\important.dat",
-          expected_checksum: "m4n3b2v1c0x9",
-          actual_checksum: null,
-          status: "MISSING",
-          timestamp: new Date(Date.now() - 900000).toISOString(),
-          details: "File not found"
-        }
-      ]);
+      console.warn("🟡 /api/integrity/logs returned no logs:", logsData);
+      setLogs([]);
     }
 
-    if (alertsData.success) {
+    // Alerts
+    if (alertsData.success && Array.isArray(alertsData.alerts)) {
       setAlerts(alertsData.alerts);
     } else {
-      console.log("🟡 Using mock integrity alerts");
-      setAlerts([
-        {
-          id: 1,
-          alert_type: "FILE_MODIFIED",
-          severity: "high",
-          file_path: "C:\\Program Files\\App\\config.json",
-          message: "Critical configuration file has been modified",
-          resolved: false,
-          created_at: new Date(Date.now() - 600000).toISOString(),
-          resolved_at: null
-        },
-        {
-          id: 2,
-          alert_type: "FILE_MISSING",
-          severity: "critical",
-          file_path: "C:\\Users\\Admin\\important.dat",
-          message: "Important system file is missing",
-          resolved: false,
-          created_at: new Date(Date.now() - 900000).toISOString(),
-          resolved_at: null
-        },
-        {
-          id: 3,
-          alert_type: "INTEGRITY_BREACH",
-          severity: "medium",
-          file_path: null,
-          message: "Multiple files show signs of tampering",
-          resolved: false,
-          created_at: new Date(Date.now() - 1800000).toISOString(),
-          resolved_at: null
-        }
-      ]);
+      console.warn("🟡 /api/integrity/alerts returned no alerts:", alertsData);
+      setAlerts([]);
     }
- } catch (error) {
-  console.error("Error fetching data:", error);
-  setError("Failed to load integrity data");
-}
+  } catch (error) {
+    console.error("Error fetching integrity data:", error);
+    setError("Failed to load integrity data");
+    setStats(null);
+    setManifest(null);
+    setLogs([]);
+    setAlerts([]);
+  }
 };
+
 
   const generateManifest = async () => {
   setGenerating(true);

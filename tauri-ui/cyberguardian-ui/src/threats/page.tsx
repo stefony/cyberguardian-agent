@@ -49,12 +49,11 @@ const fetchThreats = useCallback(async () => {
 
     const response = await threatsApi.getThreats(params);
 
-    // Handle ApiResponse wrapper
     if (response.success && response.data) {
-      const items = Array.isArray(response.data) 
-        ? response.data 
+      const items = Array.isArray(response.data)
+        ? response.data
         : normalizeThreatList(response.data);
-      
+
       // Fetch correlations for each threat
       const threatsWithCorrelations = await Promise.all(
         items.map(async (threat) => {
@@ -63,115 +62,57 @@ const fetchThreats = useCallback(async () => {
               `${import.meta.env.VITE_API_URL}/api/threats/${threat.id}/correlations`
             );
             const correlationData = await correlationResponse.json();
-            
+
             return {
               ...threat,
-              correlation: correlationData.success ? correlationData.correlations : null
+              correlation: correlationData.success ? correlationData.correlations : null,
             };
           } catch (err) {
             console.error(`Failed to fetch correlations for threat ${threat.id}:`, err);
-            return { ...threat, correlation: null };
+            return {
+              ...threat,
+              correlation: null,
+              created_at: threat.created_at ?? new Date().toISOString(),
+              updated_at: threat.updated_at ?? new Date().toISOString(),
+            };
           }
         })
       );
-      
-      setThreats(threatsWithCorrelations);
-setError(null);
-} else {
-  console.log("🟡 API returned no data, using mock data");
-  setThreats([
-    {
-      id: "1",
-      threat_type: "Malware Detection",
-      severity: "critical",
-      status: "active",
-      timestamp: new Date().toISOString(),
-      source_ip: "192.168.1.100",
-      description: "Suspicious executable detected",
-      confidence_score: 95,
-      correlation: null
-    },
-    {
-      id: "2",
-      threat_type: "Port Scan",
-      severity: "high",
-      status: "investigating",
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-      source_ip: "10.0.0.50",
-      description: "Multiple port scan attempts",
-      confidence_score: 87,
-      correlation: null
-    }
-  ]);
-  setError(null);
-}
 
+      setThreats(threatsWithCorrelations);
+      setError(null);
+    } else {
+      console.warn("🟡 API returned no threats data:", response);
+      setThreats([]);
+      setError(null);
+    }
   } catch (err) {
     console.error("Error fetching threats:", err);
-    console.log("🔴 Setting mock threats data"); // ADD THIS
-    // Fallback to mock data
-    setThreats([
-      {
-        id: "1",
-        type: "Malware Detection",
-        severity: "critical",
-        status: "active",
-        timestamp: new Date().toISOString(),
-        source_ip: "192.168.1.100",
-        description: "Suspicious executable detected",
-        correlation: null
-      },
-      {
-        id: "2",
-        type: "Port Scan",
-        severity: "high",
-        status: "investigating",
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        source_ip: "10.0.0.50",
-        description: "Multiple port scan attempts detected",
-        correlation: null
-      },
-      {
-        id: "3",
-        type: "Phishing Attempt",
-        severity: "medium",
-        status: "resolved",
-        timestamp: new Date(Date.now() - 7200000).toISOString(),
-        source_ip: "203.0.113.45",
-        description: "Email phishing attempt blocked",
-        correlation: null
-      }
-    ]);
-    setError(null); // Clear error to show mock data
+    setThreats([]);
+    setError("Failed to fetch threats");
   } finally {
     setIsLoading(false);
   }
 }, [severityFilter, statusFilter]);
 
+
   // Fetch stats
 const fetchStats = useCallback(async () => {
   try {
     const response = await threatsApi.getStats();
+
     if (response.success && response.data) {
-      setStats(response.data);
+      setStats(response.data as ThreatStats);
     } else {
-      // Mock fallback when API returns no data
-      setStats({
-        total_threats: 3,
-        severity_breakdown: { critical: 1, high: 1, medium: 1, low: 0 },
-        status_breakdown: { active: 3, blocked: 0, dismissed: 0 }
-      });
+      console.warn("🟡 Threat stats request did not succeed:", response);
+      setStats(null);
     }
   } catch (err) {
     console.error("Error fetching stats:", err);
-    // Mock fallback on error
-    setStats({
-      total_threats: 3,
-      severity_breakdown: { critical: 1, high: 1, medium: 1, low: 0 },
-      status_breakdown: { active: 3, blocked: 0, dismissed: 0 }
-    });
+    setStats(null);
   }
 }, []);
+
 
   // Block threat
   const blockThreat = async (threatId: number) => {
@@ -583,18 +524,7 @@ const fetchStats = useCallback(async () => {
           {!isLoading && (
              <div className="overflow-x-auto">
               <table className="table w-full table-fixed">
-                <colgroup>
-                  <col style={{ width: '3%' }} /> {/* Checkbox */}
-                  <col style={{ width: '6%' }} /> {/* Time */}
-                  <col style={{ width: '10%' }} /> {/* Source IP */}
-                  <col style={{ width: '9%' }} /> {/* Type */}
-                  <col style={{ width: '25%' }} /> {/* Description - WIDER */}
-                  <col style={{ width: '8%' }} /> {/* Severity */}
-                  <col style={{ width: '11%' }} /> {/* Confidence */}
-                  <col style={{ width: '10%' }} /> {/* IOC Match */}
-                  <col style={{ width: '8%' }} /> {/* Status */}
-                  <col style={{ width: '10%' }} /> {/* Actions */}
-                </colgroup>
+              
                 <thead>
                   <tr>
                     <th className="px-2">
@@ -827,3 +757,5 @@ const fetchStats = useCallback(async () => {
     </ProtectedRoute>
   );
 }
+
+

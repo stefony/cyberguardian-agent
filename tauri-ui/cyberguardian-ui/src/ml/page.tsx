@@ -79,7 +79,7 @@ useEffect(() => {
 })().catch((error) => {
   console.error("Error in useEffect:", error);
   setError("Failed to load ML data");
-})
+})  
 }, [])
 
   // ---------- helpers ----------

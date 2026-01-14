@@ -1,12 +1,12 @@
 
 
-import { useNavigate, useSearchParams } from 'next/navigation';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect, useState, Suspense } from 'react';
 import { CheckCircle, Mail, ArrowRight } from 'lucide-react';
 
 function SuccessContent() {
-  const router = useNavigate();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
   const [countdown, setCountdown] = useState(10);
 
@@ -22,7 +22,7 @@ function SuccessContent() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [router]);
+  }, [navigate]);
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-8">
@@ -103,6 +103,8 @@ function SuccessContent() {
   );
 }
 
+const navigate = useNavigate();
+
 export default function SuccessPage() {
   return (
     <Suspense fallback={
@@ -114,3 +116,5 @@ export default function SuccessPage() {
     </Suspense>
   );
 }
+
+

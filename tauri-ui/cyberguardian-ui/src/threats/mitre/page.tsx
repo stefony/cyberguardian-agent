@@ -65,167 +65,40 @@ export default function MITREPage() {
     fetchStats();
   }, []);
 
- const fetchMatrix = async () => {
+const fetchMatrix = async () => {
   setLoading(true);
   try {
     const data = await fetchWithAuth('/api/mitre/matrix');
 
     if (data.success && data.matrix) {
-      setMatrixData(data.matrix);
+      setMatrixData(data.matrix as MatrixData[]);
     } else {
-      console.log('🟡 Using mock MITRE matrix');
-      const mockMatrix: MatrixData[] = [
-        {
-          tactic_id: 'TA0001',
-          tactic_name: 'Initial Access',
-          description: 'The adversary is trying to get into your network.',
-          technique_count: 9,
-          techniques: [
-            { id: 1, technique_id: 'T1566', name: 'Phishing', description: 'Adversaries may send phishing messages to gain access to victim systems.', url: 'https://attack.mitre.org/techniques/T1566/', tactic_id: 1, platforms: ['Windows', 'macOS', 'Linux'] },
-            { id: 2, technique_id: 'T1190', name: 'Exploit Public-Facing Application', description: 'Adversaries may exploit software vulnerabilities in public-facing applications.', url: 'https://attack.mitre.org/techniques/T1190/', tactic_id: 1, platforms: ['Windows', 'Linux', 'Network'] }
-          ]
-        },
-        {
-          tactic_id: 'TA0002',
-          tactic_name: 'Execution',
-          description: 'The adversary is trying to run malicious code.',
-          technique_count: 13,
-          techniques: [
-            { id: 3, technique_id: 'T1059', name: 'Command and Scripting Interpreter', description: 'Adversaries may abuse command and script interpreters to execute commands.', url: 'https://attack.mitre.org/techniques/T1059/', tactic_id: 2, platforms: ['Windows', 'macOS', 'Linux'] },
-            { id: 4, technique_id: 'T1053', name: 'Scheduled Task/Job', description: 'Adversaries may abuse task scheduling to execute programs at system startup.', url: 'https://attack.mitre.org/techniques/T1053/', tactic_id: 2, platforms: ['Windows', 'Linux'] }
-          ]
-        },
-        {
-          tactic_id: 'TA0003',
-          tactic_name: 'Persistence',
-          description: 'The adversary is trying to maintain their foothold.',
-          technique_count: 19,
-          techniques: [
-            { id: 5, technique_id: 'T1547', name: 'Boot or Logon Autostart Execution', description: 'Adversaries may configure system settings to automatically execute programs.', url: 'https://attack.mitre.org/techniques/T1547/', tactic_id: 3, platforms: ['Windows', 'macOS', 'Linux'] },
-            { id: 6, technique_id: 'T1078', name: 'Valid Accounts', description: 'Adversaries may obtain and abuse credentials of existing accounts.', url: 'https://attack.mitre.org/techniques/T1078/', tactic_id: 3, platforms: ['Windows', 'macOS', 'Linux', 'Cloud'] }
-          ]
-        },
-        {
-          tactic_id: 'TA0004',
-          tactic_name: 'Privilege Escalation',
-          description: 'The adversary is trying to gain higher-level permissions.',
-          technique_count: 13,
-          techniques: [
-            { id: 7, technique_id: 'T1068', name: 'Exploitation for Privilege Escalation', description: 'Adversaries may exploit software vulnerabilities to escalate privileges.', url: 'https://attack.mitre.org/techniques/T1068/', tactic_id: 4, platforms: ['Windows', 'Linux', 'macOS'] }
-          ]
-        },
-        {
-          tactic_id: 'TA0005',
-          tactic_name: 'Defense Evasion',
-          description: 'The adversary is trying to avoid being detected.',
-          technique_count: 42,
-          techniques: [
-            { id: 8, technique_id: 'T1070', name: 'Indicator Removal', description: 'Adversaries may delete or modify artifacts to remove evidence.', url: 'https://attack.mitre.org/techniques/T1070/', tactic_id: 5, platforms: ['Windows', 'Linux', 'macOS'] },
-            { id: 9, technique_id: 'T1027', name: 'Obfuscated Files or Information', description: 'Adversaries may obscure files or information to evade detection.', url: 'https://attack.mitre.org/techniques/T1027/', tactic_id: 5, platforms: ['Windows', 'macOS', 'Linux'] }
-          ]
-        }
-      ];
-      setMatrixData(mockMatrix);
+      console.warn('🟡 MITRE matrix request did not succeed:', data);
+      setMatrixData([]);
     }
   } catch (error) {
     console.error("Failed to fetch MITRE matrix:", error);
-    console.log('🟡 Using mock MITRE matrix (error fallback)');
-    const mockMatrix: MatrixData[] = [
-      {
-        tactic_id: 'TA0001',
-        tactic_name: 'Initial Access',
-        description: 'The adversary is trying to get into your network.',
-        technique_count: 9,
-        techniques: [
-          { id: 1, technique_id: 'T1566', name: 'Phishing', description: 'Adversaries may send phishing messages to gain access to victim systems.', url: 'https://attack.mitre.org/techniques/T1566/', tactic_id: 1, platforms: ['Windows', 'macOS', 'Linux'] },
-          { id: 2, technique_id: 'T1190', name: 'Exploit Public-Facing Application', description: 'Adversaries may exploit software vulnerabilities in public-facing applications.', url: 'https://attack.mitre.org/techniques/T1190/', tactic_id: 1, platforms: ['Windows', 'Linux', 'Network'] }
-        ]
-      },
-      {
-        tactic_id: 'TA0002',
-        tactic_name: 'Execution',
-        description: 'The adversary is trying to run malicious code.',
-        technique_count: 13,
-        techniques: [
-          { id: 3, technique_id: 'T1059', name: 'Command and Scripting Interpreter', description: 'Adversaries may abuse command and script interpreters to execute commands.', url: 'https://attack.mitre.org/techniques/T1059/', tactic_id: 2, platforms: ['Windows', 'macOS', 'Linux'] },
-          { id: 4, technique_id: 'T1053', name: 'Scheduled Task/Job', description: 'Adversaries may abuse task scheduling to execute programs at system startup.', url: 'https://attack.mitre.org/techniques/T1053/', tactic_id: 2, platforms: ['Windows', 'Linux'] }
-        ]
-      },
-      {
-        tactic_id: 'TA0003',
-        tactic_name: 'Persistence',
-        description: 'The adversary is trying to maintain their foothold.',
-        technique_count: 19,
-        techniques: [
-          { id: 5, technique_id: 'T1547', name: 'Boot or Logon Autostart Execution', description: 'Adversaries may configure system settings to automatically execute programs.', url: 'https://attack.mitre.org/techniques/T1547/', tactic_id: 3, platforms: ['Windows', 'macOS', 'Linux'] },
-          { id: 6, technique_id: 'T1078', name: 'Valid Accounts', description: 'Adversaries may obtain and abuse credentials of existing accounts.', url: 'https://attack.mitre.org/techniques/T1078/', tactic_id: 3, platforms: ['Windows', 'macOS', 'Linux', 'Cloud'] }
-        ]
-      },
-      {
-        tactic_id: 'TA0004',
-        tactic_name: 'Privilege Escalation',
-        description: 'The adversary is trying to gain higher-level permissions.',
-        technique_count: 13,
-        techniques: [
-          { id: 7, technique_id: 'T1068', name: 'Exploitation for Privilege Escalation', description: 'Adversaries may exploit software vulnerabilities to escalate privileges.', url: 'https://attack.mitre.org/techniques/T1068/', tactic_id: 4, platforms: ['Windows', 'Linux', 'macOS'] }
-        ]
-      },
-      {
-        tactic_id: 'TA0005',
-        tactic_name: 'Defense Evasion',
-        description: 'The adversary is trying to avoid being detected.',
-        technique_count: 42,
-        techniques: [
-          { id: 8, technique_id: 'T1070', name: 'Indicator Removal', description: 'Adversaries may delete or modify artifacts to remove evidence.', url: 'https://attack.mitre.org/techniques/T1070/', tactic_id: 5, platforms: ['Windows', 'Linux', 'macOS'] },
-          { id: 9, technique_id: 'T1027', name: 'Obfuscated Files or Information', description: 'Adversaries may obscure files or information to evade detection.', url: 'https://attack.mitre.org/techniques/T1027/', tactic_id: 5, platforms: ['Windows', 'macOS', 'Linux'] }
-        ]
-      }
-    ];
-    setMatrixData(mockMatrix);
+    setMatrixData([]);
   } finally {
     setLoading(false);
   }
 };
 
+
   
-const fetchStats = async () => {
+const fetchStats = async () => { 
   try {
     const data = await fetchWithAuth('/api/mitre/statistics');
 
     if (data.success && data.statistics) {
-      setStats(data.statistics);
+      setStats(data.statistics as Stats);
     } else {
-      console.log('🟡 Using mock MITRE stats');
-      const mockStats: Stats = {
-        total_tactics: 14,
-        total_techniques: 193,
-        total_mappings: 847,
-        top_mapped_techniques: [
-          { technique_id: 'T1059', name: 'Command and Scripting Interpreter', count: 127 },
-          { technique_id: 'T1070', name: 'Indicator Removal', count: 98 },
-          { technique_id: 'T1566', name: 'Phishing', count: 86 },
-          { technique_id: 'T1053', name: 'Scheduled Task/Job', count: 74 },
-          { technique_id: 'T1027', name: 'Obfuscated Files or Information', count: 67 }
-        ]
-      };
-      setStats(mockStats);
+      console.warn('🟡 MITRE stats request did not succeed:', data);
+      setStats(null);
     }
   } catch (error) {
     console.error("Failed to fetch stats:", error);
-    console.log('🟡 Using mock MITRE stats (error fallback)');
-    const mockStats: Stats = {
-      total_tactics: 14,
-      total_techniques: 193,
-      total_mappings: 847,
-      top_mapped_techniques: [
-        { technique_id: 'T1059', name: 'Command and Scripting Interpreter', count: 127 },
-        { technique_id: 'T1070', name: 'Indicator Removal', count: 98 },
-        { technique_id: 'T1566', name: 'Phishing', count: 86 },
-        { technique_id: 'T1053', name: 'Scheduled Task/Job', count: 74 },
-        { technique_id: 'T1027', name: 'Obfuscated Files or Information', count: 67 }
-      ]
-    };
-    setStats(mockStats);
+    setStats(null);
   }
 };
 

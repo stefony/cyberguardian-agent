@@ -29,24 +29,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = location.pathname;
 
   // Desktop App Mode - No authentication required
-  useEffect(() => {
-    console.log('🔵 AuthProvider useEffect - DESKTOP MODE');
-    
-    // Desktop App - no authentication required, create default user
-    setUser({
-      id: 'desktop-user',
-      email: 'desktop@cyberguardian.local',
-      username: 'Desktop User',
-      is_admin: true,
-      is_license: true,
-      license_key: 'DESKTOP-MODE',
-      plan: 'DESKTOP'
-    });
-    
-    setLoading(false);
-    console.log('✅ Desktop mode user created');
-  }, []); // Empty dependency array - run once on mount
-
+ useEffect(() => {
+  console.log('🔵 AuthProvider useEffect - checking auth...');
+  
+  // Check for existing token and user data
+  const token = localStorage.getItem('access_token');
+  const userData = localStorage.getItem('user');
+  const licenseKey = localStorage.getItem('license_key');
+  const licensePlan = localStorage.getItem('license_plan');
+  
+  if (token) {
+    if (userData) {
+      // User data exists
+      setUser(JSON.parse(userData));
+    } else if (licenseKey) {
+      // License-based auth
+      setUser({
+        id: 'license-user',
+        email: 'license@user',
+        username: 'License User',
+        is_admin: false,
+        is_license: true,
+        license_key: licenseKey,
+        plan: licensePlan || undefined
+      });
+    }
+  }
+  
+  setLoading(false);
+}, []);
   const login = (token: string, userData: User) => {
     console.log('🔵 AuthContext.login() called with:', { 
       token: token.substring(0, 20) + '...', 
