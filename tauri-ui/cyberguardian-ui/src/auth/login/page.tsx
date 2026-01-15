@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { shell } from '@tauri-apps/api'; 
+
 
 export default function LoginPage() {
   const [licenseKey, setLicenseKey] = useState('');
@@ -134,12 +134,25 @@ const navigate = useNavigate();
     Don't have a license key?{' '}
 <button
   onClick={async () => {
+    const url = 'https://cyberguardian-dashboard.vercel.app/pricing';
+    
     try {
-      await shell.open('https://cyberguardian-dashboard.vercel.app/pricing');
+      // Check if we're in Tauri environment
+      if (window.__TAURI__) {
+        // Production Tauri app - use shell API
+        const { shell } = await import('@tauri-apps/api');
+        await shell.open(url);
+      } else {
+        // Dev mode or web - use window.open
+        window.open(url, '_blank');
+      }
     } catch (error) {
-      console.error('Failed to open URL:', error);
+      console.error('Failed to open pricing page:', error);
+      // Fallback to window.open
+      window.open(url, '_blank');
     }
   }}
+  type="button"
   className="font-medium text-cyan-400 hover:text-cyan-300 cursor-pointer underline"
 >
   Buy Now
