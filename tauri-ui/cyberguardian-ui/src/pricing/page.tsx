@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Check, ArrowLeft } from 'lucide-react';
 
+
 export default function PricingPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);

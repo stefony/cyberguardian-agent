@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { openUrl } from '@tauri-apps/plugin-opener';
 
 
 export default function LoginPage() {
@@ -10,60 +11,86 @@ export default function LoginPage() {
   const [error, setError] = useState('');
 const navigate = useNavigate();
 
-  const handleActivate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+const handleActivate = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
+  setLoading(true);
 
-    // Validate format
-    const keyPattern = /^CG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{8}$/;
-    if (!keyPattern.test(licenseKey)) {
-      setError('Invalid license key format. Expected: CG-XXXX-XXXX-XXXX-XXXX-XXXXXXXX');
-      setLoading(false);
-      return;
-    }
+  // Validate format
+  const keyPattern = /^CG-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{8}$/;
+  if (!keyPattern.test(licenseKey)) {
+    setError('Invalid license key format. Expected: CG-XXXX-XXXX-XXXX-XXXX-XXXXXXXX');
+    setLoading(false);
+    return;
+  }
 
-    try {
-      // Generate device ID (browser fingerprint)
-      const deviceId = `web-${navigator.userAgent.substring(0, 20).replace(/\s/g, '-')}`;
-      
-      // Call backend API
-      const response = await fetch(
-  `https://cyberguardian-backend-production.up.railway.app/api/license/activate`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            license_key: licenseKey,
-            device_id: deviceId,
-            hostname: window.location.hostname
-          })
-        }
-      );
+  try {
+    // 🔍 Логваме origin и userAgent, за да видим как изглеждат в Tauri build
+    const deviceId = `web-${navigator.userAgent.substring(0, 20).replace(/\s/g, '-')}`;
+    console.log('🔵 Activating license...', {
+      licenseKey,
+      deviceId,
+      origin: window.location.origin,
+      hostname: window.location.hostname,
+    });
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        // Save token and license key
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('license_key', licenseKey);
-        localStorage.setItem('license_plan', data.plan);
-        localStorage.setItem('license_expires', data.expires_at);
-        // Redirect to dashboard
-        navigate('/dashboard');
-      } else {
-        setError(data.detail || data.message || 'License activation failed');
-        setLoading(false);
+    const response = await fetch(
+      'https://cyberguardian-backend-production.up.railway.app/api/license/activate',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          license_key: licenseKey,
+          device_id: deviceId,
+          hostname: window.location.hostname,
+        }),
       }
-      
-    } catch (err) {
-      console.error('Activation error:', err);
-      setError('License activation failed. Please check your connection and try again.');
+    );
+
+    console.log('🔵 Response status:', response.status);
+
+    // Четем суровия текст, за да не хвърля JSON parse грешка
+    const rawText = await response.text();
+    console.log('🔵 Raw response body:', rawText);
+
+    let data: any = {};
+    try {
+      data = rawText ? JSON.parse(rawText) : {};
+    } catch (jsonErr) {
+      console.error('⚠️ JSON parse error:', jsonErr);
+      data = { raw: rawText };
+    }
+
+    console.log('🔵 Parsed data:', data);
+
+    if (response.ok && data.success) {
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('license_key', licenseKey);
+      localStorage.setItem('license_plan', data.plan);
+      localStorage.setItem('license_expires', data.expires_at);
+      navigate('/dashboard');
+    } else {
+      const msg =
+        data.detail ||
+        data.message ||
+        `License activation failed (status ${response.status})`;
+      console.error('🔴 Activation failed:', msg);
+      setError(msg);
       setLoading(false);
     }
-  };
+  } catch (err: any) {
+    console.error('🔴 Activation error (catch):', err);
+    setError(
+      `License activation failed. Error: ${
+        err?.message || String(err)
+      }`
+    );
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -132,31 +159,20 @@ const navigate = useNavigate();
 <div className="text-center">
   <p className="text-sm text-gray-300">
     Don't have a license key?{' '}
-<button
+    <button
+  type="button"
   onClick={async () => {
-    const url = 'https://cyberguardian-dashboard.vercel.app/pricing';
-    
     try {
-      // Check if we're in Tauri environment
-      if (window.__TAURI__) {
-        // Production Tauri app - use shell API
-        const { shell } = await import('@tauri-apps/api');
-        await shell.open(url);
-      } else {
-        // Dev mode or web - use window.open
-        window.open(url, '_blank');
-      }
+      await openUrl('https://cyberguardian-dashboard.vercel.app/pricing');
     } catch (error) {
-      console.error('Failed to open pricing page:', error);
-      // Fallback to window.open
-      window.open(url, '_blank');
+      console.error('Failed to open URL:', error);
     }
   }}
-  type="button"
   className="font-medium text-cyan-400 hover:text-cyan-300 cursor-pointer underline"
 >
   Buy Now
 </button>
+
   </p>
 </div>
         </form>
