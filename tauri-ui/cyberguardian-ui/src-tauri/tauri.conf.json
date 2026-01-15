@@ -9,28 +9,30 @@
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
-  "app": {
-    "windows": [
-      {
-        "title": "CyberGuardian XDR",
-        "width": 1200,
-        "height": 800,
-        "resizable": true,
-        "fullscreen": false,
-        "center": true,
-        "visible": true,
-        "skipTaskbar": false
-      }
-    ],
-    "security": {
-      "csp": null
-    },
-    "trayIcon": {
-      "iconPath": "icons/icon.png",
-      "iconAsTemplate": true,
-      "menuOnLeftClick": false
+"app": {
+  "windows": [
+    {
+      "title": "CyberGuardian XDR",
+      "width": 1200,
+      "height": 800,
+      "resizable": true,
+      "fullscreen": false,
+      "center": true,
+      "visible": true,
+      "skipTaskbar": false,
+      "devtools": true
     }
+  ],
+  "security": {
+    "csp": null
   },
+  "trayIcon": {
+    "iconPath": "icons/icon.png",
+    "iconAsTemplate": true,
+    "menuOnLeftClick": false
+  }
+},
+
   "bundle": {
     "active": true,
     "targets": "all",
