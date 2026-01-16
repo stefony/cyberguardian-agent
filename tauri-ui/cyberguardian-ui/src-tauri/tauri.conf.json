@@ -3,14 +3,12 @@
   "productName": "CyberGuardian XDR",
   "version": "0.1.0",
   "identifier": "com.cyberguardian.agent",
-
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
-
   "app": {
     "windows": [
       {
@@ -22,30 +20,18 @@
         "center": true,
         "visible": true,
         "skipTaskbar": false,
-        "devtools": true   // enable inspector
+        "devtools": true
       }
     ],
-
     "security": {
-      "csp": null,
-      "dangerousRemoteDomains": [
-        "https://cyberguardian-backend-production.up.railway.app"
-      ]
+      "csp": null
     },
-
     "trayIcon": {
       "iconPath": "icons/icon.png",
       "iconAsTemplate": true,
       "menuOnLeftClick": false
     }
   },
-
-  "allowlist": {
-    "shell": {
-      "all": true
-    }
-  },
-
   "bundle": {
     "active": true,
     "targets": "all",
