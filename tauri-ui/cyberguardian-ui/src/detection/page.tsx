@@ -4,6 +4,8 @@ import { useState, ChangeEvent, useEffect, useCallback } from "react";
 import { Shield, Activity, Search, Upload, AlertTriangle, XCircle, ExternalLink } from "lucide-react";
 import { detectionApi } from "@/lib/api";
 import ProtectedRoute from '@/components/ProtectedRoute';
+ 
+
 
 // Types
 type Scan = {
@@ -55,7 +57,10 @@ type UploadResult = {
   };
 };
 
-export default function DetectionPageV2() {
+export default function DetectionPage() {
+  
+
+
   // State
   const [scans, setScans] = useState<Scan[]>([]);
   const [status, setStatus] = useState<DetectionStatus | null>(null);
@@ -66,6 +71,11 @@ export default function DetectionPageV2() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const [isVtUploading, setIsVtUploading] = useState(false);
+const [vtResult, setVtResult] = useState<any>(null);
+const [vtError, setVtError] = useState<string | null>(null);
+
 
   // Fetch detection status
 const fetchStatus = useCallback(async () => {
@@ -134,6 +144,35 @@ const fetchScans = useCallback(async () => {
     }
   };
 
+  const handleVirusTotalUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  console.log("VT file selected:", file.name);
+
+  setIsVtUploading(true);
+  setVtError(null);
+  setVtResult(null);
+
+  try {
+    const response = await detectionApi.uploadFileVirusTotal(file);
+
+    if (response.success && response.data) {
+      console.log("VT upload successful:", response.data);
+      setVtResult(response.data);
+    } else {
+      setVtError(response.error || "VirusTotal upload failed");
+    }
+  } catch (err: any) {
+    console.error("VT upload error:", err);
+    setVtError(err.message || "Failed to upload to VirusTotal");
+  } finally {
+    setIsVtUploading(false);
+    e.target.value = "";
+  }
+};
+
+
   // Get severity color
   const getSeverityColor = (severity: string) => {
     const colors: Record<string, string> = {
@@ -166,6 +205,12 @@ const fetchScans = useCallback(async () => {
     }
     return "hover:bg-gradient-to-r hover:from-green-500/10 hover:via-green-500/5 hover:to-transparent";
   };
+
+    const openExternal = (url?: string) => {
+    if (!url) return;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
 
   return (
       <ProtectedRoute>
@@ -260,65 +305,114 @@ const fetchScans = useCallback(async () => {
       )}
 
       {/* File Upload Section */}
-      <div className="section">
-        <div className="bg-card border border-border rounded-lg p-8 transition-all duration-300 hover:border-purple-500/30 group relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          
-          <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 relative z-10">
-            <Upload className="h-5 w-5 text-purple-500 transition-transform duration-300 group-hover:scale-110" />
-            Upload File for Scanning
-          </h2>
+<div className="section">
+  <div className="bg-card border border-border rounded-lg p-8 transition-all duration-300 hover:border-purple-500/30 group relative overflow-hidden">
+    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-          <div className="text-center relative z-10">
-            {isUploading ? (
-              <div className="flex flex-col items-center gap-4 py-8">
-                <Activity className="h-12 w-12 text-purple-500 animate-spin" />
-                <p className="text-lg font-medium">Scanning file...</p>
-                <p className="text-sm text-muted-foreground">Please wait while we analyze your file</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-500/20 to-cyan-500/20 mb-4 animate-float">
-                  <Upload className="h-10 w-10 text-purple-500" />
-                </div>
-                <p className="text-lg font-medium mb-2">
-                  Select a file to scan
-                </p>
-                <p className="text-sm text-muted-foreground mb-6">
-                  Maximum file size: 32MB
-                </p>
-                
-                <div className="flex justify-center">
-                <div className="flex gap-4">
-  <label className="relative cursor-pointer">
-    <span className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-purple-500 text-white font-semibold text-sm transition-all duration-300 hover:bg-purple-600 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50 cursor-pointer">
-      Choose File
-    </span>
-    <input
-      type="file"
-      onChange={handleFileChange}
-      disabled={isUploading}
-      accept="*/*"
-      className="hidden"
-    />
-  </label>
-  <span className="inline-flex items-center text-sm text-muted-foreground">
-    No file chosen
-  </span>
-</div>
-                </div>
-              </div>
-            )}
+    <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 relative z-10">
+      <Upload className="h-5 w-5 text-purple-500 transition-transform duration-300 group-hover:scale-110" />
+      Upload File for Scanning
+    </h2>
+
+    <div className="text-center relative z-10">
+      {isUploading || isVtUploading ? (
+        <div className="flex flex-col items-center gap-4 py-8">
+          <Activity className="h-12 w-12 text-purple-500 animate-spin" />
+          <p className="text-lg font-medium">
+            {isUploading ? "Scanning file..." : "Uploading to VirusTotal..."}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Please wait while we process your file
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-500/20 to-cyan-500/20 mb-4 animate-float">
+            <Upload className="h-10 w-10 text-purple-500" />
           </div>
 
-          {uploadError && (
-            <div className="mt-6 p-4 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-              <XCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-              <p className="text-red-500">{uploadError}</p>
+          <p className="text-lg font-medium mb-2">Select a file</p>
+          <p className="text-sm text-muted-foreground mb-6">Maximum file size: 32MB</p>
+
+          {/* Buttons */}
+          <div className="flex justify-center">
+            <div className="flex flex-col gap-4 w-full max-w-md">
+
+              {/* Multi-engine scan */}
+              <div className="flex items-center gap-4 justify-center">
+                <label className="relative cursor-pointer">
+                  <span className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-purple-500 text-white font-semibold text-sm transition-all duration-300 hover:bg-purple-600 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50 cursor-pointer">
+                    Choose File (Scan)
+                  </span>
+                  <input
+                    type="file"
+                    onChange={handleFileChange}
+                    disabled={isUploading || isVtUploading}
+                    accept="*/*"
+                    className="hidden"
+                  />
+                </label>
+                <span className="inline-flex items-center text-sm text-muted-foreground">
+                  Multi-engine scan
+                </span>
+              </div>
+
+              {/* VirusTotal upload */}
+              <div className="flex items-center gap-4 justify-center">
+                <label className="relative cursor-pointer">
+                  <span className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-cyan-600 text-white font-semibold text-sm transition-all duration-300 hover:bg-cyan-700 hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/50 cursor-pointer">
+                    Choose File (VirusTotal)
+                  </span>
+                  <input
+                    type="file"
+                    onChange={handleVirusTotalUpload}
+                    disabled={isUploading || isVtUploading}
+                    accept="*/*"
+                    className="hidden"
+                  />
+                </label>
+                <span className="inline-flex items-center text-sm text-muted-foreground">
+                  VirusTotal upload
+                </span>
+              </div>
+
+              {/* VT result */}
+              {vtResult?.sha256 && (
+                <div className="mt-2 text-sm text-gray-300">
+                  <div>
+                    <span className="text-gray-400">SHA256:</span> {vtResult.sha256}
+                  </div>
+                  <a
+                    href={vtResult.vt_file_link || `https://www.virustotal.com/gui/file/${vtResult.sha256}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 mt-1 text-cyan-400 hover:underline"
+                  >
+                    Open VirusTotal <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              )}
+
+              {/* VT error */}
+              {vtError && (
+                <div className="mt-2 text-sm text-red-400">{vtError}</div>
+              )}
+
             </div>
-          )}
+          </div>
         </div>
+      )}
+    </div>
+
+    {/* Errors (scan) */}
+    {uploadError && (
+      <div className="mt-6 p-4 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+        <XCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+        <p className="text-red-500">{uploadError}</p>
       </div>
+    )}
+  </div>
+</div>
 
       {/* Upload Results */}
       {uploadResult && (
@@ -419,15 +513,30 @@ const fetchScans = useCallback(async () => {
                 </div>
 
                 {/* VirusTotal Link */}
-                <a
-                  href={uploadResult.vt_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 border-2 border-purple-500/30 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  View Full Report on VirusTotal
-                </a>
+                <button
+  type="button"
+  disabled={!uploadResult?.hashes?.sha256}
+  onClick={() =>
+  openExternal(
+    uploadResult?.hashes?.sha256
+      ? `https://www.virustotal.com/gui/search/${uploadResult.hashes.sha256}`
+      : undefined
+  )
+}
+
+  className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 border-2 border-purple-500/30 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  <ExternalLink className="h-4 w-4" />
+  View Full Report on VirusTotal
+</button>
+
+<p className="text-xs text-muted-foreground mt-2">
+  If VirusTotal shows “no results”, it means this file hash is not in VirusTotal yet.
+  To get a report, the file must be uploaded/scanned on VirusTotal (requires a VirusTotal API key or manual upload).
+</p>
+
+
+
               </div>
             </div>
 

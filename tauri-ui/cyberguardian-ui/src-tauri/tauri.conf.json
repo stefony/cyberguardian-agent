@@ -3,12 +3,14 @@
   "productName": "CyberGuardian XDR",
   "version": "0.1.0",
   "identifier": "com.cyberguardian.agent",
+
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
+
   "app": {
     "windows": [
       {
@@ -32,6 +34,7 @@
       "menuOnLeftClick": false
     }
   },
+
   "bundle": {
     "active": true,
     "targets": "all",

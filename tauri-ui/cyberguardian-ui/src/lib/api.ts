@@ -377,6 +377,44 @@ uploadFile: async (file: File): Promise<ApiResponse<any>> => {
     }
   }
 },
+/**
+ * Upload file to VirusTotal
+ */
+uploadFileVirusTotal: async (file: File): Promise<ApiResponse<any>> => {
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const token = localStorage.getItem('access_token')
+
+    const response = await fetch(`${API_BASE_URL}/api/virustotal/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'VirusTotal upload failed' }))
+      return {
+        success: false,
+        error: error.message || error.detail || `HTTP ${response.status}`,
+      }
+    }
+
+    const data = await response.json()
+    return {
+      success: true,
+      data,
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Network error',
+    }
+  }
+},
 }
 
 // ============================================
@@ -1056,22 +1094,28 @@ export const protectionApi = {
     return client.get<any>('/api/protection/status')
   },
 
-  /**
-   * Toggle protection
-   */
-  toggle: async (
-    enabled: boolean,
-    paths: string[],
-    autoQuarantine?: boolean,
-    threatThreshold?: number
-  ): Promise<ApiResponse<any>> => {
-    return client.post<any>('/api/protection/toggle', {
-      enabled,
-      paths,
-      auto_quarantine: autoQuarantine,
-      threat_threshold: threatThreshold,
-    })
-  },
+ /**
+ * Toggle protection
+ */
+toggle: async (
+  enabled: boolean,
+  paths: string[],
+  autoQuarantine?: boolean,
+  threatThreshold?: number
+): Promise<ApiResponse<any>> => {
+  const body = {
+    active: enabled,              // 🔴 ключово
+    enabled: enabled,             // оставяме го
+    paths,
+    auto_quarantine: autoQuarantine,
+    threat_threshold: threatThreshold,
+  };
+
+  console.log("🟦 API.toggle() OUTGOING BODY:", JSON.stringify(body, null, 2));
+
+  return client.post<any>('/api/protection/toggle', body);
+},
+
 
   /**
    * Update protection settings (without toggling)

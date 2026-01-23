@@ -19,20 +19,31 @@ type ScanResult = {
   recommendation: string
   timestamp: string
 }
+type VirusTotalUploadResult = {
+  analysis_id: string
+  sha256: string
+  vt_file_link?: string
+  vt_analysis_link?: string
+}
+
 
 export default function FileScanner() {
   const [file, setFile] = useState<File | null>(null)
   const [scanning, setScanning] = useState(false)
   const [result, setResult] = useState<ScanResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [vtResult, setVtResult] = useState<VirusTotalUploadResult | null>(null)
+  const [vtUploading, setVtUploading] = useState(false)
+ 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
-    if (selectedFile) {
-      setFile(selectedFile)
-      setResult(null)
-      setError(null)
-    }
+ if (selectedFile) {
+  setFile(selectedFile)
+  setResult(null)
+  setVtResult(null)
+  setError(null)
+}
   }
 
   const handleScan = async () => {
@@ -66,6 +77,8 @@ export default function FileScanner() {
       setScanning(false)
     }
   }
+
+  
 
   const getThreatColor = (level: string) => {
     switch (level) {

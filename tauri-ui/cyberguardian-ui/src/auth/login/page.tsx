@@ -88,11 +88,10 @@ export default function LoginPage() {
     }
   };
 
-// 🔹 Buy Now – работи еднакво в Tauri и браузър
-const handleBuyNow = () => {
-  window.location.href = 'https://cyberguardian-dashboard.vercel.app/pricing';
-};
-
+  // ✅ Buy Now – вътрешна навигация (без Vercel)
+  const handleBuyNow = () => {
+    navigate('/pricing');
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -176,7 +175,7 @@ const handleBuyNow = () => {
                     <path
                       className="opacity-75"
                       fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938л3-2.647z"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
                   Activating...

@@ -5,8 +5,20 @@ import CountUp from "react-countup";
 import { Mail, Shield, AlertTriangle, RefreshCw, Trash2, Settings } from "lucide-react";
 import { emailsApi } from "@/lib/api";
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+
+
+const EMAIL_SCAN_MAX_AGE_MS = 60 * 60 * 1000; // 60 минути
+// 🆕 Стъпка 9: добавяме функция за чистене на кеш
+function clearEmailCache() {
+  localStorage.removeItem("cg_last_email_scan");
+  localStorage.removeItem("cg_last_email_account");
+  localStorage.removeItem("cg_last_email_folder");
+  localStorage.removeItem("cg_last_email_limit");
+}
 
 export default function EmailsPage() {
+  const isOnline = useOnlineStatus();
   const [emailAccounts, setEmailAccounts] = useState<any[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
   const [status, setStatus] = useState<any>(null);
@@ -16,6 +28,7 @@ export default function EmailsPage() {
   const [folder, setFolder] = useState("INBOX");
   const [limit, setLimit] = useState(10);
   const [loading, setLoading] = useState(true);
+  const [lastScanAt, setLastScanAt] = useState<number | null>(null);
 
   // Fetch email accounts
   const fetchEmailAccounts = async () => {
@@ -54,10 +67,16 @@ export default function EmailsPage() {
     }
   };
 
-  // Scan emails
- const scanEmails = async () => {
+ // Scan emails
+const scanEmails = async () => {
   if (!selectedAccountId) {
     setError("Please select an email account first");
+    return;
+  }
+
+  // 🆕 Ако сме офлайн – не пращаме заявка, ползваме кеша
+  if (!isOnline) {
+    setError("You are offline. Showing last cached scan results.");
     return;
   }
 
@@ -78,7 +97,6 @@ export default function EmailsPage() {
       await fetchEmailAccounts();
       await fetchStatus();
 
-      // 🆕 КЕШИРАМЕ ПОСЛЕДНИЯ СКАН
       localStorage.setItem(
         "cg_last_email_scan",
         JSON.stringify({
@@ -86,8 +104,17 @@ export default function EmailsPage() {
           folder,
           limit,
           emails: scanResults,
+          scannedAt: Date.now(), // UNIX timestamp в милисекунди
         })
       );
+
+      // 🆕 Отделни ключове за по-стабилен кеш
+      localStorage.setItem("cg_last_email_account", String(selectedAccountId));
+      localStorage.setItem("cg_last_email_folder", folder);
+      localStorage.setItem("cg_last_email_limit", String(limit));
+
+      // 🆕 Обновяваме state, за да види UI веднага новото време
+      setLastScanAt(Date.now());
     }
   } catch (err) {
     console.error("Error scanning emails:", err);
@@ -98,7 +125,8 @@ export default function EmailsPage() {
 };
 
 
-  useEffect(() => {
+
+useEffect(() => {
   fetchEmailAccounts();
   fetchStatus();
 
@@ -120,11 +148,41 @@ export default function EmailsPage() {
 
       // Последен лимит
       if (parsed.limit) setLimit(parsed.limit);
+
+      // 🆕 Кога е бил последният скан
+      if (parsed.scannedAt) setLastScanAt(parsed.scannedAt);
     }
   } catch (err) {
     console.error("Failed to load cached email scan from localStorage:", err);
   }
 }, []);
+
+useEffect(() => {
+  if (!lastScanAt) return;
+  if (!selectedAccountId) return;
+  if (isScanning) return;
+
+  const ageMs = Date.now() - lastScanAt;
+
+  if (ageMs > EMAIL_SCAN_MAX_AGE_MS) {
+    console.log("Last email scan is older than 60 minutes → auto-rescan");
+    scanEmails();
+  }
+}, [lastScanAt, selectedAccountId, isScanning, folder, limit]);
+
+
+// 🆕 Auto-refresh when coming back online
+useEffect(() => {
+  if (isOnline && lastScanAt && !isScanning && selectedAccountId) {
+    const ageMs = Date.now() - lastScanAt;
+
+    // ако кешът е по-стар от 1 мин → auto scan
+    if (ageMs > 60 * 1000) {
+      scanEmails();
+    }
+  }
+}, [isOnline]);
+
 
 
   const selectedAccount = emailAccounts.find(acc => acc.id === selectedAccountId);
@@ -441,6 +499,13 @@ export default function EmailsPage() {
                     {isScanning ? 'Scanning...' : 'Scan Emails'}
                   </motion.button>
 
+                  {/* Last Scan Timestamp */}
+{lastScanAt && (
+  <p className="text-xs text-gray-500 mt-2 text-center">
+    Last scanned at: {new Date(lastScanAt).toLocaleString()}
+  </p>
+)}
+
                   <AnimatePresence>
                     {error && (
                       <motion.div
@@ -452,7 +517,7 @@ export default function EmailsPage() {
                         {error}
                       </motion.div>
                     )}
-                  </AnimatePresence>
+                 </AnimatePresence>
                 </motion.div>
 
                 {/* Scan Results */}
@@ -467,7 +532,7 @@ export default function EmailsPage() {
                   </h3>
 
                   <AnimatePresence mode="wait">
-                    {emails.length === 0 ? (
+                    {emails.length === 0 && !isScanning ? (
                       <motion.div
                         key="empty"
                         initial={{ opacity: 0 }}
@@ -600,6 +665,7 @@ export default function EmailsPage() {
                       </motion.div>
                     )}
                   </AnimatePresence>
+
                 </motion.div>
               </motion.div>
             )}
