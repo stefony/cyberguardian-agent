@@ -41,6 +41,7 @@ export default function ProtectionPage() {
 
   // ✅ пазим последните валидни paths (за да не се “изгубят” при лош response)
   const lastValidPathsRef = useRef<string>("");
+const settingsTimeoutRef = useRef<NodeJS.Timeout | null>(null); 
 
   useEffect(() => {
     (async () => {
@@ -97,8 +98,13 @@ export default function ProtectionPage() {
     if (paths.trim().length > 0) lastValidPathsRef.current = paths.trim();
   }
 
-  setAutoQuarantine(!!(data?.auto_quarantine ?? data?.autoQuarantine));
-  setThreatThreshold(Number(data?.threat_threshold ?? data?.threatThreshold ?? 80));
+  const autoQuarantineValue = !!(data?.auto_quarantine ?? data?.autoQuarantine);
+const threatThresholdValue = Number(data?.threat_threshold ?? data?.threatThreshold ?? 80);
+
+ 
+
+setAutoQuarantine(autoQuarantineValue);
+setThreatThreshold(threatThresholdValue);
 };
 
   const loadEvents = async (limit = 100) => {
@@ -381,16 +387,25 @@ export default function ProtectionPage() {
                 <label className="flex items-center justify-between cursor-pointer group">
                   <span className="text-sm">Auto-Quarantine</span>
                   <div className="relative">
-                    <input
-                      type="checkbox"
-                      checked={autoQuarantine}
-                      onChange={async (e) => {
-                        const newValue = e.target.checked;
-                        setAutoQuarantine(newValue);
-                        await saveSettings(newValue, undefined);
-                      }}
-                      className="peer sr-only"
-                    />
+ <input
+  type="checkbox"
+  checked={autoQuarantine}
+  onChange={(e) => {
+    const newValue = e.target.checked;
+    setAutoQuarantine(newValue);  // Веднага update UI
+    
+    // Cancel previous timeout
+    if (settingsTimeoutRef.current) {
+      clearTimeout(settingsTimeoutRef.current);
+    }
+    
+    // Debounce API call
+    settingsTimeoutRef.current = setTimeout(async () => {
+      await saveSettings(newValue, undefined);
+    }, 500);
+  }}
+  className="peer sr-only"
+/>
                     <div
                       className={`
                         w-5 h-5 rounded border-2 flex items-center justify-center

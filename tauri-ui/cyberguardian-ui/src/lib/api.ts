@@ -1116,19 +1116,21 @@ toggle: async (
   return client.post<any>('/api/protection/toggle', body);
 },
 
+/**
+ * Update protection settings (auto-quarantine, threat threshold)
+ * WITHOUT toggling protection on/off
+ */
+updateSettings: async (
+  autoQuarantine?: boolean,
+  threatThreshold?: number
+): Promise<ApiResponse<any>> => {
+  const body: any = {};
+  if (autoQuarantine !== undefined) body.auto_quarantine = autoQuarantine;
+  if (threatThreshold !== undefined) body.threat_threshold = threatThreshold;
 
-  /**
-   * Update protection settings (without toggling)
-   */
-  updateSettings: async (
-    autoQuarantine?: boolean,
-    threatThreshold?: number
-  ): Promise<ApiResponse<any>> => {
-    return client.post<any>('/api/protection/settings', {
-      auto_quarantine: autoQuarantine,
-      threat_threshold: threatThreshold,
-    })
-  },
+  return client.post<any>("/api/protection/settings", body);
+},
+
 
   /**
    * Get file system events
