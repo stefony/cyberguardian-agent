@@ -1,5 +1,3 @@
-
-
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect, useState, Suspense } from 'react';
 import { CheckCircle, Mail, ArrowRight } from 'lucide-react';
@@ -103,8 +101,6 @@ function SuccessContent() {
   );
 }
 
-const navigate = useNavigate();
-
 export default function SuccessPage() {
   return (
     <Suspense fallback={
@@ -116,5 +112,3 @@ export default function SuccessPage() {
     </Suspense>
   );
 }
-
-

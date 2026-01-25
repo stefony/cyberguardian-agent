@@ -46,7 +46,9 @@ const handleCheckout = async (plan: 'home' | 'business') => {
   setLoading(plan);
   
   try {
-    const response = await fetch('/api/stripe/checkout', {
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://cyberguardian-backend-production.up.railway.app';
+    
+    const response = await fetch(`${API_BASE_URL}/api/stripe/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ plan })
@@ -55,7 +57,6 @@ const handleCheckout = async (plan: 'home' | 'business') => {
     const data = await response.json();
     
     if (data.url) {
-      // Direct redirect to Stripe Checkout
       window.location.href = data.url;
     }
   } catch (error) {
