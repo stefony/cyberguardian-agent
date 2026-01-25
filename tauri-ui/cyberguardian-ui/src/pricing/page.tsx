@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Check, ArrowLeft } from 'lucide-react';
-
+import { open } from '@tauri-apps/plugin-shell';
 
 export default function PricingPage() {
   const navigate = useNavigate();
@@ -55,9 +55,9 @@ const handleCheckout = async (plan: 'home' | 'business') => {
 
     const data = await response.json();
     
-    if (data.url) {
-      window.location.href = data.url;
-    }
+  if (data.url) {
+    await open(data.url);
+}
   } catch (error) {
     console.error('Checkout error:', error);
     alert('Payment failed. Please try again.');
