@@ -46,8 +46,8 @@ const handleCheckout = async (plan: 'home' | 'business') => {
   setLoading(plan);
   
   try {
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://cyberguardian-backend-production.up.railway.app';
-    
+    //const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://cyberguardian-backend-production.up.railway.app';
+    const API_BASE_URL = 'https://cyberguardian-backend-production.up.railway.app';
     const response = await fetch(`${API_BASE_URL}/api/stripe/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
