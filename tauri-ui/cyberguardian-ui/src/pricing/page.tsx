@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Check, ArrowLeft } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-shell';
+import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 
 export default function PricingPage() {
   const navigate = useNavigate();
@@ -44,23 +45,43 @@ export default function PricingPage() {
 
 const handleCheckout = async (plan: 'home' | 'business') => {
   setLoading(plan);
-  
+
   try {
     const API_BASE_URL = 'https://cyberguardian-backend-production.up.railway.app';
-    const response = await fetch(`${API_BASE_URL}/api/stripe/checkout`, {
+    
+    console.log('🔵 Starting checkout for plan:', plan);
+    console.log('🔵 API URL:', `${API_BASE_URL}/api/stripe/checkout`);
+    
+    const response = await tauriFetch(`${API_BASE_URL}/api/stripe/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ plan })
     });
 
-    const data = await response.json();
+    console.log('🔵 Response status:', response.status);
+    console.log('🔵 Response ok:', response.ok);
     
-  if (data.url) {
-    await open(data.url);
-}
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('🔴 Response error:', errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('🔵 Response data:', data);
+
+    if (data.url) {
+      console.log('🔵 Opening URL:', data.url);
+      await open(data.url);
+      console.log('✅ URL opened successfully');
+    } else {
+      throw new Error('No checkout URL received from server');
+    }
+    
   } catch (error) {
-    console.error('Checkout error:', error);
-    alert('Payment failed. Please try again.');
+    console.error('🔴 Checkout error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    alert(`Payment failed:\n\n${errorMessage}\n\nCheck console for details (F12)`);
     setLoading(null);
   }
 };
