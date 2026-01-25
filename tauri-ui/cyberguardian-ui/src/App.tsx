@@ -32,6 +32,7 @@ import FeedsPage from "./threats/feeds/page";
 
 import LoginPage from "./auth/login/page";
 import PricingPage from "./pricing/page";
+import SuccessPage from "./success/page";
 
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
@@ -59,6 +60,7 @@ export default function App() {
         {/* ✅ PUBLIC routes (NO sidebar) */}
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/success" element={<SuccessPage />} />
 
         {/* ✅ PRIVATE routes (WITH sidebar via Layout) */}
         <Route path="/" element={<Layout />}>
