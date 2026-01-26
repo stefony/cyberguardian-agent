@@ -1,5 +1,5 @@
 "use client";
-
+import { httpFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { 
@@ -22,6 +22,7 @@ import {
   Server
 } from "lucide-react";
 import ProtectedRoute from '@/components/ProtectedRoute';
+
 
 interface ProtectionStatus {
   overall_status: string;
@@ -93,13 +94,14 @@ const fetchWithAuth = async (endpoint: string, options?: RequestInit) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
   
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      ...headers,
-      ...(options?.headers || {}),
-    }
-  });
+ const response = await httpFetch(`${API_BASE_URL}${endpoint}`, {
+  ...options,
+  headers: {
+    ...headers,
+    ...(options?.headers || {}),
+  }
+});
+
   
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);

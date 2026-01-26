@@ -1,4 +1,8 @@
-use tauri::{Manager, menu::{Menu, MenuItem}, tray::{TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState}};
+use tauri::{
+    Manager,
+    menu::{Menu, MenuItem, PredefinedMenuItem},
+    tray::{TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState},
+};
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -8,45 +12,76 @@ fn greet(name: &str) -> String {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-   .plugin(tauri_plugin_opener::init())
-.plugin(tauri_plugin_shell::init())
-.plugin(tauri_plugin_http::init())
-.setup(|app| {
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_http::init())
+        .setup(|app| {
             println!("🔧 Setup starting...");
-            
-            // Create tray menu
-            let dashboard_item = MenuItem::with_id(app, "dashboard", "Open Dashboard", true, None::<&str>)?;
-            let protection_item = MenuItem::with_id(app, "protection", "Protection: ON", true, None::<&str>)?;
-            let settings_item = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
-            let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            
-            println!("✅ Menu items created");
 
-            let menu = Menu::with_items(app, &[
+            // -----------------------------
+            // TRAY MENU (right-click on tray icon)
+            // -----------------------------
+            let dashboard_item =
+                MenuItem::with_id(app, "dashboard", "Open Dashboard", true, None::<&str>)?;
+            let protection_item =
+                MenuItem::with_id(app, "protection", "Protection: ON", true, None::<&str>)?;
+            let settings_item =
+                MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
+            let devtools_item =
+                MenuItem::with_id(app, "toggle_devtools", "Toggle DevTools", true, None::<&str>)?;
+            let quit_item =
+                MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+
+            let tray_menu = Menu::with_items(app, &[
                 &dashboard_item,
                 &protection_item,
                 &settings_item,
+                &PredefinedMenuItem::separator(app)?,
+                &devtools_item,
+                &PredefinedMenuItem::separator(app)?,
                 &quit_item,
             ])?;
-            
-            println!("✅ Menu created");
 
-            // Create tray icon
+            println!("✅ Tray menu created");
+
+            // -----------------------------
+            // APP MENU BAR (top menu in window)
+            // -----------------------------
+            let app_devtools_item =
+                MenuItem::with_id(app, "toggle_devtools", "Toggle DevTools", true, None::<&str>)?;
+            let app_menu = Menu::with_items(app, &[
+                &PredefinedMenuItem::separator(app)?,
+                &app_devtools_item,
+            ])?;
+            app.set_menu(app_menu)?;
+
+            println!("✅ App menu set");
+
+            // -----------------------------
+            // TRAY ICON
+            // -----------------------------
             let _tray = TrayIconBuilder::new()
-                .menu(&menu)
+                .menu(&tray_menu)
                 .tooltip("CyberGuardian XDR")
                 .on_tray_icon_event(|tray, event| {
                     println!("🖱️ Tray icon event: {:?}", event);
-                    
+
                     match event {
                         TrayIconEvent::Click { button, button_state, .. } => {
-                            println!("🖱️ Click detected - Button: {:?}, State: {:?}", button, button_state);
-                            
-                            if button == MouseButton::Right && button_state == MouseButtonState::Down {
+                            println!(
+                                "🖱️ Click detected - Button: {:?}, State: {:?}",
+                                button, button_state
+                            );
+
+                            if button == MouseButton::Right
+                                && button_state == MouseButtonState::Down
+                            {
                                 println!("🖱️ Right click detected - menu should show");
                             }
-                            
-                            if button == MouseButton::Left && button_state == MouseButtonState::Down {
+
+                            if button == MouseButton::Left
+                                && button_state == MouseButtonState::Down
+                            {
                                 println!("🖱️ Left click detected");
                                 if let Some(window) = tray.app_handle().get_webview_window("main") {
                                     let _ = window.show();
@@ -74,6 +109,14 @@ pub fn run() {
                                 let _ = window.set_focus();
                             }
                         }
+                    "toggle_devtools" => {
+    println!("🛠️ Toggling DevTools...");
+    if let Some(window) = app.get_webview_window("main") {
+    window.open_devtools();
+}
+
+}
+
                         "quit" => {
                             println!("🛑 Quitting...");
                             std::process::exit(0);
@@ -84,9 +127,8 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
-            
-            println!("✅ Tray icon created");
 
+            println!("✅ Tray icon created");
             Ok(())
         })
         .on_window_event(|window, event| {

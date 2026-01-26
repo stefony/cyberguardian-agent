@@ -5,6 +5,14 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "opener:default"
+    "opener:default",
+    "shell:default",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://cyberguardian-backend-production.up.railway.app/*" },
+        { "url": "wss://cyberguardian-backend-production.up.railway.app/*" }
+      ]
+    }
   ]
 }

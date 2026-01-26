@@ -2,6 +2,7 @@
  * CyberGuardian Dashboard - API Client
  * Communicates with Python backend (Detection, Response, Deception, AI engines)
  */
+import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 
 import type {
   Threat,
@@ -22,12 +23,40 @@ import type {
   ApiResponse,
 } from './types'
 
+
 // ============================================
 // CONFIGURATION
 // ============================================
 
  
 const API_BASE_URL = 'https://cyberguardian-backend-production.up.railway.app';
+
+const API_BASE = "https://cyberguardian-backend-production.up.railway.app";
+
+function isTauri() {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+
+const isTauriEnv =
+  typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
+export async function httpFetch(
+
+  input: string,
+  init: RequestInit = {}
+): Promise<Response> {
+  const url = input.startsWith("http")
+    ? input
+    : `${API_BASE_URL}${input.startsWith("/") ? "" : "/"}${input}`;
+
+  if (isTauriEnv) {
+    return (await tauriFetch(url, init as any)) as unknown as Response;
+  }
+
+  return fetch(url, init);
+}
+
+
 
  /**
  * WS URL builder:
@@ -46,8 +75,6 @@ const buildWsUrl = () => {
 };
 
 const WS_BASE_URL = buildWsUrl();
-
-
 
 
 // ============================================
@@ -109,10 +136,11 @@ private async fetch<T>(
    // 🔍 DEBUG: Log headers before fetch
     console.log('🔍 FETCH:', endpoint, 'Token:', token ? 'EXISTS' : 'NULL', 'Headers:', headers);
     
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      ...options,
-      headers,
-    });
+ const response = await httpFetch(`${this.baseUrl}${endpoint}`, {
+  ...options,
+  headers,
+});
+
 
     if (!response.ok) {
       // Handle 401 Unauthorized - redirect to login
