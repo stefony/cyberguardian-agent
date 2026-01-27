@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
+ 
 
 
 export default function LoginPage() {
@@ -36,7 +36,7 @@ export default function LoginPage() {
         hostname: window.location.hostname,
       });
 
-   const response = await tauriFetch(
+   const response = await fetch(
   'https://cyberguardian-backend-production.up.railway.app/api/license/activate',
   {
     method: 'POST',
