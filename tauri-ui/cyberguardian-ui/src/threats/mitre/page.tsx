@@ -1,29 +1,27 @@
 "use client";
-
+import { httpFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { Shield, Target, Info } from "lucide-react";
 import MITREMatrix from "@/components/threats/MITREMatrix";
 import MITREStats from "@/components/threats/MITREStats";
 import ProtectedRoute from '@/components/ProtectedRoute';
 
-// API configuration
-const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'https://cyberguardian-backend-production.up.railway.app';
-
-// Helper to make authenticated requests
+// Helper to make authenticated requests (Tauri-safe)
 const fetchWithAuth = async (endpoint: string) => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-  
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
-  
+
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
-  
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers });
+
+  const response = await httpFetch(endpoint, { headers });
   return response.json();
 };
+
 
 interface Technique {
   id: number;

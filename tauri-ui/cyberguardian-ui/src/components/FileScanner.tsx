@@ -1,5 +1,5 @@
 'use client'
-
+import { httpFetch } from '@/lib/api'
 import { useState } from 'react'
 import { Upload, FileSearch, AlertTriangle, CheckCircle2, Shield, Cpu, Zap } from 'lucide-react'
 
@@ -46,37 +46,44 @@ export default function FileScanner() {
 }
   }
 
-  const handleScan = async () => {
-    if (!file) return
+const handleScan = async () => {
+  if (!file) return
 
-    setScanning(true)
-    setError(null)
-    setResult(null)
+  setScanning(true)
+  setError(null)
+  setResult(null)
 
-    const formData = new FormData()
-    formData.append('file', file)
+  const formData = new FormData()
+  formData.append('file', file)
 
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/signatures/detect/upload`,
-        {
-          method: 'POST',
-          body: formData,
-        }
-      )
-
-      if (!response.ok) {
-        throw new Error('Scan failed')
+  try {
+    // Get JWT token
+    const token = localStorage.getItem('access_token')
+    
+    const response = await httpFetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/signatures/detect/upload`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          // NO Content-Type header - browser sets it automatically for FormData
+        },
+        body: formData,
       }
+    )
 
-      const data = await response.json()
-      setResult(data)
-    } catch (err: any) {
-      setError(err.message || 'Failed to scan file')
-    } finally {
-      setScanning(false)
+    if (!response.ok) {
+      throw new Error('Scan failed')
     }
+
+    const data = await response.json()
+    setResult(data)
+  } catch (err: any) {
+    setError(err.message || 'Failed to scan file')
+  } finally {
+    setScanning(false)
   }
+}
 
   
 

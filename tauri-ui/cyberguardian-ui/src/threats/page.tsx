@@ -1,5 +1,5 @@
 "use client";
-
+import { httpFetch } from "@/lib/api";
 import { Shield, AlertTriangle, TrendingUp, Filter, RefreshCw, Ban, X, Copy, CheckCircle2 } from "lucide-react";
 import { threatsApi } from "@/lib/api";
 import type { ThreatResponse, ThreatStats } from "@/lib/types";
@@ -58,9 +58,10 @@ const fetchThreats = useCallback(async () => {
       const threatsWithCorrelations = await Promise.all(
         items.map(async (threat) => {
           try {
-            const correlationResponse = await fetch(
-              `${import.meta.env.VITE_API_URL}/api/threats/${threat.id}/correlations`
-            );
+            const correlationResponse = await httpFetch(
+          `/api/threats/${threat.id}/correlations`
+);
+
             const correlationData = await correlationResponse.json();
 
             return {

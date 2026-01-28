@@ -1,5 +1,5 @@
 "use client";
-
+import { httpFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import {
   RefreshCw,
@@ -17,27 +17,25 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 // API configuration
 const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'https://cyberguardian-backend-production.up.railway.app';
 
-// Helper to make authenticated requests
 const fetchWithAuth = async (endpoint: string, options?: RequestInit) => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-  
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
-  
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const response = await httpFetch(endpoint, {
     ...options,
     headers: {
       ...headers,
       ...(options?.headers || {}),
-    }
+    },
   });
+
   return response.json();
 };
+
 
 interface Feed {
   id: number;

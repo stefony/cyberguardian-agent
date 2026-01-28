@@ -136,10 +136,11 @@ private async fetch<T>(
    // 🔍 DEBUG: Log headers before fetch
     console.log('🔍 FETCH:', endpoint, 'Token:', token ? 'EXISTS' : 'NULL', 'Headers:', headers);
     
- const response = await httpFetch(`${this.baseUrl}${endpoint}`, {
+const response = await httpFetch(endpoint, {
   ...options,
   headers,
 });
+
 
 
     if (!response.ok) {

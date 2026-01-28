@@ -1,5 +1,5 @@
 "use client";
-
+import { httpFetch } from "@/lib/api";
 import { useEffect, useState, useRef } from "react";
 import { Activity, MapPin, Clock, AlertCircle, Shield, Wifi } from "lucide-react";
 
@@ -30,24 +30,15 @@ interface LiveFeedResponse {
   last_updated: string;
 }
 
-// Helper to make authenticated requests
 const fetchWithAuth = async (endpoint: string) => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  // Взимаме базовия URL от Vite env
-  const API_URL = import.meta.env.VITE_API_URL || "";
-
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    headers,
-  });
+  const response = await httpFetch(endpoint, { headers });
 
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);

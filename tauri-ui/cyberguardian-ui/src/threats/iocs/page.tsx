@@ -1,5 +1,5 @@
 "use client";
-
+import { httpFetch } from "@/lib/api";
 import { useState, useEffect } from "react";
 import { Shield, Database, AlertTriangle, TrendingUp } from "lucide-react";
 import IOCTable from "@/components/threats/IOCTable";
@@ -7,24 +7,24 @@ import IOCFilters from "@/components/threats/IOCFilters";
 import IOCStats from "@/components/threats/IOCStats";
 import ProtectedRoute from '@/components/ProtectedRoute';
 
-// API configuration
-const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'https://cyberguardian-backend-production.up.railway.app';
+ 
 
 // Helper to make authenticated requests
 const fetchWithAuth = async (endpoint: string) => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-  
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
-  
+
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
-  
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers });
+
+  const response = await httpFetch(endpoint, { headers });
   return response.json();
 };
+
 
 interface IOC {
   id: number;
@@ -73,6 +73,8 @@ const fetchIOCs = async () => {
     if (selectedSource !== "all") url += `&source=${selectedSource}`;
 
     const data = await fetchWithAuth(url);
+
+
     
     if (data.success && data.iocs) {
       setIocs(data.iocs);
@@ -141,7 +143,8 @@ const fetchIOCs = async () => {
 const fetchStats = async () => {
   try {
     const data = await fetchWithAuth('/api/threat-intel/statistics');
-    
+
+
     if (data.success && data.statistics) {
       setStats(data.statistics);
     } else {

@@ -158,17 +158,15 @@ useEffect(() => {
 }, []);
 
 useEffect(() => {
-  if (!lastScanAt) return;
-  if (!selectedAccountId) return;
-  if (isScanning) return;
-
-  const ageMs = Date.now() - lastScanAt;
-
-  if (ageMs > EMAIL_SCAN_MAX_AGE_MS) {
-    console.log("Last email scan is older than 60 minutes → auto-rescan");
-    scanEmails();
-  }
-}, [lastScanAt, selectedAccountId, isScanning, folder, limit]);
+    if (!lastScanAt) return;
+    if (!selectedAccountId) return;
+    if (isScanning) return;
+    const ageMs = Date.now() - lastScanAt;
+    if (ageMs > EMAIL_SCAN_MAX_AGE_MS) {
+      console.log("Last email scan is older than 60 minutes → auto-rescan");
+      scanEmails();
+    }
+  }, [selectedAccountId]); // ← ПРОМЕНЕНО: махнато lastScanAt, isScanning, folder, limit
 
 
 // 🆕 Auto-refresh when coming back online
