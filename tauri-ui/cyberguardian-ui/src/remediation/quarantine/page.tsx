@@ -1,5 +1,5 @@
 "use client"
-
+import { httpFetch } from '@/lib/api';
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -44,9 +44,10 @@ const fetchWithAuth = async (endpoint: string, options?: RequestInit) => {
   if (options?.body && !(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
-   const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://cyberguardian-backend-production.up.railway.app';
   
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://cyberguardian-backend-production.up.railway.app';
+  
+  const response = await httpFetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers: {
       ...headers,

@@ -1,5 +1,5 @@
 
-
+import { httpFetch } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CountUp from 'react-countup';
@@ -36,7 +36,7 @@ const fetchWithAuth = async (endpoint: string, options?: RequestInit) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
   
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const response = await httpFetch(`${API_URL}${endpoint}`, {
     ...options,
     headers: {
       ...headers,
@@ -93,38 +93,16 @@ export default function UpdatesPage() {
   const [checking, setChecking] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
+// Fail gracefully, NO fake data
 const fetchVersion = async () => {
   try {
     const data = await fetchWithAuth('/api/updates/version');
-
     if (data.success && data.version) {
       setVersionInfo(data.version);
-    } else {
-      console.log('🟡 Using mock version info');
-      const mockVersion: VersionInfo = {
-        version: '2.1.4',
-        major: 2,
-        minor: 1,
-        patch: 4,
-        codename: 'Guardian Shield',
-        build_date: '2025-01-05T10:30:00Z',
-        release_notes: 'Bug fixes and performance improvements'
-      };
-      setVersionInfo(mockVersion);
     }
   } catch (error) {
     console.error('Error fetching version:', error);
-    console.log('🟡 Using mock version info (error fallback)');
-    const mockVersion: VersionInfo = {
-      version: '2.1.4',
-      major: 2,
-      minor: 1,
-      patch: 4,
-      codename: 'Guardian Shield',
-      build_date: '2025-01-05T10:30:00Z',
-      release_notes: 'Bug fixes and performance improvements'
-    };
-    setVersionInfo(mockVersion);
+    // No mock fallback
   }
 };
 
@@ -135,36 +113,10 @@ const checkForUpdates = async (force: boolean = false) => {
 
     if (data.success) {
       setUpdateInfo(data);
-    } else {
-      console.log('🟡 Using mock update info');
-      const mockUpdate: UpdateInfo = {
-        available: true,
-        current_version: '2.1.4',
-        latest_version: '2.2.0',
-        update_type: 'minor',
-        release_date: '2025-01-10T14:00:00Z',
-        release_notes: 'New features: Enhanced ML detection, Improved UI, Bug fixes',
-        download_url: 'https://downloads.cyberguardian.com/v2.2.0',
-        size_bytes: 47185920,
-        message: 'New version available'
-      };
-      setUpdateInfo(mockUpdate);
     }
   } catch (error) {
     console.error('Error checking updates:', error);
-    console.log('🟡 Using mock update info (error fallback)');
-    const mockUpdate: UpdateInfo = {
-      available: true,
-      current_version: '2.1.4',
-      latest_version: '2.2.0',
-      update_type: 'minor',
-      release_date: '2025-01-10T14:00:00Z',
-      release_notes: 'New features: Enhanced ML detection, Improved UI, Bug fixes',
-      download_url: 'https://downloads.cyberguardian.com/v2.2.0',
-      size_bytes: 47185920,
-      message: 'New version available'
-    };
-    setUpdateInfo(mockUpdate);
+    // No mock data fallback
   } finally {
     setChecking(false);
   }

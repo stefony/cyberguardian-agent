@@ -1,5 +1,5 @@
 
-
+import { httpFetch } from '@/lib/api'
 import { useState, useEffect, useCallback } from 'react';
 import { 
   UserGroupIcon,
@@ -69,50 +69,50 @@ export default function UsersPage() {
     filterUsers();
   }, [filterUsers]);
 
-  const fetchUsers = async () => {
-    try {
-      const response = await fetch(`${API_URL}/api/users/`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await response.json();
-      
-      if (data.success) {
-        setUsers(data.users);
+const fetchUsers = async () => {
+  try {
+    const response = await httpFetch(`${API_URL}/api/users/`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json'
       }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleInviteUser = async (e: React.FormEvent) => {
-    e.preventDefault();
+    });
+    const data = await response.json();
     
-    try {
-      const response = await fetch(`${API_URL}/api/users/invite`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(inviteData)
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setShowInviteModal(false);
-        setInviteData({ email: '', role: 'viewer', message: '' });
-        alert('Invitation sent successfully!');
-      }
-    } catch (error) {
-      console.error('Error inviting user:', error);
+    if (data.success) {
+      setUsers(data.users);
     }
-  };
+  } catch (error) {
+    console.error('Error fetching users:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+ const handleInviteUser = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  try {
+    const response = await httpFetch(`${API_URL}/api/users/invite`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(inviteData)
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      setShowInviteModal(false);
+      setInviteData({ email: '', role: 'viewer', message: '' });
+      alert('Invitation sent successfully!');
+    }
+  } catch (error) {
+    console.error('Error inviting user:', error);
+  }
+};
 
   const getRoleConfig = (role: string) => {
     const configs: any = {

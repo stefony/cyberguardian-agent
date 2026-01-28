@@ -1,5 +1,5 @@
 
-
+import { httpFetch } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CountUp from 'react-countup';
@@ -31,7 +31,7 @@ const fetchWithAuth = async (endpoint: string, options?: RequestInit) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
   
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const response = await httpFetch(`${API_URL}${endpoint}`, {
     ...options,
     headers: {
       ...headers,
