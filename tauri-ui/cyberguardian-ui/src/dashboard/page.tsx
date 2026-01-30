@@ -1,6 +1,6 @@
 "use client";
-
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Shield, Activity, AlertTriangle, Eye, Wifi, WifiOff } from "lucide-react";
 import { dashboardApi, threatsApi, honeypotApi } from "@/lib/api";
 import type { HealthData } from "@/lib/types";
@@ -201,6 +201,7 @@ export default function DashboardPage() {
   const [honeypotCount, setHoneypotCount] = useState(0);
   const [monitorCount] = useState(5);
   const [isConnected] = useState(true);
+  const navigate = useNavigate();
 
   const fetchHealth = async () => {
     try {
@@ -343,7 +344,7 @@ export default function DashboardPage() {
 
   {/* Enhanced CTA Buttons */}
   <div className="flex flex-wrap gap-3 mb-6">
-    <button className="group relative px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl font-bold text-white overflow-hidden transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-purple-500/50">
+    <button onClick={() => navigate('/detection')} className="group relative px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-xl font-bold text-white overflow-hidden transition-all duration-300 hover:scale-110 hover:shadow-2xl hover:shadow-purple-500/50">
       <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       <div className="relative flex items-center gap-2">
         <Activity className="w-5 h-5 animate-pulse" />
@@ -351,12 +352,12 @@ export default function DashboardPage() {
       </div>
     </button>
 
-    <button className="group relative px-6 py-3 bg-slate-800/50 backdrop-blur-sm border-2 border-purple-500/40 rounded-xl font-bold text-slate-200 overflow-hidden transition-all duration-300 hover:scale-110 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/40">
+     <button onClick={() => navigate('/analytics')} className="group relative px-6 py-3 bg-slate-800/50 backdrop-blur-sm border-2 border-purple-500/40 rounded-xl font-bold text-slate-200 overflow-hidden transition-all duration-300 hover:scale-110 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/40">
       <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-cyan-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       <span className="relative">Learn More</span>
     </button>
 
-    <button className="group relative px-6 py-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border-2 border-green-500/60 rounded-xl font-bold text-green-300 overflow-hidden transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-green-500/50">
+   <button onClick={() => navigate('/settings')} className="group relative px-6 py-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-sm border-2 border-green-500/60 rounded-xl font-bold text-green-300 overflow-hidden transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-green-500/50">
       <div className="absolute inset-0 bg-gradient-to-r from-green-500/30 to-emerald-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       <div className="relative flex items-center gap-2">
         <Shield className="w-5 h-5 animate-pulse" />
