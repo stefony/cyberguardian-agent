@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Activity, AlertTriangle, Eye, Wifi, WifiOff } from "lucide-react";
 import { dashboardApi, threatsApi, honeypotApi } from "@/lib/api";
-import type { HealthData } from "@/lib/types";
+import type { HealthData, ThreatResponse } from "@/lib/types";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -199,9 +199,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [threatCount, setThreatCount] = useState(0);
   const [honeypotCount, setHoneypotCount] = useState(0);
-  const [monitorCount] = useState(5);
-  const [isConnected] = useState(true);
-  const navigate = useNavigate();
+const [monitorCount] = useState(5);
+const [isConnected] = useState(true);
+const [recentThreats, setRecentThreats] = useState<ThreatResponse[]>([]);
+const navigate = useNavigate();
 
   const fetchHealth = async () => {
     try {
@@ -256,11 +257,23 @@ export default function DashboardPage() {
     }
   };
 
-  useEffect(() => {
-    fetchHealth();
-    fetchThreatsCount();
-    fetchHoneypotsCount();
-  }, []);
+  const fetchRecentThreats = async () => {
+  try {
+    const response = await threatsApi.getThreats({ limit: 5, status: 'active' });
+    if (response.success && response.data) {
+      setRecentThreats(response.data);
+    }
+  } catch (err) {
+    console.error('Failed to fetch recent threats:', err);
+  }
+};
+
+useEffect(() => {
+  fetchHealth();
+  fetchThreatsCount();
+  fetchHoneypotsCount();
+  fetchRecentThreats();
+}, []);
 
   if (loading) {
     return (
@@ -562,52 +575,58 @@ export default function DashboardPage() {
                   <th className="text-left py-3 px-4 text-sm font-semibold text-slate-400">Description</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr className="group border-b border-slate-700/50 hover:bg-slate-800/50 transition-all duration-300">
-                  <td className="py-3 px-4 text-sm text-slate-300">09:41 AM</td>
-                  <td className="py-3 px-4 text-sm font-mono text-slate-300 group-hover:text-cyan-400 transition-colors">198.51.100.42</td>
-                  <td className="py-3 px-4 text-sm font-medium group-hover:text-white transition-colors">Brute Force</td>
-                  <td className="py-3 px-4 text-sm">
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border bg-red-500/20 text-red-400 border-red-500/50 group-hover:scale-110 transition-transform">
-                      <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse"></span>CRITICAL
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-sm">
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border bg-red-500/20 text-red-400 border-red-500/50">
-                      <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse"></span>ACTIVE
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-slate-400 group-hover:text-slate-300 transition-colors">Multiple failed login attempts detected</td>
-                </tr>
-                <tr className="group border-b border-slate-700/50 hover:bg-slate-800/50 transition-all duration-300">
-                  <td className="py-3 px-4 text-sm text-slate-300">09:12 AM</td>
-                  <td className="py-3 px-4 text-sm font-mono text-slate-300 group-hover:text-cyan-400 transition-colors">203.0.113.11</td>
-                  <td className="py-3 px-4 text-sm font-medium group-hover:text-white transition-colors">Phishing</td>
-                  <td className="py-3 px-4 text-sm">
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border bg-orange-500/20 text-orange-400 border-orange-500/50 group-hover:scale-110 transition-transform">HIGH</span>
-                  </td>
-                  <td className="py-3 px-4 text-sm">
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border bg-red-500/20 text-red-400 border-red-500/50">
-                      <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse"></span>ACTIVE
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-slate-400 group-hover:text-slate-300 transition-colors">Suspicious email with malicious link detected</td>
-                </tr>
-                <tr className="group border-b border-slate-700/50 hover:bg-slate-800/50 transition-all duration-300">
-                  <td className="py-3 px-4 text-sm text-slate-300">08:57 AM</td>
-                  <td className="py-3 px-4 text-sm font-mono text-slate-300 group-hover:text-cyan-400 transition-colors">192.0.2.156</td>
-                  <td className="py-3 px-4 text-sm font-medium group-hover:text-white transition-colors">Malware</td>
-                  <td className="py-3 px-4 text-sm">
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border bg-yellow-500/20 text-yellow-400 border-yellow-500/50 group-hover:scale-110 transition-transform">MEDIUM</span>
-                  </td>
-                  <td className="py-3 px-4 text-sm">
-                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border bg-red-500/20 text-red-400 border-red-500/50">
-                      <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse"></span>ACTIVE
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-slate-400 group-hover:text-slate-300 transition-colors">Malicious file detected in download folder</td>
-                </tr>
-              </tbody>
+             <tbody>
+  {recentThreats.length === 0 ? (
+    <tr>
+      <td colSpan={6} className="py-8 text-center text-slate-400">
+        No recent threats detected
+      </td>
+    </tr>
+  ) : (
+    recentThreats.map((threat) => (
+      <tr key={threat.id} className="group border-b border-slate-700/50 hover:bg-slate-800/50 transition-all duration-300">
+        <td className="py-3 px-4 text-sm text-slate-300">
+          {new Date(threat.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+        </td>
+        <td className="py-3 px-4 text-sm font-mono text-slate-300 group-hover:text-cyan-400 transition-colors">
+          {threat.source_ip}
+        </td>
+        <td className="py-3 px-4 text-sm font-medium group-hover:text-white transition-colors">
+          {threat.threat_type}
+        </td>
+        <td className="py-3 px-4 text-sm">
+          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${
+            threat.severity === 'critical' 
+              ? 'bg-red-500/20 text-red-400 border-red-500/50' 
+              : threat.severity === 'high'
+              ? 'bg-orange-500/20 text-orange-400 border-orange-500/50'
+              : threat.severity === 'medium'
+              ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
+              : 'bg-blue-500/20 text-blue-400 border-blue-500/50'
+          } group-hover:scale-110 transition-transform`}>
+            {threat.severity === 'critical' && <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse"></span>}
+            {threat.severity.toUpperCase()}
+          </span>
+        </td>
+        <td className="py-3 px-4 text-sm">
+          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${
+            threat.status === 'active'
+              ? 'bg-red-500/20 text-red-400 border-red-500/50'
+              : threat.status === 'resolved'
+              ? 'bg-green-500/20 text-green-400 border-green-500/50'
+              : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
+          }`}>
+            {threat.status === 'active' && <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse"></span>}
+            {threat.status.toUpperCase()}
+          </span>
+        </td>
+        <td className="py-3 px-4 text-sm text-slate-400 group-hover:text-slate-300 transition-colors">
+          {threat.description}
+        </td>
+      </tr>
+    ))
+  )}
+</tbody>
             </table>
           </div>
         </div>
