@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Activity, AlertTriangle, Eye, Wifi, WifiOff } from "lucide-react";
-import { dashboardApi, threatsApi, honeypotApi } from "@/lib/api";
+import { dashboardApi, threatsApi, honeypotApi, analyticsApi } from "@/lib/api";
 import type { HealthData, ThreatResponse } from "@/lib/types";
 import {
   ResponsiveContainer,
@@ -75,44 +75,36 @@ function ThreatActivityChart() {
   const [range, setRange] = useState<RangeKey>("24h");
   const [data, setData] = useState<ThreatPoint[]>([]);
 
-  // MOCK DATA - показвай винаги
-  useEffect(() => {
-    const mockData24h = [
-      { t: '1h', threats: 18 },
-      { t: '2h', threats: 22 },
-      { t: '3h', threats: 16 },
-      { t: '4h', threats: 25 },
-      { t: '5h', threats: 32 },
-      { t: '6h', threats: 28 },
-      { t: '7h', threats: 35 },
-      { t: '8h', threats: 38 },
-      { t: '9h', threats: 42 },
-      { t: '10h', threats: 45 },
-      { t: '11h', threats: 48 },
-      { t: '12h', threats: 46 },
-      { t: '13h', threats: 52 },
-      { t: '14h', threats: 48 },
-      { t: '15h', threats: 44 }
-    ];
-
-    const mockData7d = Array.from({ length: 7 }, (_, i) => ({
-      t: `Day ${i + 1}`,
-      threats: Math.floor(Math.random() * 20 + 30) + i * 3,
-    }));
-
-    const mockData30d = Array.from({ length: 30 }, (_, i) => ({
-      t: `Day ${i + 1}`,
-      threats: Math.floor(Math.random() * 30 + 25) + i * 1,
-    }));
-
-    const dataMap: Record<RangeKey, ThreatPoint[]> = {
-      "24h": mockData24h,
-      "7d": mockData7d,
-      "30d": mockData30d
-    };
-
-    setData(dataMap[range]);
-  }, [range]);
+   
+// Real API data
+useEffect(() => {
+  const fetchTimeline = async () => {
+    try {
+      const days = range === "24h" ? 1 : range === "7d" ? 7 : 30;
+      console.log('📊 Fetching timeline for days:', days);
+      const response = await analyticsApi.getThreatsTimeline(days);
+      console.log('📊 Timeline response:', response);
+      
+      if (response.success && response.data && Array.isArray(response.data)) {
+        console.log('📊 Timeline data:', response.data);
+        const chartData = response.data.map((item: any, index: number) => ({
+          t: range === "24h" ? `${index + 1}h` : `Day ${index + 1}`,
+          threats: item.count || item.threats || 0
+        }));
+        console.log('📊 Chart data:', chartData);
+        setData(chartData);
+      } else {
+        console.log('⚠️ No timeline data or wrong format');
+        setData([]);
+      }
+    } catch (err) {
+      console.error('❌ Failed to fetch threat timeline:', err);
+      setData([]);
+    }
+  };
+  
+  fetchTimeline();
+}, [range]);
 
   return (
     <div className="chart-card p-6">
@@ -142,53 +134,63 @@ function ThreatActivityChart() {
       </div>
 
       <div style={{ width: "100%", height: "300px", minHeight: "300px" }}>
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={data} margin={{ top: 10, right: 12, bottom: 0, left: -10 }}>
-            <defs>
-              <linearGradient id="gradThreat" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#7C3AED" stopOpacity={0.8} />
-                <stop offset="100%" stopColor="#7C3AED" stopOpacity={0.05} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid vertical={false} stroke="rgba(255,255,255,.06)" strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="t" 
-              tick={{ fill: "rgba(226,232,240,.7)", fontSize: 12 }} 
-              tickMargin={8} 
-              axisLine={false} 
-              tickLine={false} 
-            />
-            <YAxis 
-              tick={{ fill: "rgba(226,232,240,.6)", fontSize: 12 }} 
-              axisLine={false} 
-              tickLine={false} 
-              width={30} 
-            />
-            <Tooltip
-              contentStyle={{ 
-                background: "rgba(17,27,46,.95)", 
-                border: "1px solid rgba(255,255,255,.08)", 
-                borderRadius: 12, 
-                color: "rgb(226 232 240)", 
-                boxShadow: "0 8px 24px rgba(0,0,0,.45)", 
-                padding: "10px 12px" 
-              }}
-              labelStyle={{ color: "rgba(148,163,184,1)" }}
-              cursor={{ stroke: "rgba(124,58,237,.4)", strokeWidth: 1 }}
-            />
-            <Area 
-              type="monotone" 
-              dataKey="threats" 
-              stroke="#7C3AED" 
-              strokeWidth={2} 
-              fill="url(#gradThreat)" 
-              animationDuration={900} 
-              dot={false} 
-              activeDot={{ r: 5 }} 
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+  {data.length === 0 ? (
+    <div className="flex items-center justify-center h-full text-slate-400">
+      <div className="text-center">
+        <Activity className="w-12 h-12 mx-auto mb-2 opacity-50" />
+        <p className="text-lg font-semibold">No threat activity data available</p>
+        <p className="text-sm text-slate-500 mt-1">Threat timeline will appear as threats are detected</p>
       </div>
+    </div>
+  ) : (
+    <ResponsiveContainer width="100%" height={300}>
+      <AreaChart data={data} margin={{ top: 10, right: 12, bottom: 0, left: -10 }}>
+        <defs>
+          <linearGradient id="gradThreat" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#7C3AED" stopOpacity={0.8} />
+            <stop offset="100%" stopColor="#7C3AED" stopOpacity={0.05} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid vertical={false} stroke="rgba(255,255,255,.06)" strokeDasharray="3 3" />
+        <XAxis 
+          dataKey="t" 
+          tick={{ fill: "rgba(226,232,240,.7)", fontSize: 12 }} 
+          tickMargin={8} 
+          axisLine={false} 
+          tickLine={false} 
+        />
+        <YAxis 
+          tick={{ fill: "rgba(226,232,240,.6)", fontSize: 12 }} 
+          axisLine={false} 
+          tickLine={false} 
+          width={30} 
+        />
+        <Tooltip
+          contentStyle={{ 
+            background: "rgba(17,27,46,.95)", 
+            border: "1px solid rgba(255,255,255,.08)", 
+            borderRadius: 12, 
+            color: "rgb(226 232 240)", 
+            boxShadow: "0 8px 24px rgba(0,0,0,.45)", 
+            padding: "10px 12px" 
+          }}
+          labelStyle={{ color: "rgba(148,163,184,1)" }}
+          cursor={{ stroke: "rgba(124,58,237,.4)", strokeWidth: 1 }}
+        />
+        <Area 
+          type="monotone" 
+          dataKey="threats" 
+          stroke="#7C3AED" 
+          strokeWidth={2} 
+          fill="url(#gradThreat)" 
+          animationDuration={900} 
+          dot={false} 
+          activeDot={{ r: 5 }} 
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  )}
+</div>
     </div>
   );
 }
