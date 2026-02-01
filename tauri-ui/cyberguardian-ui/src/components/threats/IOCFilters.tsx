@@ -9,6 +9,7 @@ interface IOCFiltersProps {
   onTypeChange: (type: string) => void;
   onSeverityChange: (severity: string) => void;
   onSourceChange: (source: string) => void;
+  stats: any; // ← ДОБАВИ
 }
 
 export default function IOCFilters({
@@ -18,15 +19,20 @@ export default function IOCFilters({
   onTypeChange,
   onSeverityChange,
   onSourceChange,
+  stats, // ← ДОБАВИ
 }: IOCFiltersProps) {
-  const iocTypes = [
-    { value: "all", label: "All Types" },
-    { value: "ip", label: "IP Address" },
-    { value: "domain", label: "Domain" },
-    { value: "hash", label: "File Hash" },
-    { value: "url", label: "URL" },
-    { value: "email", label: "Email" },
-  ];
+// Generate IOC types dynamically from stats
+const iocTypes = [
+  { value: "all", label: "All Types" },
+  ...Object.keys(stats?.iocs_by_type || {}).map(type => ({
+    value: type,
+    label: type === 'ip' ? 'IP Address' : 
+           type === 'domain' ? 'Domain' :
+           type === 'hash' ? 'File Hash' :
+           type === 'url' ? 'URL' :
+           type.charAt(0).toUpperCase() + type.slice(1)
+  }))
+];
 
   const severityLevels = [
     { value: "all", label: "All Severities" },
@@ -36,13 +42,11 @@ export default function IOCFilters({
     { value: "critical", label: "Critical", color: "text-red-400" },
   ];
 
-  const sources = [
-    { value: "all", label: "All Sources" },
-    { value: "AbuseIPDB", label: "AbuseIPDB" },
-    { value: "OTX", label: "AlienVault OTX" },
-    { value: "manual", label: "Manual Entry" },
-    { value: "internal", label: "Internal Detection" },
-  ];
+// Sources need to come from separate API call or backend
+// For now, keep "All Sources" option
+const sources = [
+  { value: "all", label: "All Sources" },
+];
 
   return (
     <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6 transition-all duration-300 hover:border-gray-600">

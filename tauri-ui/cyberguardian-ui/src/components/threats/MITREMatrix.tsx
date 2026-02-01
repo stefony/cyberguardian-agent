@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronRight, ExternalLink, Shield, Sparkles } from "lucide-react";
+import { ChevronRight, ChevronLeft, ExternalLink, Shield, Sparkles } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
 
 interface Technique {
   id: number;
@@ -31,6 +32,37 @@ export default function MITREMatrix({
   loading,
   onTechniqueClick,
 }: MITREMatrixProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 400; // Width of ~1 tactic card
+      const newScrollLeft = direction === 'left'
+        ? scrollContainerRef.current.scrollLeft - scrollAmount
+        : scrollContainerRef.current.scrollLeft + scrollAmount;
+      
+      scrollContainerRef.current.scrollTo({
+        left: newScrollLeft,
+        behavior: 'smooth'
+      });
+    }
+  };
+  useEffect(() => {
+    checkScroll();
+    const timer = setTimeout(checkScroll, 100);
+    return () => clearTimeout(timer);
+  }, [matrixData]);
+
   if (loading) {
     return (
       <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
@@ -49,7 +81,6 @@ export default function MITREMatrix({
   if (matrixData.length === 0) {
     return (
       <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-12 text-center relative overflow-hidden group">
-        {/* Floating particles background */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-cyan-500/5 rounded-full blur-3xl animate-float" />
           <div className="absolute bottom-1/4 right-1/4 w-40 h-40 bg-purple-500/5 rounded-full blur-3xl animate-float-delayed" />
@@ -81,7 +112,6 @@ export default function MITREMatrix({
             </button>
           </div>
 
-          {/* Info card */}
           <div className="mt-8 max-w-lg mx-auto bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
             <p className="text-sm text-blue-300 text-left">
               <strong className="text-blue-400">💡 What is MITRE ATT&CK?</strong><br/>
@@ -105,9 +135,45 @@ export default function MITREMatrix({
         </span>
       </div>
 
-      {/* Horizontal Scrollable Matrix */}
+      {/* Matrix with Navigation */}
       <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden transition-all duration-300 hover:border-gray-600">
-        <div className="overflow-x-auto">
+        {/* Navigation Controls */}
+        <div className="flex items-center justify-between px-6 py-3 bg-gray-900/50 border-b border-gray-700">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => scroll('left')}
+              disabled={!canScrollLeft}
+              className="p-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-400
+                       hover:text-cyan-400 hover:border-cyan-500/50 disabled:opacity-30 
+                       disabled:cursor-not-allowed transition-all duration-300
+                       hover:scale-105 disabled:hover:scale-100"
+              aria-label="Scroll left"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => scroll('right')}
+              disabled={!canScrollRight}
+              className="p-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-400
+                       hover:text-cyan-400 hover:border-cyan-500/50 disabled:opacity-30 
+                       disabled:cursor-not-allowed transition-all duration-300
+                       hover:scale-105 disabled:hover:scale-100"
+              aria-label="Scroll right"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+          <span className="text-xs text-gray-500">
+            ← Scroll to view all {matrixData.length} tactics →
+          </span>
+        </div>
+
+        {/* Scrollable Matrix */}
+        <div 
+          ref={scrollContainerRef}
+          onScroll={checkScroll}
+          className="overflow-x-auto scrollbar-thin scrollbar-thumb-cyan-500/50 scrollbar-track-gray-800"
+        >
           <div className="flex gap-4 p-6" style={{ minWidth: 'max-content' }}>
             {matrixData.map((tactic) => (
               <div
@@ -120,7 +186,6 @@ export default function MITREMatrix({
                               transition-all duration-300
                               group-hover/tactic:border-cyan-500/50 group-hover/tactic:shadow-lg group-hover/tactic:shadow-cyan-500/20
                               relative overflow-hidden">
-                  {/* Corner glow */}
                   <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-white/10 to-transparent rounded-bl-full opacity-0 group-hover/tactic:opacity-100 transition-opacity duration-300" />
                   
                   <div className="flex items-start justify-between mb-2 relative z-10">
