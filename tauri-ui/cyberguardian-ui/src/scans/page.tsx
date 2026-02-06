@@ -24,7 +24,9 @@ export default function ScansPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
+// Pagination state
+const [currentPage, setCurrentPage] = useState(1);
+const itemsPerPage = 10;
   // Create form state
   const [formData, setFormData] = useState({
     name: "",
@@ -50,17 +52,20 @@ const loadSchedules = async () => {
     console.log("🔵 Schedules response:", res);
     
     if (res.success && res.data) {
-      // Handle both nested and direct array responses
-      const schedulesData = Array.isArray(res.data) 
-        ? res.data 
-        : (res.data as any)?.data || [];
+      // Cast to any to handle double-nested response
+      const responseData = res.data as any;
+      let schedulesData = responseData;
+      
+      // If res.data has a nested 'data' array, unwrap it
+      if (responseData.data && Array.isArray(responseData.data)) {
+        schedulesData = responseData.data;
+      }
       
       console.log("✅ Setting schedules:", schedulesData);
-      setSchedules(schedulesData);
+      setSchedules(Array.isArray(schedulesData) ? schedulesData : []);
     }
   } catch (err) {
     console.error("❌ Error loading schedules:", err);
-    // No mock data fallback
   }
 };
 
@@ -68,16 +73,22 @@ const loadHistory = async () => {
   try {
     const res = await scansApi.getHistory(20);
     console.log("🔍 History response:", res);
-    console.log("🔍 res.data:", res.data);
+    
     if (res.success && res.data) {
-      console.log("🔍 Is array?", Array.isArray(res.data));
-      console.log("🔍 Array length:", res.data.length);
-      const historyData = (res.data as any)?.data || res.data;
+      // Cast to any to handle double-nested response
+      const responseData = res.data as any;
+      let historyData = responseData;
+      
+      // If res.data has a nested 'data' array, unwrap it
+      if (responseData.data && Array.isArray(responseData.data)) {
+        historyData = responseData.data;
+      }
+      
+      console.log("✅ Setting history:", historyData);
       setHistory(Array.isArray(historyData) ? historyData : []);
     }
   } catch (err) {
     console.error("Error loading history:", err);
-    // No mock data fallback
   }
 };
 
@@ -168,6 +179,12 @@ const loadHistory = async () => {
       default: return "bg-gray-500/10 border-gray-500/30";
     }
   };
+
+  // Pagination logic
+const indexOfLastItem = currentPage * itemsPerPage;
+const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+const currentHistory = history.slice(indexOfFirstItem, indexOfLastItem);
+const totalPages = Math.ceil(history.length / itemsPerPage);
 
   if (loading) {
     return (
@@ -386,7 +403,7 @@ const loadHistory = async () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {history.map((item) => (
+                  {currentHistory.map((item) => (
                     <tr key={item.id}>
                       <td className="font-mono text-sm">
                         {new Date(item.started_at).toLocaleString()}
@@ -396,9 +413,15 @@ const loadHistory = async () => {
                           {item.scan_type}
                         </span>
                       </td>
-                      <td className="font-mono text-xs truncate max-w-xs">
-                        {item.target_path}
-                      </td>
+                      <td className="font-mono text-xs max-w-xs">
+  <div 
+    className="truncate" 
+    title={item.target_path}
+    style={{ maxWidth: '300px' }}
+  >
+    {item.target_path}
+  </div>
+</td>
                       <td className="text-sm">
                         {item.duration_seconds
                           ? `${item.duration_seconds}s`
@@ -425,6 +448,34 @@ const loadHistory = async () => {
               </table>
             </div>
           )}
+          {/* Pagination Controls */}
+      {history.length > 0 && totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4 px-6 pb-6">
+          <div className="text-sm text-muted-foreground">
+            Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, history.length)} of {history.length}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="btn btn-secondary disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="px-4 py-2 rounded-lg bg-card border-2 border-border">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="btn btn-secondary disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+     
         </div>
       </div>
 

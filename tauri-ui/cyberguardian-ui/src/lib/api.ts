@@ -49,6 +49,7 @@ export async function httpFetch(
     ? input
     : `${API_BASE_URL}${input.startsWith("/") ? "" : "/"}${input}`;
 
+  
   if (isTauriEnv) {
     return (await tauriFetch(url, init as any)) as unknown as Response;
   }

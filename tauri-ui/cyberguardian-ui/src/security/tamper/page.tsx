@@ -79,6 +79,18 @@ interface Privileges {
   can_protect: boolean;
   username: string;
 }
+
+// Tauri API for Desktop Agent
+const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
+
+const invokeTauri = async (command: string, args?: any) => {
+  if (isTauri) {
+    const { invoke } = (window as any).__TAURI__.core;
+    return await invoke(command, args);
+  }
+  throw new Error('Tauri API not available');
+};
+
 // API configuration
 const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'https://cyberguardian-backend-production.up.railway.app';
 
@@ -120,7 +132,7 @@ export default function TamperProtectionPage() {
   const [privileges, setPrivileges] = useState<Privileges | null>(null);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-
+  const [desktopProtection, setDesktopProtection] = useState<any | null>(null);
    
 
   useEffect(() => {
@@ -166,10 +178,24 @@ const fetchData = async () => {
     if (privilegesData.success) {
       setPrivileges(privilegesData.privileges);
     }
+
+    // ← ДОБАВИ ТУК (преди края на try блока)
+    // Fetch Desktop Agent protection status (Tauri)
+    if (isTauri) {
+      try {
+        const desktopStatus = await invokeTauri('get_desktop_protection_status');
+        setDesktopProtection(desktopStatus);
+        console.log('Desktop Agent protection:', desktopStatus);
+      } catch (error) {
+        console.error("Error fetching desktop protection:", error);
+      }
+    }
+    // ← КРАЯ НА НОВИЯ КОД
+    
   } catch (error) {
-  console.error("Error fetching data:", error);
-  setError("Failed to load tamper protection data");
-}
+    console.error("Error fetching data:", error);
+    setError("Failed to load tamper protection data");
+  }
 };
 
   const startWatchdog = async () => {
@@ -324,6 +350,77 @@ const fetchData = async () => {
       setActionLoading(false);
     }
   };
+  
+const initDesktopProtection = async () => {
+    if (!isTauri) {
+      toast.error("Desktop Agent not available");
+      return;
+    }
+    
+    setActionLoading(true);
+    try {
+      await invokeTauri('init_tamper_protection');
+      toast.success("Desktop Protection Initialized");
+      fetchData();
+    } catch (error) {
+      console.error("Error initializing desktop protection:", error);
+      toast.error("Failed to initialize desktop protection");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const enableDesktopMaxProtection = async () => {
+    if (!isTauri) {
+      toast.error("Desktop Agent not available");
+      return;
+    }
+    
+    setActionLoading(true);
+    try {
+      await invokeTauri('enable_desktop_max_protection');
+      toast.success("Desktop Maximum Protection Enabled");
+      fetchData();
+    } catch (error) {
+      console.error("Error enabling desktop protection:", error);
+      toast.error(`Failed: ${error}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const disableDesktopProtection = async () => {
+    if (!isTauri) {
+      toast.error("Desktop Agent not available");
+      return;
+    }
+    
+    setActionLoading(true);
+    try {
+      await invokeTauri('disable_desktop_protection');
+      toast.success("Desktop Protection Disabled");
+      fetchData();
+    } catch (error) {
+      console.error("Error disabling desktop protection:", error);
+      toast.error("Failed to disable desktop protection");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const checkAdminPrivileges = async () => {
+    if (!isTauri) {
+      return false;
+    }
+    
+    try {
+      return await invokeTauri('check_admin_privileges');
+    } catch (error) {
+      console.error("Error checking admin privileges:", error);
+      return false;
+    }
+  };
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -555,6 +652,132 @@ const fetchData = async () => {
           </div>
         )}
 
+ {/* Desktop Agent Protection */}
+        <div className="bg-gradient-to-br from-green-600/30 via-emerald-600/30 to-teal-600/30 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-lg">
+                <Shield className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <p className="text-green-200 font-semibold text-sm mb-1">🖥️ Desktop Agent Protection</p>
+                <p className="text-3xl font-black text-white">
+                  {desktopProtection?.platform || "Windows"}
+                </p>
+                <p className="text-sm text-green-200 mt-1">
+                  PID: {desktopProtection?.pid || "N/A"} • 
+                  User: {desktopProtection?.username || "N/A"}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              {desktopProtection?.can_protect ? (
+                <>
+                  {!desktopProtection?.is_protected && (
+                    <button
+                      onClick={initDesktopProtection}
+                      disabled={actionLoading}
+                      className="px-6 py-3 bg-white/20 backdrop-blur-lg text-white rounded-xl hover:bg-white/30 transition-all disabled:opacity-50 flex items-center gap-2 border border-white/30"
+                    >
+                      <Power className="w-5 h-5" />
+                      <span className="font-semibold">Initialize</span>
+                    </button>
+                  )}
+                  
+                  <button
+                    onClick={enableDesktopMaxProtection}
+                    disabled={actionLoading}
+                    className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl hover:shadow-2xl transition-all disabled:opacity-50 flex items-center gap-2 font-bold"
+                  >
+                    <Zap className="w-5 h-5" />
+                    <span>Enable Protection</span>
+                  </button>
+                  
+                  {desktopProtection?.is_protected && (
+                    <button
+                      onClick={disableDesktopProtection}
+                      disabled={actionLoading}
+                      className="px-6 py-3 bg-white/10 backdrop-blur-lg text-white rounded-xl hover:bg-white/20 transition-all disabled:opacity-50 flex items-center gap-2 border border-white/20"
+                    >
+                      <PowerOff className="w-5 h-5" />
+                      <span className="font-semibold">Disable</span>
+                    </button>
+                  )}
+                </>
+              ) : (
+                <div className="px-6 py-3 bg-amber-500/20 backdrop-blur-lg text-amber-200 rounded-xl border border-amber-400/30 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5" />
+                  <span className="font-semibold">Requires Administrator</span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Desktop Protection Status Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-green-200">Protection Status</span>
+                {desktopProtection?.is_protected ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                ) : (
+                  <XCircle className="w-5 h-5 text-rose-400" />
+                )}
+              </div>
+              <p className="text-2xl font-bold text-white">
+                {desktopProtection?.is_protected ? "ACTIVE" : "INACTIVE"}
+              </p>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-green-200">Self-Healing</span>
+                {desktopProtection?.self_healing_enabled ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                ) : (
+                  <XCircle className="w-5 h-5 text-rose-400" />
+                )}
+              </div>
+              <p className="text-2xl font-bold text-white">
+                {desktopProtection?.self_healing_enabled ? "ENABLED" : "DISABLED"}
+              </p>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 border border-white/20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-green-200">Admin Rights</span>
+                {desktopProtection?.is_admin ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                ) : (
+                  <XCircle className="w-5 h-5 text-rose-400" />
+                )}
+              </div>
+              <p className="text-2xl font-bold text-white">
+                {desktopProtection?.is_admin ? "ADMIN" : "USER"}
+              </p>
+            </div>
+          </div>
+          
+          {/* Desktop Recommendations */}
+          {desktopProtection && desktopProtection.recommendations.length > 0 && (
+            <div className="bg-white/5 backdrop-blur-lg rounded-xl p-4 border border-white/10">
+              <p className="text-white font-semibold mb-3 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-green-400" />
+                Desktop Agent Recommendations
+              </p>
+              <div className="space-y-2">
+                {desktopProtection.recommendations.map((rec: string, index: number) => (
+                  <div key={index} className="flex items-start gap-2 text-sm text-green-200">
+                    <span className="text-green-400 mt-0.5">•</span>
+                    <span>{rec}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        
         {/* Process Protection Status */}
         <div className="bg-gradient-to-br from-indigo-600/30 via-blue-600/30 to-cyan-600/30 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
           <div className="flex items-center justify-between mb-6">

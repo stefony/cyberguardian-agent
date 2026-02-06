@@ -97,6 +97,8 @@ export default function IntegrityMonitoringPage() {
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+ const logsPerPage = 10;
   const [overallHealth, setOverallHealth] = useState<"HEALTHY" | "WARNING" | "CRITICAL">("HEALTHY");
 
 
@@ -125,7 +127,7 @@ const fetchData = async () => {
     const [statsData, manifestData, logsData, alertsData] = await Promise.all([
       fetchWithAuth('/api/integrity/statistics'),
       fetchWithAuth('/api/integrity/manifest/latest'),
-      fetchWithAuth('/api/integrity/logs?limit=20'),
+      fetchWithAuth('/api/integrity/logs?limit=200'),
       fetchWithAuth('/api/integrity/alerts?resolved=false'),
     ]);
 
@@ -285,18 +287,24 @@ const fetchData = async () => {
     }
   };
 
-  const getHealthIcon = () => {
-    switch (overallHealth) {
-      case "HEALTHY":
-        return <Shield className="w-20 h-20 text-white drop-shadow-lg animate-pulse" />;
-      case "WARNING":
-        return <ShieldAlert className="w-20 h-20 text-white drop-shadow-lg animate-pulse" />;
-      case "CRITICAL":
-        return <AlertTriangle className="w-20 h-20 text-white drop-shadow-lg animate-bounce" />;
-    }
-  };
+const getHealthIcon = () => {
+  switch (overallHealth) {
+    case "HEALTHY":
+      return <Shield className="w-20 h-20 text-white drop-shadow-lg animate-pulse" />;
+    case "WARNING":
+      return <ShieldAlert className="w-20 h-20 text-white drop-shadow-lg animate-pulse" />;
+    case "CRITICAL":
+      return <AlertTriangle className="w-20 h-20 text-white drop-shadow-lg animate-bounce" />;
+  }
+};
 
-  return (
+// Pagination logic
+const indexOfLastLog = currentPage * logsPerPage;
+const indexOfFirstLog = indexOfLastLog - logsPerPage;
+const currentLogs = logs.slice(indexOfFirstLog, indexOfLastLog);
+const totalPages = Math.ceil(logs.length / logsPerPage);
+
+return (
     <ProtectedRoute>
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -558,7 +566,7 @@ const fetchData = async () => {
                     </td>
                   </tr>
                 ) : (
-                  logs.map((log) => (
+                   currentLogs.map((log) => (
                     <tr key={log.id} className="hover:bg-white/5 transition-colors">
                       <td className="px-6 py-4">
                         <p className="text-sm font-mono text-white">{log.file_path}</p>
@@ -584,8 +592,34 @@ const fetchData = async () => {
               </tbody>
             </table>
           </div>
+             {/* Pagination Controls */}
+      {logs.length > 0 && totalPages > 1 && (
+        <div className="flex items-center justify-between p-6 border-t border-white/10">
+          <div className="text-sm text-gray-300">
+            Showing {indexOfFirstLog + 1}-{Math.min(indexOfLastLog, logs.length)} of {logs.length}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="px-4 py-2 rounded-xl bg-purple-500/20 border border-purple-500/30 text-white">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
         </div>
-
+      )}   
+        </div>
       </div>
     </div>
     </ProtectedRoute>

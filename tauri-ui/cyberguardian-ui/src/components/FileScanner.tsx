@@ -61,7 +61,7 @@ const handleScan = async () => {
     const token = localStorage.getItem('access_token')
     
     const response = await httpFetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/signatures/detect/upload`,
+      `https://cyberguardian-backend-production.up.railway.app/api/signatures/detect/upload`,
       {
         method: 'POST',
         headers: {

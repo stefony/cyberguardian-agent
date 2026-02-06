@@ -43,9 +43,20 @@ export default function AutoPurgeSettings({ onSettingsChanged }: AutoPurgeSettin
   const loadSettings = async () => {
     setLoading(true);
     try {
+      console.log('🔵 Loading auto-purge settings...');
       const res = await quarantineApi.getAutoPurgeSettings();
+      console.log('🔵 Response:', res);
+      console.log('🔵 res.success:', res.success);
+      console.log('🔵 res.data:', res.data);
+      
       if (res.success && res.data) {
-        setSettings(res.data);
+  // FIX: Unwrap double-nested data (backend returns nested structure)
+  const rawData: any = res.data;
+  const settingsData = rawData.data || rawData;
+  console.log('✅ Setting state with:', settingsData);
+  setSettings(settingsData);
+} else {
+        console.log('❌ Failed to load settings - success:', res.success, 'data:', res.data);
       }
     } catch (err) {
       console.error("Error loading settings:", err);

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
 import { Zap, Shield, Search, CheckCircle2, AlertCircle, Clock, Cpu, FileSearch, Info } from 'lucide-react'
+import { invoke } from '@tauri-apps/api/core'
 
 type Profile = {
   name: string
@@ -40,36 +41,50 @@ export default function ScanProfiles() {
 }
 
 const handleStartScan = async (profileKey: string) => {
-  if (loading) return
+  if (loading) return;
   
-  const profile = profiles[profileKey]
+  const profile = profiles[profileKey];
   
-  setLoading(profileKey)
-  setMessage(null)
+  setLoading(profileKey);
+  setMessage(null);
   
   try {
-    const response = await api.scans.startScanWithProfile(profileKey)
+    const token = localStorage.getItem('access_token');
+    const backendUrl = 'https://cyberguardian-backend-production.up.railway.app';
     
-    if (response.success || response.data) {
-      setMessage({ 
-        type: 'success', 
-        text: `${profile?.name || 'Scan'} started successfully! Check Scan History for results.`
-      })
-      setTimeout(() => setMessage(null), 5000)
-    } else {
-      throw new Error('Failed to start scan')
-    }
+    console.log('🔵 Starting local scan:', profileKey);
+    
+    // Dynamic import for Tauri
+    const { invoke } = await import('@tauri-apps/api/core');
+    
+    const result = await invoke('start_local_scan', {
+      profile: profileKey,
+      backendUrl: backendUrl,
+      token: token || ''
+    }) as any;
+    
+    console.log('✅ Local scan result:', result);
+    
+    setMessage({ 
+      type: 'success', 
+      text: `${profile?.name || 'Scan'} completed! Scanned ${result.files_scanned} files.`
+    });
+    
+    setTimeout(() => {
+      window.location.reload();
+    }, 3000);
+    
   } catch (error: any) {
-    console.error('Scan start error:', error)
+    console.error('❌ Scan start error:', error);
     setMessage({ 
       type: 'error', 
-      text: `Failed to start scan: ${error.message || 'Unknown error'}`
-    })
-    setTimeout(() => setMessage(null), 5000)
+      text: `Failed: ${error.toString()}`
+    });
+    setTimeout(() => setMessage(null), 5000);
   } finally {
-    setLoading(null)
+    setLoading(null);
   }
-}
+};
 
   const getProfileIcon = (iconName: string) => {
     switch (iconName) {

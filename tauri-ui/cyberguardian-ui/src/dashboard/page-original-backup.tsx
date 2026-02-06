@@ -17,8 +17,8 @@ import { LiveThreatNotification } from "@/components/LiveThreatNotification";
 import {
   ResponsiveContainer,
   AreaChart,
-  Area,
-  XAxis,
+    Area,
+    XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,

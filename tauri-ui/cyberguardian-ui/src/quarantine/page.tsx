@@ -36,10 +36,16 @@ export default function QuarantinePage() {
   };
 
 const loadFiles = async () => {
+  console.log("🚀 loadFiles() CALLED");
   try {
     const res = await quarantineApi.getFiles();
+    console.log("📦 getFiles() result:", res);
     if (res.success && res.data) {
-      setFiles(Array.isArray(res.data) ? res.data : []);
+      // Backend wraps response in {success, data, count}
+      const files = (res.data as any).data || res.data;
+      console.log("📁 Files array:", files); // ← ДОБАВИ ТОВА
+      console.log("📊 Files count:", files.length); // ← И ТОВА
+      setFiles(Array.isArray(files) ? files : []);
     }
   } catch (err) {
     console.error("Error loading files:", err);
@@ -49,8 +55,12 @@ const loadFiles = async () => {
 const loadStats = async () => {
   try {
     const res = await quarantineApi.getStats();
+    console.log("📊 Stats response:", res);
     if (res.success && res.data) {
-      setStats(res.data);
+      // Backend wraps response in {success, data}
+      const stats = (res.data as any).data || res.data; // ✅ ДОБАВИ ТОВА
+      console.log("📊 Real stats:", stats); // ← ДОБАВИ
+      setStats(stats); // ✅ ПРОМЕНИ
     }
   } catch (err) {
     console.error("Error loading stats:", err);
@@ -360,7 +370,7 @@ const loadStats = async () => {
             </motion.div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="table w-full">
+             <table className="table w-full">
                 <thead>
                   <tr>
                     <th>File Name</th>
@@ -387,9 +397,11 @@ const loadStats = async () => {
                           {file.original_name}
                         </div>
                       </td>
-                      <td className="font-mono text-xs truncate max-w-xs" title={file.original_path}>
-                        {file.original_path}
-                      </td>
+                     <td className="px-6 py-4">
+  <div className="font-mono text-xs truncate max-w-sm" title={file.original_path}>
+    {file.original_path}
+  </div>
+</td>
                       <td className="text-sm">{formatBytes(file.file_size || 0)}</td>
                       <td className={`font-bold ${getThreatColor(file.threat_level)}`}>
                         <CountUp end={Math.round(file.threat_score || 0)} duration={1.5} />

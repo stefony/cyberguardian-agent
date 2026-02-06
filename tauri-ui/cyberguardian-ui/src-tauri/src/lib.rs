@@ -1,3 +1,6 @@
+mod file_watcher;
+mod process_protection;  // ✅ Вече добавен
+
 use tauri::{
     Manager,
     menu::{Menu, MenuItem, PredefinedMenuItem},
@@ -9,6 +12,244 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+#[tauri::command]
+fn start_file_protection(
+    paths: Vec<String>,
+    backend_url: String,
+    token: String
+) -> Result<String, String> {
+    println!("🛡️ Starting file protection for: {:?}", paths);
+    println!("🔗 Backend URL: {}", backend_url);
+    println!("🔑 Token length: {}", token.len());
+    
+    std::env::set_var("RAILWAY_BACKEND_URL", backend_url);
+    std::env::set_var("AUTH_TOKEN", token);
+    
+    match file_watcher::start_watching(paths) {
+        Ok(_) => Ok("File protection started".to_string()),
+        Err(e) => Err(format!("Failed to start protection: {}", e)),
+    }
+}
+
+#[tauri::command]
+async fn create_quarantine_record(
+    file_path: String,
+    threat_score: f64,
+    threat_level: String,
+    detection_method: String,
+    reason: String,
+) -> Result<String, String> {
+    println!("📝 Tauri command called: create_quarantine_record");
+    println!("   File: {}", file_path);
+    println!("   Score: {}", threat_score);
+    Ok("Command received by Rust".to_string())
+}
+
+#[tauri::command]
+async fn start_local_scan(
+    profile: String,
+    backend_url: String,
+    token: String,
+) -> Result<serde_json::Value, String> {
+    use std::time::Instant;
+    use std::path::Path;
+    use std::fs;
+    
+    println!("🔍 Starting LOCAL {} scan on Windows", profile);
+    
+    let start_time = Instant::now();
+    let mut files_scanned = 0;
+    let mut threats_found = 0;
+    
+    let (max_files, scan_paths, extensions, recursive): (usize, Vec<&str>, Vec<&str>, bool) = match profile.as_str() {
+        "quick" => (
+            100,
+            vec![
+                r"C:\Users\admin\Downloads",
+                r"C:\Users\admin\AppData\Local\Temp",
+                r"C:\Windows\Temp",
+            ],
+            vec![".exe", ".dll", ".bat", ".ps1", ".cmd", ".vbs", ".js"],
+            false
+        ),
+        "standard" => (
+            1000,
+            vec![
+                r"C:\Users\admin\Downloads",
+                r"C:\Users\admin\Documents",
+                r"C:\Users\admin\Desktop",
+                r"C:\Users\admin\AppData",
+            ],
+            vec![".exe", ".dll", ".bat", ".ps1", ".zip", ".rar", ".7z", ".jar"],
+            true
+        ),
+        "deep" => (
+            10000,
+            vec![r"C:\"],
+            vec!["*"],
+            true
+        ),
+        _ => (100, vec![r"C:\Users\admin\Downloads"], vec![".exe", ".dll"], false),
+    };
+    
+    println!("📁 Scanning {} paths (max {} files)", scan_paths.len(), max_files);
+    
+    for scan_path in &scan_paths {
+        if files_scanned >= max_files {
+            break;
+        }
+        
+        let path = Path::new(scan_path);
+        if !path.exists() {
+            println!("⚠️ Path does not exist: {}", scan_path);
+            continue;
+        }
+        
+        println!("📂 Scanning: {}", scan_path);
+        
+        fn scan_directory(
+            path: &Path,
+            extensions: &Vec<&str>,
+            recursive: bool,
+            files_scanned: &mut usize,
+            threats_found: &mut usize,
+            max_files: usize,
+        ) {
+            if *files_scanned >= max_files {
+                return;
+            }
+            
+            if let Ok(entries) = fs::read_dir(path) {
+                for entry in entries {
+                    if *files_scanned >= max_files {
+                        break;
+                    }
+                    
+                    if let Ok(entry) = entry {
+                        let file_path = entry.path();
+                        
+                        if file_path.is_file() {
+                            let should_scan = extensions.contains(&"*") || 
+                                file_path.extension()
+                                    .and_then(|ext| ext.to_str())
+                                    .map(|ext| {
+                                        let ext_with_dot = format!(".{}", ext);
+                                        extensions.contains(&ext_with_dot.as_str())
+                                    })
+                                    .unwrap_or(false);
+                            
+                            if should_scan {
+                                *files_scanned += 1;
+                                
+                                if let Some(file_name) = file_path.file_name() {
+                                    let name = file_name.to_string_lossy().to_lowercase();
+                                    if name.contains("virus") || name.contains("malware") || 
+                                       name.contains("trojan") || name.contains("hack") ||
+                                       name.contains("ransom") || name.contains("keylog") {
+                                        *threats_found += 1;
+                                        println!("🚨 Potential threat: {:?}", file_path);
+                                    }
+                                }
+                                
+                                if *files_scanned % 100 == 0 {
+                                    println!("   Progress: {} files scanned", files_scanned);
+                                }
+                            }
+                        } else if file_path.is_dir() && recursive {
+                            scan_directory(&file_path, extensions, recursive, files_scanned, threats_found, max_files);
+                        }
+                    }
+                }
+            }
+        }
+        
+        scan_directory(path, &extensions, recursive, &mut files_scanned, &mut threats_found, max_files);
+    }
+    
+    let duration = start_time.elapsed().as_secs();
+    
+    println!("✅ Scan completed: {} files, {} threats, {}s", 
+             files_scanned, threats_found, duration);
+    
+    let client = reqwest::Client::new();
+    let target_path = scan_paths.join("; ");
+    
+    let history_data = serde_json::json!({
+        "schedule_id": null,
+        "scan_type": profile,
+        "target_path": target_path,
+        "started_at": chrono::Utc::now().to_rfc3339(),
+        "status": "completed",
+        "files_scanned": files_scanned,
+        "threats_found": threats_found,
+        "duration_seconds": duration,
+    });
+    
+    match client
+        .post(format!("{}/api/scans/history", backend_url))
+        .header("Authorization", format!("Bearer {}", token))
+        .header("Content-Type", "application/json")
+        .json(&history_data)
+        .send()
+        .await
+    {
+        Ok(response) => {
+            println!("✅ Results sent to backend: {}", response.status());
+            Ok(serde_json::json!({
+                "success": true,
+                "files_scanned": files_scanned,
+                "threats_found": threats_found,
+                "duration": duration
+            }))
+        }
+        Err(e) => {
+            println!("❌ Failed to send results: {}", e);
+            Err(format!("Failed to send results: {}", e))
+        }
+    }
+}
+
+// ============================================================================
+// PROCESS PROTECTION COMMANDS (НОВИ)
+// ============================================================================
+
+/// Initialize process protection
+#[tauri::command]
+fn init_tamper_protection() -> Result<String, String> {
+    process_protection::init_protection()?;
+    Ok("Process protection initialized".to_string())
+}
+
+/// Get protection status
+#[tauri::command]
+fn get_desktop_protection_status() -> Result<process_protection::ProtectionStatus, String> {
+    Ok(process_protection::get_protection_status())
+}
+
+/// Enable maximum protection
+#[tauri::command]
+fn enable_desktop_max_protection() -> Result<String, String> {
+    process_protection::enable_max_protection()?;
+    Ok("Maximum protection enabled".to_string())
+}
+
+/// Disable protection
+#[tauri::command]
+fn disable_desktop_protection() -> Result<String, String> {
+    process_protection::disable_protection()?;
+    Ok("Protection disabled".to_string())
+}
+
+/// Check if running as admin
+#[tauri::command]
+fn check_admin_privileges() -> Result<bool, String> {
+    Ok(process_protection::ProcessProtection::check_admin_privileges())
+}
+
+// ============================================================================
+// MAIN APPLICATION
+// ============================================================================
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -18,9 +259,6 @@ pub fn run() {
         .setup(|app| {
             println!("🔧 Setup starting...");
 
-            // -----------------------------
-            // TRAY MENU (right-click on tray icon)
-            // -----------------------------
             let dashboard_item =
                 MenuItem::with_id(app, "dashboard", "Open Dashboard", true, None::<&str>)?;
             let protection_item =
@@ -44,9 +282,6 @@ pub fn run() {
 
             println!("✅ Tray menu created");
 
-            // -----------------------------
-            // APP MENU BAR (top menu in window)
-            // -----------------------------
             let app_devtools_item =
                 MenuItem::with_id(app, "toggle_devtools", "Toggle DevTools", true, None::<&str>)?;
             let app_menu = Menu::with_items(app, &[
@@ -57,9 +292,6 @@ pub fn run() {
 
             println!("✅ App menu set");
 
-            // -----------------------------
-            // TRAY ICON
-            // -----------------------------
             let _tray = TrayIconBuilder::new()
                 .menu(&tray_menu)
                 .tooltip("CyberGuardian XDR")
@@ -109,14 +341,12 @@ pub fn run() {
                                 let _ = window.set_focus();
                             }
                         }
-                    "toggle_devtools" => {
-    println!("🛠️ Toggling DevTools...");
-    if let Some(window) = app.get_webview_window("main") {
-    window.open_devtools();
-}
-
-}
-
+                        "toggle_devtools" => {
+                            println!("🛠️ Toggling DevTools...");
+                            if let Some(window) = app.get_webview_window("main") {
+                                window.open_devtools();
+                            }
+                        }
                         "quit" => {
                             println!("🛑 Quitting...");
                             std::process::exit(0);
@@ -138,7 +368,18 @@ pub fn run() {
                 api.prevent_close();
             }
         })
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            start_file_protection,
+            create_quarantine_record,
+            start_local_scan,
+            // Process Protection Commands
+            init_tamper_protection,
+            get_desktop_protection_status,
+            enable_desktop_max_protection,
+            disable_desktop_protection,
+            check_admin_privileges
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

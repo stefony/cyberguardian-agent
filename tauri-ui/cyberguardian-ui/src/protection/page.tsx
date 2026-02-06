@@ -1,5 +1,5 @@
 "use client";
-
+import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from "react";
 import {
   Shield,
@@ -31,6 +31,8 @@ export default function ProtectionPage() {
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   const [stats, setStats] = useState({
     files_scanned: 0,
@@ -107,7 +109,7 @@ setAutoQuarantine(autoQuarantineValue);
 setThreatThreshold(threatThresholdValue);
 };
 
-  const loadEvents = async (limit = 100) => {
+  const loadEvents = async (limit = 1000) => {
     const res = await protectionApi.getEvents(limit);
     const data = normalizeStatusPayload(res);
 
@@ -185,8 +187,7 @@ setThreatThreshold(threatThresholdValue);
       if (lastValidPathsRef.current) setPaths(lastValidPathsRef.current);
     }
   };
-
- const toggle = async () => {
+const toggle = async () => {
   if (toggling) return;
 
   const targetEnabled = !enabled;
@@ -198,9 +199,31 @@ setThreatThreshold(threatThresholdValue);
   setToggling(true);
 
   try {
-     
     await protectionApi.toggle(targetEnabled, pathList, autoQuarantine, threatThreshold);
-     
+
+    // ✅ НОВО: Start local FSWatcher if enabling protection
+if (targetEnabled && pathList.length > 0) {
+  try {
+    const backendUrl = "https://cyberguardian-backend-production.up.railway.app";
+    const token = localStorage.getItem('access_token') || '';
+    
+    console.log('🔗 Sending to Rust:', { 
+      paths: pathList, 
+      backendUrl: backendUrl,
+      token_length: token.length 
+    });
+    
+    const result = await invoke('start_file_protection', { 
+      paths: pathList,
+      backendUrl: backendUrl,
+      token: token
+    });
+    
+    console.log('🛡️ Local file watcher started:', result);
+  } catch (err) {
+    console.error('❌ Failed to start local watcher:', err);
+  }
+}
 
     // ✅ НЕ правим setEnabled(targetEnabled) тук!
     // Оставяме backend да е source of truth.
@@ -218,7 +241,6 @@ setThreatThreshold(threatThresholdValue);
     setToggling(false);
   }
 };
-
   const formatUptime = (seconds: number | null | undefined) => {
     if (!seconds || isNaN(seconds as any)) return "00:00:00";
     const s = Number(seconds);
@@ -271,6 +293,28 @@ setThreatThreshold(threatThresholdValue);
       </ProtectedRoute>
     );
   }
+// ✅ PAGINATION CALCULATIONS
+const indexOfLastItem = currentPage * itemsPerPage;
+const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+const currentEvents = events.slice(indexOfFirstItem, indexOfLastItem);
+const totalPages = Math.ceil(events.length / itemsPerPage);
+
+// Pagination handlers
+const goToNextPage = () => {
+  if (currentPage < totalPages) {
+    setCurrentPage(currentPage + 1);
+  }
+};
+
+const goToPreviousPage = () => {
+  if (currentPage > 1) {
+    setCurrentPage(currentPage - 1);
+  }
+};
+
+const goToPage = (pageNumber: number) => {
+  setCurrentPage(pageNumber);
+};
 
   return (
     <ProtectedRoute>
@@ -524,44 +568,113 @@ setThreatThreshold(threatThresholdValue);
                     <th>Level</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {events.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="text-center py-8 text-muted-foreground">
-                        {enabled
-                          ? "No events yet. Create or modify a file in watched directories."
-                          : "Enable protection to start monitoring files."}
-                      </td>
-                    </tr>
-                  ) : (
-                    events.map((ev, idx) => (
-                      <tr key={idx}>
-                        <td className="font-mono text-sm">
-                          {ev?.timestamp ? new Date(ev.timestamp).toLocaleTimeString() : "—"}
-                        </td>
-                        <td>
-                          <span className="badge badge--info">{ev?.event_type ?? "—"}</span>
-                        </td>
-                        <td className="font-mono text-xs truncate max-w-xs" title={ev?.file_path}>
-                          {ev?.file_path ?? "—"}
-                        </td>
-                        <td className="text-sm">
-                          ev?.file_size ? `${(Number(ev.file_size) / 1024).toFixed(1)} KB` : "—"
-                        </td>
-                        <td className={`font-bold ${getSeverityColor(ev?.threat_level)}`}>
-                          {Math.round(ev?.threat_score || 0)}
-                        </td>
-                        <td>
-                          <span className={`badge border-2 ${getSeverityBg(ev?.threat_level)}`}>
-                            {ev?.threat_level?.toUpperCase?.() || "UNKNOWN"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
+               <tbody>
+  {currentEvents.length === 0 ? (
+    <tr>
+      <td colSpan={6} className="text-center py-8 text-muted-foreground">
+        {enabled
+          ? "No events yet. Create or modify a file in watched directories."
+          : "Enable protection to start monitoring files."}
+      </td>
+    </tr>
+  ) : (
+    currentEvents.map((ev, idx) => (
+      <tr key={idx}>
+        <td className="font-mono text-sm">
+          {ev?.timestamp ? new Date(ev.timestamp).toLocaleTimeString() : "—"}
+        </td>
+        <td>
+          <span className="badge badge--info">{ev?.event_type ?? "—"}</span>
+        </td>
+        <td className="font-mono text-xs max-w-xs">
+          <div className="truncate" title={ev?.file_path}>
+            {ev?.file_path ?? "—"}
+          </div>
+        </td>
+        <td className="text-sm">
+          {ev?.file_size ? `${(Number(ev.file_size) / 1024).toFixed(1)} KB` : "—"}
+        </td>
+        <td className={`font-bold ${getSeverityColor(ev?.threat_level)}`}>
+          {Math.round(ev?.threat_score || 0)}
+        </td>
+        <td>
+          <span className={`badge border-2 ${getSeverityBg(ev?.threat_level)}`}>
+            {ev?.threat_level?.toUpperCase?.() || "UNKNOWN"}
+          </span>
+        </td>
+      </tr>
+    ))
+  )}
+</tbody>
               </table>
-            </div>
+                            {/* ✅ PAGINATION CONTROLS */}
+              {events.length > itemsPerPage && (
+                <div className="flex items-center justify-between mt-6 px-4">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, events.length)} of {events.length} events
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {/* Previous Button */}
+                    <button
+                      onClick={goToPreviousPage}
+                      disabled={currentPage === 1}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        currentPage === 1
+                          ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                          : 'bg-purple-600 text-white hover:bg-purple-700'
+                      }`}
+                    >
+                      Previous
+                    </button>
+                    
+                    {/* Page Numbers */}
+                    <div className="flex gap-2">
+                      {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                        let pageNumber;
+                        if (totalPages <= 5) {
+                          pageNumber = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNumber = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNumber = totalPages - 4 + i;
+                        } else {
+                          pageNumber = currentPage - 2 + i;
+                        }
+                        
+                        return (
+                          <button
+                            key={pageNumber}
+                            onClick={() => goToPage(pageNumber)}
+                            className={`w-10 h-10 rounded-lg font-medium transition-all ${
+                              currentPage === pageNumber
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                            }`}
+                          >
+                            {pageNumber}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Next Button */}
+                    <button
+                      onClick={goToNextPage}
+                      disabled={currentPage === totalPages}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        currentPage === totalPages
+                          ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                          : 'bg-purple-600 text-white hover:bg-purple-700'
+                      }`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+
+               </div>
           </div>
         </div>
 
