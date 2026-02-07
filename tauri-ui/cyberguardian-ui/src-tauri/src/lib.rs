@@ -1,11 +1,20 @@
 mod file_watcher;
-mod process_protection;  // ✅ Вече добавен
+mod process_protection;
+mod registry_scanner;
+mod service_scanner;
+mod task_scanner;
+mod deep_quarantine;
 
 use tauri::{
     Manager,
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState},
 };
+
+use registry_scanner::{scan_registry, calculate_statistics}; 
+use service_scanner::{scan_services, calculate_statistics as calculate_service_stats};
+use task_scanner::{scan_tasks, calculate_statistics as calculate_task_stats}; 
+
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -35,14 +44,59 @@ fn start_file_protection(
 async fn create_quarantine_record(
     file_path: String,
     threat_score: f64,
-    threat_level: String,
-    detection_method: String,
-    reason: String,
+    _threat_level: String,
+    _detection_method: String,
+    _reason: String,
 ) -> Result<String, String> {
     println!("📝 Tauri command called: create_quarantine_record");
     println!("   File: {}", file_path);
     println!("   Score: {}", threat_score);
     Ok("Command received by Rust".to_string())
+}
+
+#[tauri::command]
+async fn scan_windows_registry() -> Result<serde_json::Value, String> {
+    match scan_registry() {
+        Ok(entries) => {
+            let stats = calculate_statistics(&entries);
+            Ok(serde_json::json!({
+                "entries": entries,
+                "statistics": stats,
+                "scanned_at": chrono::Utc::now().to_rfc3339()
+            }))
+        }
+        Err(e) => Err(format!("Registry scan failed: {}", e))
+    }
+}
+
+#[tauri::command]
+async fn scan_windows_services() -> Result<serde_json::Value, String> {
+    match scan_services() {
+        Ok(services) => {
+            let stats = calculate_service_stats(&services);
+            Ok(serde_json::json!({
+                "services": services,
+                "statistics": stats,
+                "scanned_at": chrono::Utc::now().to_rfc3339()
+            }))
+        }
+        Err(e) => Err(format!("Service scan failed: {}", e))
+    }
+}
+
+#[tauri::command]
+async fn scan_windows_tasks() -> Result<serde_json::Value, String> {
+    match scan_tasks() {
+        Ok(tasks) => {
+            let stats = calculate_task_stats(&tasks);
+            Ok(serde_json::json!({
+                "tasks": tasks,
+                "statistics": stats,
+                "scanned_at": chrono::Utc::now().to_rfc3339()
+            }))
+        }
+        Err(e) => Err(format!("Task scan failed: {}", e))
+    }
 }
 
 #[tauri::command]
@@ -210,7 +264,7 @@ async fn start_local_scan(
 }
 
 // ============================================================================
-// PROCESS PROTECTION COMMANDS (НОВИ)
+// PROCESS PROTECTION COMMANDS
 // ============================================================================
 
 /// Initialize process protection
@@ -244,6 +298,63 @@ fn disable_desktop_protection() -> Result<String, String> {
 #[tauri::command]
 fn check_admin_privileges() -> Result<bool, String> {
     Ok(process_protection::ProcessProtection::check_admin_privileges())
+}
+
+// ============================================================================
+// DEEP QUARANTINE COMMANDS
+// ============================================================================
+
+use crate::deep_quarantine::*;
+
+/// Analyze file with all 4 stages
+#[tauri::command]
+async fn deep_quarantine_analyze(file_path: String) -> Result<DeepAnalysisResult, String> {
+    println!("🔍 Starting deep analysis for: {}", file_path);
+    
+    match perform_deep_analysis(&file_path) {
+        Ok(result) => {
+            println!("✅ Deep analysis completed successfully");
+            Ok(result)
+        }
+        Err(e) => {
+            eprintln!("❌ Deep analysis failed: {}", e);
+            Err(e)
+        }
+    }
+}
+
+/// Perform complete removal with backup
+#[tauri::command]
+async fn deep_quarantine_remove(analysis_data: DeepAnalysisResult) -> Result<RemovalResult, String> {
+    println!("🗑️ Starting complete removal...");
+    
+    match perform_complete_removal(&analysis_data) {
+        Ok(result) => {
+            println!("✅ Complete removal finished successfully");
+            Ok(result)
+        }
+        Err(e) => {
+            eprintln!("❌ Removal failed: {}", e);
+            Err(e)
+        }
+    }
+}
+
+/// List all Deep Quarantine backups
+#[tauri::command]
+async fn deep_quarantine_list_backups() -> Result<BackupList, String> {
+    println!("📋 Listing Deep Quarantine backups...");
+    
+    match list_backups() {
+        Ok(list) => {
+            println!("✅ Found {} backups", list.backups.len());
+            Ok(list)
+        }
+        Err(e) => {
+            eprintln!("❌ Failed to list backups: {}", e);
+            Err(e)
+        }
+    }
 }
 
 // ============================================================================
@@ -373,12 +484,19 @@ pub fn run() {
             start_file_protection,
             create_quarantine_record,
             start_local_scan,
+            scan_windows_registry,
+            scan_windows_services,
+            scan_windows_tasks,
             // Process Protection Commands
             init_tamper_protection,
             get_desktop_protection_status,
             enable_desktop_max_protection,
             disable_desktop_protection,
-            check_admin_privileges
+            check_admin_privileges,
+            // Deep Quarantine Commands
+            deep_quarantine_analyze,
+            deep_quarantine_remove,
+            deep_quarantine_list_backups
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

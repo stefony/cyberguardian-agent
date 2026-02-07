@@ -13,18 +13,14 @@ import {
   Trash2,
   StopCircle,
   Shield,
-  RefreshCw,
   Info,
   History,
   Activity,
   Zap,
   Loader2,
-  CheckCircle2,
-  XCircle,
   Play,
   Pause
 } from "lucide-react"
-import { remediationApi } from "@/lib/api"
 import { toast } from "sonner"
 import ProtectedRoute from '@/components/ProtectedRoute';
 
@@ -52,125 +48,40 @@ interface ServiceStats {
   by_startup_type: Record<string, number>
 }
 
-interface BackupFile {
-  filename: string
-  filepath: string
-  service_name: string
-  binary_path: string
-  startup_type: string
-  backed_up_at: string
-}
-
 export default function ServicesCleanupPage() {
   const [scanning, setScanning] = useState(false)
   const [services, setServices] = useState<Service[]>([])
   const [stats, setStats] = useState<ServiceStats | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedSeverity, setSelectedSeverity] = useState<string>("all")
-  const [backups, setBackups] = useState<BackupFile[]>([])
-  const [showBackups, setShowBackups] = useState(false)
-  const [removing, setRemoving] = useState<string | null>(null)
-  const [stopping, setStopping] = useState<string | null>(null)
 
   useEffect(() => {
     handleScan()
-    loadBackups()
   }, [])
 
-const handleScan = async () => {
-  setScanning(true);
-  try {
-    const response = await remediationApi.scanServices();
-
-    if (response.success && response.data) {
-      setServices(response.data.services || []);
-      setStats(response.data.statistics || null);
-
-      toast.success("Service scan completed", {
-        description: "Suspicious services have been analyzed successfully.",
-      });
-    } else {
-      console.warn("🟡 remediationApi.scanServices() returned no data:", response);
-      setServices([]);
-      setStats(null);
-
-      toast.error("Service scan did not return data", {
-        description: "No results were received from the service scan API.",
-      });
-    }
-  } catch (error) {
-    console.error("Error scanning services:", error);
-    setServices([]);
-    setStats(null);
-
-    toast.error("Service scan failed", {
-      description: "An error occurred while scanning services. Check logs or backend.",
-    });
-  } finally {
-    setScanning(false);
-  }
-};
-
-
-const loadBackups = async () => { 
-  try {
-    const response = await remediationApi.listServiceBackups();
-
-    if (response.success && response.data?.backups) {
-      setBackups(response.data.backups);
-    } else {
-      console.warn("🟡 remediationApi.listServiceBackups() returned no backups:", response);
-      setBackups([]);
-    }
-  } catch (error) {
-    console.error("Failed to load service backups:", error);
-    setBackups([]);
-  }
-};
-
-
-  const handleStop = async (service: Service) => {
-    if (!confirm(`Stop this service?\n\n${service.display_name}\n\nThe service will be stopped but not deleted.`)) {
-      return
-    }
-
-    setStopping(service.id)
+  // 🔥 DESKTOP AGENT INTEGRATION - Real Windows Services Scan
+  const handleScan = async () => {
+    setScanning(true)
     try {
-      const response = await remediationApi.stopService({ service_name: service.service_name })
-
-      if (response.success && response.data?.success) {
-     toast.success("...", { description: "..." })
-        handleScan()
-      } else {
-      toast.error("...", { description: "..." })
+      // Use window.__TAURI__ directly (more reliable than import)
+      const invoke = (window as any).__TAURI__.core.invoke
+      const result: any = await invoke('scan_windows_services')
+      
+      if (result && result.services) {
+        setServices(result.services)
+        setStats(result.statistics)
+        
+        toast.success("Service Scan Complete", {
+          description: `Found ${result.services.length} suspicious services`,
+        })
       }
     } catch (error) {
-   toast.error("...", { description: "..." })
+      console.error("Service scan failed:", error)
+      toast.error("Scan Failed", {
+        description: error?.toString() || "An error occurred during service scan",
+      })
     } finally {
-      setStopping(null)
-    }
-  }
-
-  const handleRemove = async (service: Service) => {
-    if (!confirm(`⚠️ PERMANENTLY DELETE this service?\n\n${service.display_name}\n\nService: ${service.service_name}\nPath: ${service.binary_path}\n\nA backup will be created automatically.\n\n⚠️ This action requires administrator privileges!`)) {
-      return
-    }
-
-    setRemoving(service.id)
-    try {
-      const response = await remediationApi.removeService({ service_name: service.service_name })
-
-      if (response.success && response.data?.success) {
-      toast.success("...", { description: "..." })
-        handleScan()
-        loadBackups()
-      } else {
-      toast.error("...", { description: "..." })
-      }
-    } catch (error) {
-    toast.error("...", { description: "..." })
-    } finally {
-      setRemoving(null)
+      setScanning(false)
     }
   }
 
@@ -223,7 +134,7 @@ const loadBackups = async () => {
   return (
     <ProtectedRoute>
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header with Gradient */}
+      {/* Header */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-pink-600 to-cyan-600 p-8">
         <div className="absolute inset-0 bg-grid-white/10" />
         <div className="relative flex items-center justify-between">
@@ -235,36 +146,26 @@ const loadBackups = async () => {
               Services Cleanup
             </h1>
             <p className="text-white/90 mt-2 text-lg">
-              Detect and remove malicious Windows services
+              🖥️ Desktop Agent - Real Windows Services Scanning
             </p>
           </div>
-          <div className="flex gap-3">
-            <Button
-              variant="secondary"
-              className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
-              onClick={() => setShowBackups(!showBackups)}
-            >
-              <History className="mr-2 h-4 w-4" />
-              Backups ({backups.length})
-            </Button>
-            <Button
-              onClick={handleScan}
-              disabled={scanning}
-              className="bg-white text-purple-600 hover:bg-white/90"
-            >
-              {scanning ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Scanning...
-                </>
-              ) : (
-                <>
-                  <Search className="mr-2 h-4 w-4" />
-                  Scan Services
-                </>
-              )}
-            </Button>
-          </div>
+          <Button
+            onClick={handleScan}
+            disabled={scanning}
+            className="bg-white text-purple-600 hover:bg-white/90"
+          >
+            {scanning ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Scanning...
+              </>
+            ) : (
+              <>
+                <Search className="mr-2 h-4 w-4" />
+                Scan Services
+              </>
+            )}
+          </Button>
         </div>
       </div>
 
@@ -298,53 +199,6 @@ const loadBackups = async () => {
             )
           })}
         </div>
-      )}
-
-      {/* Backups Panel */}
-      {showBackups && (
-        <Card className="border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-transparent">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <History className="h-5 w-5 text-purple-500" />
-              Service Backups
-            </CardTitle>
-            <CardDescription>Restore previously removed services</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {backups.length === 0 ? (
-              <div className="text-center py-8">
-                <Shield className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-sm text-muted-foreground">No backups available</p>
-              </div>
-            ) : (
-              <div className="grid gap-3 md:grid-cols-2">
-                {backups.map((backup) => (
-                  <div
-                    key={backup.filename}
-                    className="p-4 border rounded-lg bg-gradient-to-br from-purple-500/5 to-cyan-500/5 hover:from-purple-500/10 hover:to-cyan-500/10 transition-all"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium">{backup.service_name}</p>
-                        <p className="text-xs text-muted-foreground mt-1 break-all">
-                          {backup.binary_path}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge variant="outline" className="text-xs">
-                            {backup.startup_type}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(backup.backed_up_at).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
       )}
 
       {/* Search */}
@@ -443,42 +297,6 @@ const loadBackups = async () => {
                     </div>
                   </div>
                 )}
-
-                {/* Actions */}
-                <div className="flex gap-2 pt-4 border-t border-white/10">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleStop(service)}
-                    disabled={stopping === service.id || service.status === "Stopped"}
-                    className="flex-1"
-                  >
-                    {stopping === service.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        <StopCircle className="mr-2 h-4 w-4" />
-                        Stop
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleRemove(service)}
-                    disabled={removing === service.id}
-                    className="flex-1"
-                  >
-                    {removing === service.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Remove
-                      </>
-                    )}
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           ))}
@@ -489,7 +307,7 @@ const loadBackups = async () => {
       <Alert className="border-yellow-500/50 bg-gradient-to-r from-yellow-500/10 to-orange-500/10">
         <AlertTriangle className="h-4 w-4 text-yellow-500" />
         <AlertDescription>
-          <strong>Administrator Rights Required:</strong> Modifying Windows services requires elevated privileges. All services are automatically backed up before removal.
+          <strong>Desktop Agent Active:</strong> This page uses the Tauri Desktop Agent to scan real Windows services locally using PowerShell. All scanning is performed directly on your system.
         </AlertDescription>
       </Alert>
     </div>

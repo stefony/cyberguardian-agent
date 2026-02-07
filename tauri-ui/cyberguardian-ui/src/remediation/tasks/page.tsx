@@ -10,11 +10,8 @@ import {
   AlertTriangle,
   Clock,
   Search,
-  Trash2,
   Shield,
-  RefreshCw,
   Info,
-  History,
   Calendar,
   Zap,
   Loader2,
@@ -24,7 +21,6 @@ import {
   User,
   MapPin
 } from "lucide-react"
-import { remediationApi } from "@/lib/api"
 import { toast } from "sonner"
 import ProtectedRoute from '@/components/ProtectedRoute';
 
@@ -63,111 +59,40 @@ interface TaskStats {
   disabled_count: number
 }
 
-interface BackupFile {
-  filename: string
-  filepath: string
-  task_path: string
-  task_name: string
-  author: string
-  backed_up_at: string
-}
-
 export default function TasksCleanupPage() {
   const [scanning, setScanning] = useState(false)
   const [tasks, setTasks] = useState<Task[]>([])
   const [stats, setStats] = useState<TaskStats | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedSeverity, setSelectedSeverity] = useState<string>("all")
-  const [backups, setBackups] = useState<BackupFile[]>([])
-  const [showBackups, setShowBackups] = useState(false)
-  const [removing, setRemoving] = useState<string | null>(null)
 
   useEffect(() => {
     handleScan()
-    loadBackups()
   }, [])
 
-const handleScan = async () => {
-  setScanning(true);
-  try {
-    const response = await remediationApi.scanTasks();
-
-    if (response.success && response.data) {
-      const tasks = response.data.tasks || [];
-      const statistics = response.data.statistics || null;
-
-      setTasks(tasks);
-      setStats(statistics);
-
-      toast.success("Scan Complete", {
-        description: `Found ${tasks.length} suspicious tasks`,
-      });
-    } else {
-      console.warn("🟡 remediationApi.scanTasks() returned no data:", response);
-      setTasks([]);
-      setStats(null);
-
-      toast.error("Scan did not return data", {
-        description: "No task scan results were received from the API.",
-      });
-    }
-  } catch (error) {
-    console.error("Error scanning tasks:", error);
-    setTasks([]);
-    setStats(null);
-
-    toast.error("Scan failed", {
-      description: "An error occurred while scanning scheduled tasks.",
-    });
-  } finally {
-    setScanning(false);
-  }
-};
-
-
-const loadBackups = async () => {
-  try {
-    const response = await remediationApi.listTaskBackups();
-
-    if (response.success && response.data?.backups) {
-      setBackups(response.data.backups);
-    } else {
-      console.warn("🟡 remediationApi.listTaskBackups() returned no backups:", response);
-      setBackups([]);
-    }
-  } catch (error) {
-    console.error("Failed to load task backups:", error);
-    setBackups([]);
-  }
-};
-
-
-  const handleRemove = async (task: Task) => {
-    if (!confirm(`⚠️ PERMANENTLY DELETE this scheduled task?\n\n${task.task_name}\n\nPath: ${task.path}\n\nA backup will be created automatically.\n\n⚠️ This action requires administrator privileges!`)) {
-      return
-    }
-
-    setRemoving(task.id)
+  // 🔥 DESKTOP AGENT INTEGRATION - Real Windows Tasks Scan
+  const handleScan = async () => {
+    setScanning(true)
     try {
-      const response = await remediationApi.removeTask({ task_path: task.path })
-
-      if (response.success && response.data?.success) {
-       toast.success("Task Removed", {
-  description: `Task deleted. Backup: ${response.data.backup_file}`,
-})
-        handleScan()
-        loadBackups()
-      } else {
-      toast.error("Removal Failed", {
-  description: response.data?.message || response.error,
-})
+      // Use window.__TAURI__ directly (more reliable than import)
+      const invoke = (window as any).__TAURI__.core.invoke
+      const result: any = await invoke('scan_windows_tasks')
+      
+      if (result && result.tasks) {
+        setTasks(result.tasks)
+        setStats(result.statistics)
+        
+        toast.success("Task Scan Complete", {
+          description: `Found ${result.tasks.length} suspicious tasks`,
+        })
       }
     } catch (error) {
-     toast.error("Error", {
-  description: "An error occurred during removal",
-})
+      console.error("Task scan failed:", error)
+      toast.error("Scan Failed", {
+        description: error?.toString() || "An error occurred during task scan",
+      })
     } finally {
-      setRemoving(null)
+      setScanning(false)
     }
   }
 
@@ -215,7 +140,7 @@ const loadBackups = async () => {
   return (
     <ProtectedRoute>
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header with Gradient */}
+      {/* Header */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-600 via-yellow-600 to-green-600 p-8">
         <div className="absolute inset-0 bg-grid-white/10" />
         <div className="relative flex items-center justify-between">
@@ -227,36 +152,26 @@ const loadBackups = async () => {
               Scheduled Tasks Cleanup
             </h1>
             <p className="text-white/90 mt-2 text-lg">
-              Scan and clean malicious scheduled tasks
+              🖥️ Desktop Agent - Real Windows Tasks Scanning
             </p>
           </div>
-          <div className="flex gap-3">
-            <Button
-              variant="secondary"
-              className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30"
-              onClick={() => setShowBackups(!showBackups)}
-            >
-              <History className="mr-2 h-4 w-4" />
-              Backups ({backups.length})
-            </Button>
-            <Button
-              onClick={handleScan}
-              disabled={scanning}
-              className="bg-white text-orange-600 hover:bg-white/90"
-            >
-              {scanning ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Scanning...
-                </>
-              ) : (
-                <>
-                  <Search className="mr-2 h-4 w-4" />
-                  Scan Tasks
-                </>
-              )}
-            </Button>
-          </div>
+          <Button
+            onClick={handleScan}
+            disabled={scanning}
+            className="bg-white text-orange-600 hover:bg-white/90"
+          >
+            {scanning ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Scanning...
+              </>
+            ) : (
+              <>
+                <Search className="mr-2 h-4 w-4" />
+                Scan Tasks
+              </>
+            )}
+          </Button>
         </div>
       </div>
 
@@ -290,54 +205,6 @@ const loadBackups = async () => {
             )
           })}
         </div>
-      )}
-
-      {/* Backups Panel */}
-      {showBackups && (
-        <Card className="border-orange-500/30 bg-gradient-to-br from-orange-500/10 to-transparent">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <History className="h-5 w-5 text-orange-500" />
-              Task Backups
-            </CardTitle>
-            <CardDescription>Restore previously removed tasks</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {backups.length === 0 ? (
-              <div className="text-center py-8">
-                <Shield className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-sm text-muted-foreground">No backups available</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {backups.map((backup) => (
-                  <div
-                    key={backup.filename}
-                    className="p-4 border rounded-lg bg-gradient-to-br from-orange-500/5 to-yellow-500/5 hover:from-orange-500/10 hover:to-yellow-500/10 transition-all"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium">{backup.task_name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {backup.task_path}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge variant="outline" className="text-xs">
-                            <User className="h-3 w-3 mr-1" />
-                            {backup.author}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(backup.backed_up_at).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
       )}
 
       {/* Search */}
@@ -400,24 +267,6 @@ const loadBackups = async () => {
                   </div>
                 </div>
 
-                {/* Actions */}
-                {task.actions.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                      <Play className="h-3 w-3" />
-                      Actions
-                    </p>
-                    {task.actions.map((action, idx) => (
-                      <div key={idx} className="text-sm font-mono bg-black/40 px-3 py-2 rounded mb-1">
-                        <span className="text-green-400">{action.path}</span>
-                        {action.arguments && (
-                          <span className="text-blue-400 ml-2">{action.arguments}</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
                 {/* Triggers */}
                 {task.triggers.length > 0 && (
                   <div className="mb-4">
@@ -430,7 +279,7 @@ const loadBackups = async () => {
                           className="text-xs bg-orange-500/10 border-orange-500/30"
                         >
                           {getTriggerIcon(trigger.type)}
-                          <span className="ml-1">{trigger.type.replace("TASK_TRIGGER_", "")}</span>
+                          <span className="ml-1">{trigger.type}</span>
                         </Badge>
                       ))}
                     </div>
@@ -455,36 +304,6 @@ const loadBackups = async () => {
                     </div>
                   </div>
                 )}
-
-                {/* Schedule Info */}
-                <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
-                  <div>
-                    <span className="font-medium">Last Run:</span> {task.last_run}
-                  </div>
-                  <div>
-                    <span className="font-medium">Next Run:</span> {task.next_run}
-                  </div>
-                  <div>
-                    <span className="font-medium">Author:</span> {task.author}
-                  </div>
-                </div>
-
-                {/* Action Button */}
-                <Button
-                  variant="destructive"
-                  onClick={() => handleRemove(task)}
-                  disabled={removing === task.id}
-                  className="w-full"
-                >
-                  {removing === task.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Remove Task
-                    </>
-                  )}
-                </Button>
               </CardContent>
             </Card>
           ))}
@@ -495,7 +314,7 @@ const loadBackups = async () => {
       <Alert className="border-yellow-500/50 bg-gradient-to-r from-yellow-500/10 to-orange-500/10">
         <AlertTriangle className="h-4 w-4 text-yellow-500" />
         <AlertDescription>
-          <strong>Administrator Rights Required:</strong> Modifying scheduled tasks requires elevated privileges. All tasks are automatically backed up before removal.
+          <strong>Desktop Agent Active:</strong> This page uses the Tauri Desktop Agent to scan real Windows scheduled tasks locally using PowerShell. All scanning is performed directly on your system.
         </AlertDescription>
       </Alert>
     </div>

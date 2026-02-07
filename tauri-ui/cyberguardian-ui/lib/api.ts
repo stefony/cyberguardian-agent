@@ -1603,6 +1603,21 @@ export const remediationApi = {
   },
 
   /**
+   * Get service scan statistics
+   */
+  getServiceStats: async (): Promise<ApiResponse<{
+    total_suspicious: number
+    critical_risk: number
+    high_risk: number
+    medium_risk: number
+    low_risk: number
+    by_status: Record<string, number>
+    by_startup_type: Record<string, number>
+  }>> => {
+    return client.get<any>('/api/remediation/services/statistics')
+  },
+
+  /**
    * List all service backups
    */
   listServiceBackups: async (): Promise<ApiResponse<{
@@ -1673,6 +1688,22 @@ export const remediationApi = {
     backup_file: string | null
   }>> => {
     return client.post<any>('/api/remediation/tasks/remove', data)
+  },
+
+  /**
+   * Get task scan statistics
+   */
+  getTaskStats: async (): Promise<ApiResponse<{
+    total_suspicious: number
+    critical_risk: number
+    high_risk: number
+    medium_risk: number
+    low_risk: number
+    by_status: Record<string, number>
+    enabled_count: number
+    disabled_count: number
+  }>> => {
+    return client.get<any>('/api/remediation/tasks/statistics')
   },
 
   /**

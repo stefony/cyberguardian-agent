@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import CountUp from "react-countup";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -22,11 +23,71 @@ import {
   AlertTriangle,
   CheckCircle2,
   Activity,
+  Loader2,
 } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { toast } from "sonner";
 
 export default function RemediationPage() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [statsData, setStatsData] = useState({
+    registry: 0,
+    services: 0,
+    tasks: 0,
+    total: 0,
+  });
+
+  useEffect(() => {
+    loadStatistics();
+  }, []);
+
+  const loadStatistics = async () => {
+    setLoading(true);
+    try {
+      // Check if running in Tauri Desktop Agent environment
+      if (!(window as any).__TAURI__) {
+        toast.error("Desktop Agent Required", {
+          description: "This feature requires the CyberGuardian Desktop Agent. Run with: npm run tauri dev",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const invoke = (window as any).__TAURI__.core.invoke;
+
+      // Fetch statistics from all Desktop Agent modules in parallel
+      const [registryResult, servicesResult, tasksResult] = await Promise.all([
+        invoke('scan_windows_registry'),
+        invoke('scan_windows_services'),
+        invoke('scan_windows_tasks'),
+      ]);
+
+      // Extract statistics from Desktop Agent responses
+      const registryCount = registryResult?.statistics?.total_suspicious || 0;
+      const servicesCount = servicesResult?.statistics?.total_suspicious || 0;
+      const tasksCount = tasksResult?.statistics?.total_suspicious || 0;
+
+      setStatsData({
+        registry: registryCount,
+        services: servicesCount,
+        tasks: tasksCount,
+        total: registryCount + servicesCount + tasksCount,
+      });
+
+      // Show success notification
+      toast.success("Statistics Updated", {
+        description: `Found ${registryCount + servicesCount + tasksCount} suspicious items across all modules`,
+      });
+    } catch (error) {
+      console.error("Failed to load statistics:", error);
+      toast.error("Scan Failed", {
+        description: error instanceof Error ? error.message : "Could not scan system for suspicious items",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const remediationModules = [
     {
@@ -106,28 +167,28 @@ export default function RemediationPage() {
   const stats = [
     {
       label: "Registry Entries",
-      value: 0,
+      value: statsData.registry,
       desc: "Suspicious entries found",
       icon: Database,
       color: "blue",
     },
     {
       label: "Services",
-      value: 0,
+      value: statsData.services,
       desc: "Malicious services",
       icon: Settings,
       color: "purple",
     },
     {
       label: "Scheduled Tasks",
-      value: 0,
+      value: statsData.tasks,
       desc: "Suspicious tasks",
       icon: Clock,
       color: "green",
     },
     {
       label: "Total Threats",
-      value: 0,
+      value: statsData.total,
       desc: "Persistence mechanisms",
       icon: AlertTriangle,
       color: "red",
@@ -192,6 +253,21 @@ export default function RemediationPage() {
               Advanced tools for complete malware removal and system cleanup
             </p>
           </div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button onClick={loadStatistics} disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Scanning...
+                </>
+              ) : (
+                <>
+                  <Activity className="mr-2 h-4 w-4" />
+                  Refresh Stats
+                </>
+              )}
+            </Button>
+          </motion.div>
         </motion.div>
 
         {/* Statistics Overview */}
@@ -224,7 +300,11 @@ export default function RemediationPage() {
                     <div
                       className={`text-2xl font-bold text-${stat.color}-500`}
                     >
-                      <CountUp end={stat.value} duration={2} />
+                      {loading ? (
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      ) : (
+                        <CountUp end={stat.value} duration={2} />
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">{stat.desc}</p>
                   </CardContent>

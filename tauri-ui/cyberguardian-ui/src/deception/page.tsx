@@ -11,9 +11,11 @@ export default function DeceptionPage() {
   const [honeypots, setHoneypots] = useState<HoneypotResponse[]>([]);
 const [logs, setLogs] = useState<any[]>([]);
 const [status, setStatus] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
+const [isLoading, setIsLoading] = useState(true);
+const [error, setError] = useState<string | null>(null);
+// Pagination for logs
+const [logsPage, setLogsPage] = useState(1);
+const logsPerPage = 10;
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -342,40 +344,83 @@ const toggleHoneypot = async (honeypot: HoneypotResponse) => {
                   <th>Details</th>
                 </tr>
               </thead>
-              <tbody>
-                {logs.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="text-center py-8 text-muted-foreground">
-                      No interactions logged
-                    </td>
-                  </tr>
-                ) : (
-                  logs.map((log) => (
-                    <tr key={log.id}>
-                      <td className="text-sm">{formatTime(log.timestamp)}</td>
-                      <td className="font-mono text-sm text-blue-400">{log.source_ip}</td>
-                      <td>
-                      <span className="badge badge--warn">{log.event_type || log.action}</span>
-                      </td>
-                     <td className="text-sm text-muted-foreground">
-  {typeof log.details === 'string' ? (
-    log.details
-  ) : log.details ? (
-    <span>
-      {log.details.username && `User: ${log.details.username}`}
-      {log.details.attempts && ` (${log.details.attempts} attempts)`}
-      {log.details.method && `Method: ${log.details.method}`}
-      {log.details.credentials_tried && ` (${log.details.credentials_tried} credentials)`}
-    </span>
+<tbody>
+  {logs.length === 0 ? (
+    <tr>
+      <td colSpan={4} className="p-0">
+        <div className="flex flex-col items-center justify-center py-16 px-4">
+          <Activity className="h-16 w-16 text-green-500 mb-4" />
+          <h3 className="text-xl font-semibold mb-2">All Clear</h3>
+          <p className="text-muted-foreground text-center mb-4 max-w-md">
+            No honeypot interactions detected. Your deception layer is active and ready to capture threats.
+          </p>
+          <div className="flex items-center gap-2 text-sm text-blue-400 bg-blue-500/10 px-4 py-2 rounded-lg">
+            <span>💡</span>
+            <span>Activate more honeypots to increase detection coverage</span>
+          </div>
+        </div>
+      </td>
+    </tr>
   ) : (
-    "—"
+    logs
+  .slice((logsPage - 1) * logsPerPage, logsPage * logsPerPage)
+  .map((log) => (
+      <tr key={log.id}>
+        <td className="text-sm">{formatTime(log.timestamp)}</td>
+        <td className="font-mono text-sm text-blue-400">{log.source_ip}</td>
+        <td>
+          <span className="badge badge--warn">{log.event_type || log.action}</span>
+        </td>
+        <td className="text-sm text-muted-foreground">
+          {typeof log.details === 'string' ? (
+            log.details
+          ) : log.details ? (
+            <span>
+              {log.details.username && `User: ${log.details.username}`}
+              {log.details.attempts && ` (${log.details.attempts} attempts)`}
+              {log.details.method && `Method: ${log.details.method}`}
+              {log.details.credentials_tried && ` (${log.details.credentials_tried} credentials)`}
+            </span>
+          ) : (
+            "—"
+          )}
+        </td>
+      </tr>
+    ))
   )}
-</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
+</tbody>
             </table>
+            {/* Pagination */}
+          {logs.length > 0 && (
+            <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
+              <div className="text-sm text-muted-foreground">
+                Showing {Math.min((logsPage - 1) * logsPerPage + 1, logs.length)}-
+                {Math.min(logsPage * logsPerPage, logs.length)} of {logs.length} interactions
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setLogsPage(p => Math.max(1, p - 1))}
+                  disabled={logsPage === 1}
+                  className="px-4 py-2 rounded-lg bg-card border border-border hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  ← Previous
+                </button>
+                
+                <div className="text-sm text-muted-foreground">
+                  Page {logsPage} of {Math.ceil(logs.length / logsPerPage)}
+                </div>
+                
+                <button
+                  onClick={() => setLogsPage(p => Math.min(Math.ceil(logs.length / logsPerPage), p + 1))}
+                  disabled={logsPage >= Math.ceil(logs.length / logsPerPage)}
+                  className="px-4 py-2 rounded-lg bg-card border border-border hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          )}
           </div>
         </div>
       </div>
