@@ -50,6 +50,13 @@ export default function AIInsightsPage() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [riskScore, setRiskScore] = useState<RiskScore | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  
+  // PHASE 2 - Filter, Sort, Search States
+const [filterPriority, setFilterPriority] = useState<string>('all');
+const [sortBy, setSortBy] = useState<string>('priority');
+const [searchQuery, setSearchQuery] = useState<string>('');
+const [expandedRecs, setExpandedRecs] = useState<Set<number>>(new Set());
+const [recStatuses, setRecStatuses] = useState<Record<number, string>>({});
   const [status, setStatus] = useState<AIStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -269,129 +276,203 @@ export default function AIInsightsPage() {
                 </div>
               </div>
 
-              {/* AI Recommendations - ENHANCED */}
+             {/* AI Recommendations - ENHANCED */}
               <div className="card-premium p-6">
-                <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-yellow-500" />
-                  AI Recommendations
-                </h2>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <Lightbulb className="h-5 w-5 text-yellow-500" />
+                    AI Recommendations
+                  </h2>
+                </div>
+
+                {/* Filter & Sort Controls */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  {/* Search */}
+                  <input
+                    type="text"
+                    placeholder="Search recommendations..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  />
+                  
+                  {/* Priority Filter */}
+                  <select
+                    value={filterPriority}
+                    onChange={(e) => setFilterPriority(e.target.value)}
+                    className="px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  >
+                    <option value="all">All Priorities</option>
+                    <option value="critical">Critical Only</option>
+                    <option value="high">High Only</option>
+                    <option value="medium">Medium Only</option>
+                    <option value="low">Low Only</option>
+                  </select>
+                  
+                  {/* Sort */}
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  >
+                    <option value="priority">Sort by Priority</option>
+                    <option value="roi">Sort by ROI (High to Low)</option>
+                    <option value="risk">Sort by Risk Reduction</option>
+                    <option value="time">Sort by Implementation Time</option>
+                  </select>
+                </div>
+
                 <div className="space-y-4">
-                  {recommendations.map((rec) => {
-   
-  
-  return (
-    <div key={rec.id} className="card-premium p-5 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20">
-                      <div className="flex items-start gap-4">
-                        <AlertCircle className={`h-5 w-5 flex-shrink-0 mt-1 ${
-                          rec.priority === "critical" ? "text-red-500" :
-                          rec.priority === "high" ? "text-orange-500" :
-                          rec.priority === "medium" ? "text-yellow-500" : "text-blue-500"
-                        }`} />
-                        <div className="flex-1">
-                          {/* Header */}
-                          <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <h3 className="font-semibold text-lg">{rec.title}</h3>
-                              <div className="flex gap-2 mt-1 flex-wrap">
-                                <span className={getPriorityBadge(rec.priority)}>
-                                  {rec.priority}
-                                </span>
-                                <span className="badge">{rec.category}</span>
+                  {recommendations
+                    .filter(rec => {
+                      // Priority filter
+                      if (filterPriority !== 'all' && rec.priority !== filterPriority) return false;
+                      
+                      // Search filter
+                      if (searchQuery) {
+                        const query = searchQuery.toLowerCase();
+                        return rec.title.toLowerCase().includes(query) ||
+                               rec.description.toLowerCase().includes(query) ||
+                               rec.category.toLowerCase().includes(query);
+                      }
+                      
+                      return true;
+                    })
+                    .sort((a, b) => {
+                      if (sortBy === 'priority') {
+                        const priorityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+                        return priorityOrder[a.priority] - priorityOrder[b.priority];
+                      }
+                      if (sortBy === 'roi') return (b.roi_savings || 0) - (a.roi_savings || 0);
+                      if (sortBy === 'risk') return (b.risk_reduction_pct || 0) - (a.risk_reduction_pct || 0);
+                      if (sortBy === 'time') return (a.implementation_hours || 0) - (b.implementation_hours || 0);
+                      return 0;
+                    })
+                    .map((rec) => (
+                      <div key={rec.id} className="card-premium p-5 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20">
+                        <div className="flex items-start gap-4">
+                          <AlertCircle className={`h-5 w-5 flex-shrink-0 mt-1 ${
+                            rec.priority === "critical" ? "text-red-500" :
+                            rec.priority === "high" ? "text-orange-500" :
+                            rec.priority === "medium" ? "text-yellow-500" : "text-blue-500"
+                          }`} />
+                          <div className="flex-1">
+                            {/* Header */}
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <h3 className="font-semibold text-lg">{rec.title}</h3>
+                                <div className="flex gap-2 mt-1 flex-wrap">
+                                  <span className={getPriorityBadge(rec.priority)}>
+                                    {rec.priority}
+                                  </span>
+                                  <span className="badge">{rec.category}</span>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          {/* Description */}
-                          <p className="text-muted-foreground mb-3">{rec.description}</p>
+                            {/* Description */}
+                            <p className="text-muted-foreground mb-3">{rec.description}</p>
 
-                          {/* Evidence Citation */}
-                          {rec.evidence_count && rec.evidence_count > 0 && (
-                            <div className="text-xs text-cyan-400 mb-3 flex items-center gap-1">
-                              <span className="font-mono">📊</span>
-                              <span>Based on {rec.evidence_count.toLocaleString()} events in {rec.evidence_timeframe}</span>
-                            </div>
-                          )}
-
-                          {/* Metrics Grid */}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-                            {/* ROI Savings */}
-                            {rec.roi_savings && rec.roi_savings > 0 && (
-                              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2">
-                                <div className="text-xs text-green-400 mb-1">Annual Savings</div>
-                                <div className="text-lg font-bold text-green-500">
-                                  ${(rec.roi_savings / 1000).toFixed(0)}K
-                                </div>
+                            {/* Evidence Citation */}
+                            {rec.evidence_count && rec.evidence_count > 0 && (
+                              <div className="text-xs text-cyan-400 mb-3 flex items-center gap-1">
+                                <span className="font-mono">📊</span>
+                                <span>Based on {rec.evidence_count.toLocaleString()} events in {rec.evidence_timeframe}</span>
                               </div>
                             )}
 
-                            {/* Risk Reduction */}
-                            {rec.risk_reduction_pct && rec.risk_reduction_pct > 0 && (
-                              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-2">
-                                <div className="text-xs text-purple-400 mb-1">Risk Reduction</div>
-                                <div className="flex items-center gap-2">
-                                  <div className="flex-1 h-2 bg-card rounded-full overflow-hidden">
-                                    <div 
-                                      className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-1000 ease-out"
-                                      style={{ width: `${rec.risk_reduction_pct}%` }}
-                                    />
+                            {/* Metrics Grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                              {/* ROI Savings */}
+                              {rec.roi_savings && rec.roi_savings > 0 && (
+                                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-2">
+                                  <div className="text-xs text-green-400 mb-1">Annual Savings</div>
+                                  <div className="text-lg font-bold text-green-500">
+                                    ${(rec.roi_savings / 1000).toFixed(0)}K
                                   </div>
-                                  <span className="text-sm font-bold text-purple-500">{rec.risk_reduction_pct}%</span>
                                 </div>
-                              </div>
-                            )}
+                              )}
 
-                            {/* Implementation Time */}
-                            {rec.implementation_hours && rec.implementation_hours > 0 && (
-                              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2">
-                                <div className="text-xs text-blue-400 mb-1">Implementation</div>
-                                <div className="text-lg font-bold text-blue-500">
-                                  {rec.implementation_hours}h
+                              {/* Risk Reduction */}
+                              {rec.risk_reduction_pct && rec.risk_reduction_pct > 0 && (
+                                <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-2">
+                                  <div className="text-xs text-purple-400 mb-1">Risk Reduction</div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 h-2 bg-card rounded-full overflow-hidden">
+                                      <div 
+                                        className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-1000 ease-out"
+                                        style={{ width: `${rec.risk_reduction_pct}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-sm font-bold text-purple-500">{rec.risk_reduction_pct}%</span>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
 
-                            {/* Complexity */}
-                            {rec.complexity && (
-                              <div className={`border rounded-lg p-2 ${
-                                rec.complexity === 'low' ? 'bg-green-500/10 border-green-500/20' :
-                                rec.complexity === 'medium' ? 'bg-yellow-500/10 border-yellow-500/20' :
-                                'bg-red-500/10 border-red-500/20'
-                              }`}>
-                                <div className="text-xs text-muted-foreground mb-1">Complexity</div>
-                                <div className={`text-sm font-semibold capitalize ${
-                                  rec.complexity === 'low' ? 'text-green-500' :
-                                  rec.complexity === 'medium' ? 'text-yellow-500' :
-                                  'text-red-500'
+                              {/* Implementation Time */}
+                              {rec.implementation_hours && rec.implementation_hours > 0 && (
+                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2">
+                                  <div className="text-xs text-blue-400 mb-1">Implementation</div>
+                                  <div className="text-lg font-bold text-blue-500">
+                                    {rec.implementation_hours}h
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Complexity */}
+                              {rec.complexity && (
+                                <div className={`border rounded-lg p-2 ${
+                                  rec.complexity === 'low' ? 'bg-green-500/10 border-green-500/20' :
+                                  rec.complexity === 'medium' ? 'bg-yellow-500/10 border-yellow-500/20' :
+                                  'bg-red-500/10 border-red-500/20'
                                 }`}>
-                                  {rec.complexity}
+                                  <div className="text-xs text-muted-foreground mb-1">Complexity</div>
+                                  <div className={`text-sm font-semibold capitalize ${
+                                    rec.complexity === 'low' ? 'text-green-500' :
+                                    rec.complexity === 'medium' ? 'text-yellow-500' :
+                                    'text-red-500'
+                                  }`}>
+                                    {rec.complexity}
+                                  </div>
                                 </div>
+                              )}
+                            </div>
+
+                            {/* Impact */}
+                            <div className="text-sm text-green-400 mb-3">
+                              <strong>Impact:</strong> {rec.impact}
+                            </div>
+
+                           {/* Compliance Frameworks */}
+                            {rec.compliance && rec.compliance.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {rec.compliance.map((framework, idx) => (
+                                  <span 
+                                    key={idx}
+                                    className="text-xs px-2 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
+                                  >
+                                    {framework}
+                                  </span>
+                                ))}
                               </div>
                             )}
-                          </div>
 
-                          {/* Impact */}
-                          <div className="text-sm text-green-400 mb-3">
-                            <strong>Impact:</strong> {rec.impact}
-                          </div>
-
-                          {/* Compliance Frameworks */}
-                          {rec.compliance && rec.compliance.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {rec.compliance.map((framework, idx) => (
-                                <span 
-                                  key={idx}
-                                  className="text-xs px-2 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-                                >
-                                  {framework}
-                                </span>
-                              ))}
+                            {/* Action Buttons */}
+                            <div className="flex gap-2 mt-4 pt-3 border-t border-slate-700/50">
+                              <button className="px-3 py-1.5 bg-green-500/10 text-green-500 border border-green-500/30 rounded-lg text-sm font-medium hover:bg-green-500/20 transition-colors">
+                                ✓ Implement
+                              </button>
+                              <button className="px-3 py-1.5 bg-blue-500/10 text-blue-500 border border-blue-500/30 rounded-lg text-sm font-medium hover:bg-blue-500/20 transition-colors">
+                                📖 Learn More
+                              </button>
+                              <button className="px-3 py-1.5 bg-slate-500/10 text-slate-400 border border-slate-600/30 rounded-lg text-sm font-medium hover:bg-slate-500/20 transition-colors">
+                                ✕ Dismiss
+                              </button>
                             </div>
-                          )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-          })}
+                    ))}
                 </div>
               </div>
             </div>
