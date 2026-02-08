@@ -1,90 +1,91 @@
-
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Check, ArrowLeft } from 'lucide-react';
-import { open } from '@tauri-apps/plugin-shell';
-import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 
 export default function PricingPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
 
   const plans = {
-  home: {
-    name: 'Home',
-    price: 50,
-    devices: 1,
-    popular: false,  // ← ДОБАВИ ТОВА
-    features: [
-      'Real-time threat detection',
-      '9 honeypot types',
-      'Web dashboard access',
-      'MITRE ATT&CK mapping',
-      '1 device license',
-      'Email alerts',
-      'Basic support'
-    ]
-  },
-  business: {
-    name: 'Business',
-    price: 100,
-    devices: 5,
-    popular: true,
-    features: [
-      'Everything in Home',
-      '5 device licenses',
-      'Priority support',
-      'Advanced analytics',
-      'Custom rules',
-      'API access',
-      'Team management'
-    ]
-  }
-};
-
-const handleCheckout = async (plan: 'home' | 'business') => {
-  setLoading(plan);
-
-  try {
-    const API_BASE_URL = 'https://cyberguardian-backend-production.up.railway.app';
-    
-    console.log('🔵 Starting checkout for plan:', plan);
-    console.log('🔵 API URL:', `${API_BASE_URL}/api/stripe/checkout`);
-    
-    const response = await tauriFetch(`${API_BASE_URL}/api/stripe/checkout`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan })
-    });
-
-    console.log('🔵 Response status:', response.status);
-    console.log('🔵 Response ok:', response.ok);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('🔴 Response error:', errorText);
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    home: {
+      name: 'Home',
+      price: 50,
+      devices: 1,
+      popular: false,
+      features: [
+        'Real-time threat detection',
+        '9 honeypot types',
+        'Web dashboard access',
+        'MITRE ATT&CK mapping',
+        '1 device license',
+        'Email alerts',
+        'Basic support'
+      ]
+    },
+    business: {
+      name: 'Business',
+      price: 100,
+      devices: 5,
+      popular: true,
+      features: [
+        'Everything in Home',
+        '5 device licenses',
+        'Priority support',
+        'Advanced analytics',
+        'Custom rules',
+        'API access',
+        'Team management'
+      ]
     }
+  };
 
-    const data = await response.json();
-    console.log('🔵 Response data:', data);
+  const handleCheckout = async (plan: 'home' | 'business') => {
+    setLoading(plan);
 
-    if (data.url) {
-      console.log('🔵 Opening URL:', data.url);
-      await open(data.url);
-      console.log('✅ URL opened successfully');
-    } else {
-      throw new Error('No checkout URL received from server');
+    try {
+      const API_BASE_URL = 'https://cyberguardian-backend-production.up.railway.app';
+      
+      console.log('🔵 Starting checkout for plan:', plan);
+      console.log('🔵 API URL:', `${API_BASE_URL}/api/stripe/checkout`);
+      
+      // ✅ Use native fetch (works in Tauri 2.0)
+      const response = await fetch(`${API_BASE_URL}/api/stripe/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan })
+      });
+
+      console.log('🔵 Response status:', response.status);
+      console.log('🔵 Response ok:', response.ok);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🔴 Response error:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('🔵 Response data:', data);
+
+      if (data.url) {
+        console.log('🔵 Opening URL:', data.url);
+        // ✅ Use window.open (works reliably in Tauri)
+        window.open(data.url, '_blank');
+        console.log('✅ URL opened successfully');
+      } else {
+        throw new Error('No checkout URL received from server');
+      }
+      
+    } catch (error) {
+      console.error('🔴 Checkout error:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      alert(`Payment failed:\n\n${errorMessage}\n\nCheck console for details (F12)`);
+    } finally {
+      // ✅ Always reset loading state
+      setLoading(null);
     }
-    
-  } catch (error) {
-    console.error('🔴 Checkout error:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    alert(`Payment failed:\n\n${errorMessage}\n\nCheck console for details (F12)`);
-    setLoading(null);
-  }
-};
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8">
       {/* Back button */}

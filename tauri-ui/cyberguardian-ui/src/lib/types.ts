@@ -185,6 +185,27 @@ export interface NLPAnalysis {
 }
 
 // ============================================
+// AI RECOMMENDATION TYPES
+// ============================================
+
+export interface Recommendation {
+  id: number
+  priority: string
+  category: string
+  title: string
+  description: string
+  impact: string
+  // ✅ PHASE 1 - Enhanced fields
+  roi_savings?: number
+  risk_reduction_pct?: number
+  implementation_hours?: number
+  complexity?: string
+  compliance?: string[]
+  evidence_count?: number
+  evidence_timeframe?: string
+}
+
+// ============================================
 // SYSTEM STATUS TYPES
 // ============================================
 
