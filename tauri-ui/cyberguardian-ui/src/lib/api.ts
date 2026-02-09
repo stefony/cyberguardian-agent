@@ -2292,19 +2292,61 @@ export const api = {
   ml: mlApi,
   analytics: analyticsApi,
   emails: emailsApi,
-  settings: settingsApi, 
+  settings: settingsApi,
   protection: protectionApi,
   scans: scansApi,
   quarantine: quarantineApi,
   geoAttacks: geoAttacksApi,
   whatIf: whatIfApi,
   exclusions: exclusionsApi,
-  profiles: profilesApi, 
+  profiles: profilesApi,
   remediation: remediationApi,
   processProtection: processProtectionApi,
-  processMonitor: processMonitorApi,  
-  reports: reportsApi,  
-   executive: executiveApi,  
-}
+  processMonitor: processMonitorApi,
+  reports: reportsApi,
+  executive: executiveApi,
 
-export default api
+  // ============================================
+  // RECOMMENDATIONS STATUS API
+  // ============================================
+  recommendationsStatus: {
+    updateStatus: async (recommendationId: number, status: string, notes?: string) => {
+      const token = localStorage.getItem("access_token");
+
+      return httpFetch('/api/recommendations/status/update', {
+        method: 'POST',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          recommendation_id: recommendationId,
+          status: status,
+          notes: notes
+        })
+      });
+    },
+
+    getStatus: async (recommendationId: number) => {
+      const token = localStorage.getItem("access_token");
+
+      return httpFetch(`/api/recommendations/status/${recommendationId}`, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        }
+      });
+    },
+
+    getAllStatuses: async () => {
+      const token = localStorage.getItem("access_token");
+
+      return httpFetch('/api/recommendations/status', {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        }
+      });
+    }
+  }
+};
+
+export default api;

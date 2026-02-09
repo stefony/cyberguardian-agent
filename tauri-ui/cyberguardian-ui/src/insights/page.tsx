@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Brain, TrendingUp, AlertCircle, Lightbulb, Activity, Shield, FileText } from "lucide-react";
-import { aiApi } from "@/lib/api";
+import api, { aiApi } from "@/lib/api";  // ✅ Both imports in one line
 import LiveThreatFeed from "@/components/LiveThreatFeed";
 import ReportGenerator from "@/components/ReportGenerator";
+import RecommendationModal from '@/components/RecommendationModal';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 // Types
@@ -50,17 +51,108 @@ export default function AIInsightsPage() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [riskScore, setRiskScore] = useState<RiskScore | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  
-  // PHASE 2 - Filter, Sort, Search States
-const [filterPriority, setFilterPriority] = useState<string>('all');
-const [sortBy, setSortBy] = useState<string>('priority');
-const [searchQuery, setSearchQuery] = useState<string>('');
-const [expandedRecs, setExpandedRecs] = useState<Set<number>>(new Set());
-const [recStatuses, setRecStatuses] = useState<Record<number, string>>({});
   const [status, setStatus] = useState<AIStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  
+  // PHASE 2 - Filter, Sort, Search States
+  const [filterPriority, setFilterPriority] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('priority');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // PHASE 3 - Button handlers
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
+
+  // PHASE 4 - Status tracking
+  const [recommendationStatuses, setRecommendationStatuses] = useState<Record<number, any>>({});
+  const [statusesLoading, setStatusesLoading] = useState(true);
+
+  // Learn More Modal
+const [learnMoreModal, setLearnMoreModal] = useState<number | null>(null);
+
+const handleImplement = async (recId: number) => {
+  console.log('🔵 IMPLEMENT CLICKED! RecID:', recId);
+  setActionLoading(recId);
+  try {
+    const res = await api.recommendationsStatus.updateStatus(recId, 'implementing');
+const result = await res.json();
+if (res.ok && result.success) {
+      // ✅ Update local state with NEW object reference
+      const newStatuses = {
+        ...recommendationStatuses,
+        [recId]: { 
+          recommendation_id: recId, 
+          status: 'implementing', 
+          updated_at: new Date().toISOString() 
+        }
+      };
+      console.log('🟢 NEW STATUSES:', newStatuses); // DEBUG
+      setRecommendationStatuses(newStatuses);
+      alert('✓ Recommendation marked for implementation!');
+    }
+  } catch (err) {
+    console.error('Failed to update status:', err);
+    alert('Failed to update status');
+  } finally {
+    setActionLoading(null);
+  }
+};
+
+const handleDismiss = async (recId: number) => {
+  console.log('🔴 DISMISS CLICKED! RecID:', recId);
+  setActionLoading(recId);
+  try {
+    const res = await api.recommendationsStatus.updateStatus(recId, 'dismissed');
+const result = await res.json();
+if (res.ok && result.success) {
+
+      // ✅ Update local state with NEW object reference
+      const newStatuses = {
+        ...recommendationStatuses,
+        [recId]: { 
+          recommendation_id: recId, 
+          status: 'dismissed', 
+          updated_at: new Date().toISOString() 
+        }
+      };
+      console.log('🟢 NEW STATUSES:', newStatuses); // DEBUG
+      setRecommendationStatuses(newStatuses);
+      alert('✓ Recommendation dismissed');
+    }
+  } catch (err) {
+    console.error('Failed to dismiss:', err);
+    alert('Failed to dismiss');
+  } finally {
+    setActionLoading(null);
+  }
+};
+
+// Helper function to get status for a recommendation
+const getRecommendationStatus = (recId: number): string => {
+  return recommendationStatuses[recId]?.status || 'pending';
+};
+
+// Status Badge Component
+const StatusBadge = ({ status }: { status: string }) => {
+  const badges = {
+    pending: { text: 'Pending', color: 'bg-gray-500/20 text-gray-400', icon: '⏳' },
+    implementing: { text: 'Implementing', color: 'bg-blue-500/20 text-blue-400', icon: '🔵' },
+    completed: { text: 'Completed', color: 'bg-green-500/20 text-green-400', icon: '✅' },
+    dismissed: { text: 'Dismissed', color: 'bg-gray-600/20 text-gray-500', icon: '✕' }
+  };
+  
+  const badge = badges[status as keyof typeof badges] || badges.pending;
+  
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${badge.color}`}>
+      <span>{badge.icon}</span>
+      {badge.text}
+    </span>
+  );
+};
+
+
+  
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -98,6 +190,32 @@ const [recStatuses, setRecStatuses] = useState<Record<number, string>>({});
 
     fetchData();
   }, []);
+
+  // Phase 4 - Fetch recommendation statuses on mount
+useEffect(() => {
+  const fetchStatuses = async () => {
+    try {
+      setStatusesLoading(true);
+      const res = await api.recommendationsStatus.getAllStatuses();
+const result = await res.json();
+
+if (res.ok && result.success && result.data?.statuses) {
+        // Convert array to object for easy lookup
+        const statusMap: Record<number, any> = {};
+        result.data.statuses.forEach((s: any) => {
+          statusMap[s.recommendation_id] = s;
+        });
+        setRecommendationStatuses(statusMap);
+      }
+    } catch (err) {
+      console.error('Failed to fetch statuses:', err);
+    } finally {
+      setStatusesLoading(false);
+    }
+  };
+
+  fetchStatuses();
+}, []);
 
   const getSeverityColor = (severity: string) => {
     const colors: Record<string, string> = {
@@ -361,12 +479,14 @@ const [recStatuses, setRecStatuses] = useState<Record<number, string>>({});
                             <div className="flex items-start justify-between mb-3">
                               <div>
                                 <h3 className="font-semibold text-lg">{rec.title}</h3>
-                                <div className="flex gap-2 mt-1 flex-wrap">
-                                  <span className={getPriorityBadge(rec.priority)}>
-                                    {rec.priority}
-                                  </span>
-                                  <span className="badge">{rec.category}</span>
-                                </div>
+                              <div className="flex gap-2 mt-1 flex-wrap">
+  <span className={getPriorityBadge(rec.priority)}>
+    {rec.priority}
+  </span>
+  <span className="badge">{rec.category}</span>
+  {/* ✅ PHASE 4 - Status Badge */}
+  <StatusBadge status={getRecommendationStatus(rec.id)} />
+</div>
                               </div>
                             </div>
 
@@ -457,16 +577,27 @@ const [recStatuses, setRecStatuses] = useState<Record<number, string>>({});
                               </div>
                             )}
 
-                            {/* Action Buttons */}
+                           {/* Action Buttons */}
                             <div className="flex gap-2 mt-4 pt-3 border-t border-slate-700/50">
-                              <button className="px-3 py-1.5 bg-green-500/10 text-green-500 border border-green-500/30 rounded-lg text-sm font-medium hover:bg-green-500/20 transition-colors">
-                                ✓ Implement
+                              <button 
+                                onClick={() => handleImplement(rec.id)}
+                                disabled={actionLoading === rec.id}
+                                className="px-3 py-1.5 bg-green-500/10 text-green-500 border border-green-500/30 rounded-lg text-sm font-medium hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                              >
+                                {actionLoading === rec.id ? '...' : '✓ Implement'}
                               </button>
-                              <button className="px-3 py-1.5 bg-blue-500/10 text-blue-500 border border-blue-500/30 rounded-lg text-sm font-medium hover:bg-blue-500/20 transition-colors">
-                                📖 Learn More
-                              </button>
-                              <button className="px-3 py-1.5 bg-slate-500/10 text-slate-400 border border-slate-600/30 rounded-lg text-sm font-medium hover:bg-slate-500/20 transition-colors">
-                                ✕ Dismiss
+                              <button 
+  onClick={() => setLearnMoreModal(rec.id)}
+  className="px-3 py-1.5 bg-blue-500/10 text-blue-500 border border-blue-500/30 rounded-lg text-sm font-medium hover:bg-blue-500/20 transition-colors"
+>
+  📖 Learn More
+</button>
+                              <button 
+                                onClick={() => handleDismiss(rec.id)}
+                                disabled={actionLoading === rec.id}
+                                className="px-3 py-1.5 bg-slate-500/10 text-slate-400 border border-slate-600/30 rounded-lg text-sm font-medium hover:bg-slate-500/20 transition-colors disabled:opacity-50"
+                              >
+                                {actionLoading === rec.id ? '...' : '✕ Dismiss'}
                               </button>
                             </div>
                           </div>
@@ -487,11 +618,19 @@ const [recStatuses, setRecStatuses] = useState<Record<number, string>>({});
           </div>
         </div>
 
-        {/* Report Generator Modal */}
+         {/* Report Generator Modal */}
         <ReportGenerator 
           isOpen={isReportModalOpen} 
           onClose={() => setIsReportModalOpen(false)} 
         />
+
+        {/* Learn More Modal */}
+        {learnMoreModal !== null && (
+          <RecommendationModal
+            recommendation={recommendations.find(r => r.id === learnMoreModal)}
+            onClose={() => setLearnMoreModal(null)}
+          />
+        )}
       </main>
     </ProtectedRoute>
   );
