@@ -207,87 +207,89 @@ const fetchLiveFeed = async () => {
               }`}
             >
               {/* Event header */}
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  {/* Severity dot */}
-                  <div
-                    className={`w-2 h-2 rounded-full ${getSeverityDot(
-                      event.severity
-                    )}`}
-                  />
-                  
-                  {/* Source icon */}
-                  <div className="text-muted-foreground">
-                    {getSourceIcon(event.source)}
-                  </div>
-                  
-                  {/* Event type */}
-                  <span className="text-sm font-medium">{event.event_type}</span>
-                </div>
-
-                {/* Time ago */}
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="w-3 h-3" />
-                  <span>{event.time_ago}</span>
-                </div>
-              </div>
-
-              {/* Event details */}
-              <div className="space-y-1 text-xs text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono">{event.source_ip}</span>
-                  {event.country && (
-                    <>
-                      <span>•</span>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        <span>
-                          {event.city}, {event.country}
-                        </span>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Additional details */}
-                {event.source === "honeypot" && event.details.honeypot_type && (
-                  <div className="flex items-center gap-1">
-                    <span className="badge badge--xs">
-                      {event.details.honeypot_type}
-                    </span>
-                    {event.details.port && (
-                      <span className="badge badge--xs">
-                        Port {event.details.port}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {event.source === "threat_detector" && event.details.description && (
-                  <p className="text-xs italic">{event.details.description}</p>
-                )}
-              </div>
-
-              {/* Severity badge */}
-              <div className="mt-2">
-                <span
-                  className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                    event.severity === "critical"
-                      ? "bg-red-500/20 text-red-400"
-                      : event.severity === "high"
-                      ? "bg-orange-500/20 text-orange-400"
-                      : event.severity === "medium"
-                      ? "bg-yellow-500/20 text-yellow-400"
-                      : "bg-blue-500/20 text-blue-400"
-                  }`}
-                >
-                  {event.severity.toUpperCase()}
-                </span>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+<div className="flex items-start justify-between mb-2">
+  <div className="flex items-center gap-2 min-w-0 flex-1">
+    {/* Severity dot */}
+    <div
+      className={`w-2 h-2 rounded-full flex-shrink-0 ${getSeverityDot(
+        event.severity
+      )}`}
+    />
+    
+    {/* Source icon */}
+    <div className="text-muted-foreground flex-shrink-0">
+      {getSourceIcon(event.source)}
     </div>
-  );
+    
+    {/* Event type */}
+    <span className="text-sm font-medium truncate" title={event.event_type}>
+      {event.event_type}
+    </span>
+  </div>
+
+  {/* Time ago */}
+  <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
+    <Clock className="w-3 h-3" />
+    <span>{event.time_ago}</span>
+  </div>
+</div>
+
+{/* Event details */}
+<div className="space-y-1 text-xs text-muted-foreground">
+  <div className="flex items-center gap-2">
+    <span className="font-mono">{event.source_ip}</span>
+    {event.country && (
+      <>
+        <span>•</span>
+        <div className="flex items-center gap-1">
+          <MapPin className="w-3 h-3" />
+          <span>
+            {event.city}, {event.country}
+          </span>
+        </div>
+      </>
+    )}
+  </div>
+
+  {/* Additional details */}
+  {event.source === "honeypot" && event.details.honeypot_type && (
+    <div className="flex items-center gap-1">
+      <span className="badge badge--xs">
+        {event.details.honeypot_type}
+      </span>
+      {event.details.port && (
+        <span className="badge badge--xs">
+          Port {event.details.port}
+        </span>
+      )}
+    </div>
+  )}
+
+  {event.source === "threat_detector" && event.details.description && (
+    <p className="text-xs italic">{event.details.description}</p>
+  )}
+</div>
+
+{/* Severity badge */}
+<div className="mt-2">
+  <span
+    className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+      event.severity === "critical"
+        ? "bg-red-500/20 text-red-400"
+        : event.severity === "high"
+        ? "bg-orange-500/20 text-orange-400"
+        : event.severity === "medium"
+        ? "bg-yellow-500/20 text-yellow-400"
+        : "bg-blue-500/20 text-blue-400"
+    }`}
+  >
+    {event.severity.toUpperCase()}
+  </span>
+</div>
+</div>
+))
+)}
+</div>
+</div>
+);
 }
