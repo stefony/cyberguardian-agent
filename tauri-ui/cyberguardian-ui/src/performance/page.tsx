@@ -17,6 +17,7 @@ import {
   SparklesIcon
 } from '@heroicons/react/24/outline';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { toast } from 'sonner';
 
 const API_URL = (import.meta as any).env.VITE_API_URL || 'https://cyberguardian-backend-production.up.railway.app';
 // Helper to make authenticated requests
@@ -137,10 +138,12 @@ const fetchData = async (showRefreshing = false) => {
       setRecommendations(recsData.recommendations);
     }
 
-  } catch (error) {
-    console.error('Error fetching performance data:', error);
-    // No mock data fallback
-  } finally {
+} catch (error) {
+  console.error('Error fetching performance data:', error);
+  toast.error('Failed to load performance data', {
+    description: 'Please check your connection and try again'
+  });
+} finally {
     setLoading(false);
     setRefreshing(false);
   }
@@ -213,6 +216,43 @@ const fetchData = async (showRefreshing = false) => {
           </div>
         </div>
       </div>
+      </ProtectedRoute>
+    );
+  }
+
+  // Empty state - no data
+  if (!health || !summary) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-dark-bg p-8 flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-dark-card rounded-2xl shadow-xl p-12 border border-dark-border max-w-md text-center"
+          >
+            <div className="flex justify-center mb-6">
+              <div className="p-4 bg-yellow-500/20 rounded-full">
+                <ExclamationTriangleIcon className="h-12 w-12 text-yellow-500" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-dark-text mb-3">No Performance Data Available</h2>
+            <p className="text-dark-text/70 mb-6">
+              Unable to load system performance metrics. Please try refreshing.
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => fetchData(true)}
+              disabled={refreshing}
+              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300"
+            >
+              <div className="flex items-center space-x-2">
+                <ArrowPathIcon className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
+                <span>{refreshing ? 'Refreshing...' : 'Retry'}</span>
+              </div>
+            </motion.button>
+          </motion.div>
+        </div>
       </ProtectedRoute>
     );
   }

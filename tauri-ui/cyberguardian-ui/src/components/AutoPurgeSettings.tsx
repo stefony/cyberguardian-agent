@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import CountUp from "react-countup";
+import { toast } from "sonner";
 import { 
   Trash2, 
   Clock, 
   Shield, 
   AlertTriangle, 
-  Save,
   Eye,
   Play,
   Zap,
@@ -32,7 +32,6 @@ export default function AutoPurgeSettings({ onSettingsChanged }: AutoPurgeSettin
 
   const [preview, setPreview] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [executing, setExecuting] = useState(false);
 
@@ -46,40 +45,85 @@ export default function AutoPurgeSettings({ onSettingsChanged }: AutoPurgeSettin
       console.log('🔵 Loading auto-purge settings...');
       const res = await quarantineApi.getAutoPurgeSettings();
       console.log('🔵 Response:', res);
-      console.log('🔵 res.success:', res.success);
-      console.log('🔵 res.data:', res.data);
       
       if (res.success && res.data) {
-  // FIX: Unwrap double-nested data (backend returns nested structure)
-  const rawData: any = res.data;
-  const settingsData = rawData.data || rawData;
-  console.log('✅ Setting state with:', settingsData);
-  setSettings(settingsData);
-} else {
-        console.log('❌ Failed to load settings - success:', res.success, 'data:', res.data);
+        const rawData: any = res.data;
+        const settingsData = rawData.data || rawData;
+        
+        // Check if backend returns defaults (enabled: false)
+        if (!settingsData.enabled) {
+          // Try localStorage first
+          const cached = localStorage.getItem('cg_auto_purge_settings');
+          if (cached) {
+            console.log('✅ Loading from localStorage (backend has defaults)');
+            const cachedSettings = JSON.parse(cached);
+            setSettings(cachedSettings);
+            setLoading(false);
+            return; // Use cached settings!
+          }
+        }
+        
+        console.log('✅ Setting state with:', settingsData);
+        setSettings(settingsData);
+      } else {
+        console.log('❌ Backend failed, trying localStorage...');
+        // Fallback to localStorage
+        const cached = localStorage.getItem('cg_auto_purge_settings');
+        if (cached) {
+          console.log('✅ Loading from localStorage (backend error)');
+          const cachedSettings = JSON.parse(cached);
+          setSettings(cachedSettings);
+        }
       }
     } catch (err) {
       console.error("Error loading settings:", err);
+      // Fallback to localStorage on error
+      const cached = localStorage.getItem('cg_auto_purge_settings');
+      if (cached) {
+        console.log('✅ Loading from localStorage (exception)');
+        const cachedSettings = JSON.parse(cached);
+        setSettings(cachedSettings);
+      }
     }
     setLoading(false);
   };
 
-  const handleSave = async () => {
-    setSaving(true);
+  // Auto-save function (no manual Save button needed)
+  const autoSave = useCallback(async (newSettings: typeof settings) => {
     try {
-      const res = await quarantineApi.updateAutoPurgeSettings(settings);
+      // Save to localStorage instantly
+      localStorage.setItem('cg_auto_purge_settings', JSON.stringify(newSettings));
+      
+      // Also save to backend
+      const res = await quarantineApi.updateAutoPurgeSettings(newSettings);
+      
       if (res.success) {
-        alert("✅ Auto-purge settings saved successfully!");
+        toast.success('Settings saved automatically', {
+          duration: 2000,
+        });
         if (onSettingsChanged) onSettingsChanged();
-      } else {
-        alert(`❌ Failed to save: ${res.error}`);
       }
     } catch (err) {
-      console.error("Error saving settings:", err);
-      alert("❌ Error saving settings");
+      console.error("Auto-save error:", err);
+      // localStorage is already saved, so it's OK
+      toast.info('Settings saved locally', {
+        duration: 2000,
+      });
     }
-    setSaving(false);
-  };
+  }, [onSettingsChanged]);
+
+  // Debounced auto-save for slider (to avoid saving on every pixel)
+  const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  const debouncedAutoSave = useCallback((newSettings: typeof settings) => {
+    if (saveTimeout) clearTimeout(saveTimeout);
+    
+    const timeout = setTimeout(() => {
+      autoSave(newSettings);
+    }, 1000); // Wait 1 second after user stops moving slider
+    
+    setSaveTimeout(timeout);
+  }, [autoSave, saveTimeout]);
 
   const handlePreview = async () => {
     setPreviewing(true);
@@ -204,7 +248,11 @@ export default function AutoPurgeSettings({ onSettingsChanged }: AutoPurgeSettin
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => setSettings({ ...settings, enabled: !settings.enabled })}
+          onClick={() => {
+            const newSettings = { ...settings, enabled: !settings.enabled };
+            setSettings(newSettings);
+            autoSave(newSettings);
+          }}
           className="relative inline-flex items-center cursor-pointer group"
           style={{ pointerEvents: 'auto', zIndex: 20 }}
         >
@@ -287,7 +335,11 @@ export default function AutoPurgeSettings({ onSettingsChanged }: AutoPurgeSettin
             min="1"
             max="90"
             value={settings.days_threshold}
-            onChange={(e) => setSettings({ ...settings, days_threshold: parseInt(e.target.value) })}
+            onChange={(e) => {
+              const newSettings = { ...settings, days_threshold: parseInt(e.target.value) };
+              setSettings(newSettings);
+              debouncedAutoSave(newSettings);
+            }}
             className="slider-thumb w-full h-3 rounded-lg appearance-none cursor-pointer transition-all duration-300 group-hover:h-4"
             style={{
               background: `linear-gradient(to right, #a855f7 0%, #a855f7 ${((settings.days_threshold - 1) / 89) * 100}%, #374151 ${((settings.days_threshold - 1) / 89) * 100}%, #374151 100%)`,
@@ -325,7 +377,9 @@ export default function AutoPurgeSettings({ onSettingsChanged }: AutoPurgeSettin
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              setSettings({ ...settings, auto_purge_critical: !settings.auto_purge_critical });
+              const newSettings = { ...settings, auto_purge_critical: !settings.auto_purge_critical };
+              setSettings(newSettings);
+              autoSave(newSettings);
             }}
             type="button"
             style={{ pointerEvents: 'auto', zIndex: 20 }}
@@ -368,7 +422,9 @@ export default function AutoPurgeSettings({ onSettingsChanged }: AutoPurgeSettin
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              setSettings({ ...settings, auto_purge_high: !settings.auto_purge_high });
+              const newSettings = { ...settings, auto_purge_high: !settings.auto_purge_high };
+              setSettings(newSettings);
+              autoSave(newSettings);
             }}
             type="button"
             style={{ pointerEvents: 'auto', zIndex: 20 }}
@@ -411,7 +467,9 @@ export default function AutoPurgeSettings({ onSettingsChanged }: AutoPurgeSettin
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              setSettings({ ...settings, auto_purge_medium: !settings.auto_purge_medium });
+              const newSettings = { ...settings, auto_purge_medium: !settings.auto_purge_medium };
+              setSettings(newSettings);
+              autoSave(newSettings);
             }}
             type="button"
             style={{ pointerEvents: 'auto', zIndex: 20 }}
@@ -454,7 +512,9 @@ export default function AutoPurgeSettings({ onSettingsChanged }: AutoPurgeSettin
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              setSettings({ ...settings, auto_purge_low: !settings.auto_purge_low });
+              const newSettings = { ...settings, auto_purge_low: !settings.auto_purge_low };
+              setSettings(newSettings);
+              autoSave(newSettings);
             }}
             type="button"
             style={{ pointerEvents: 'auto', zIndex: 20 }}
@@ -532,24 +592,12 @@ export default function AutoPurgeSettings({ onSettingsChanged }: AutoPurgeSettin
         className="flex gap-3"
       >
         <motion.button
-          whileHover={{ scale: 1.02, y: -2 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleSave}
-          disabled={saving}
-          style={{ pointerEvents: 'auto', zIndex: 20 }}
-          className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:shadow-purple-500/30"
-        >
-          <Save className={`h-4 w-4 ${saving ? "animate-spin" : ""}`} />
-          {saving ? "Saving..." : "Save Settings"}
-        </motion.button>
-
-        <motion.button
           whileHover={{ scale: 1.05, y: -2 }}
           whileTap={{ scale: 0.95 }}
           onClick={handlePreview}
           disabled={previewing}
           style={{ pointerEvents: 'auto', zIndex: 20 }}
-          className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:shadow-blue-500/30"
+          className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:shadow-blue-500/30"
         >
           <Eye className={`h-4 w-4 ${previewing ? "animate-spin" : ""}`} />
           {previewing ? "Loading..." : "Preview"}
@@ -561,7 +609,7 @@ export default function AutoPurgeSettings({ onSettingsChanged }: AutoPurgeSettin
           onClick={handleExecute}
           disabled={!settings.enabled || executing}
           style={{ pointerEvents: 'auto', zIndex: 20 }}
-          className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:shadow-red-500/30"
+          className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:shadow-red-500/30"
         >
           <Play className={`h-4 w-4 ${executing ? "animate-spin" : ""}`} />
           {executing ? "Running..." : "Execute Now"}
