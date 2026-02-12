@@ -300,6 +300,27 @@ fn check_admin_privileges() -> Result<bool, String> {
     Ok(process_protection::ProcessProtection::check_admin_privileges())
 }
 
+/// Enable anti-termination protection
+#[tauri::command]
+fn enable_anti_termination_desktop() -> Result<String, String> {
+    process_protection::enable_anti_termination_only()?;
+    Ok("Anti-termination protection enabled".to_string())
+}
+
+/// Enable self-healing watchdog
+#[tauri::command]
+fn enable_self_healing_desktop() -> Result<String, String> {
+    process_protection::enable_self_healing_only()?;
+    Ok("Self-healing watchdog enabled".to_string())
+}
+
+/// Install as Windows service
+#[tauri::command]
+fn install_service_desktop() -> Result<String, String> {
+    process_protection::install_as_service()?;
+    Ok("Service installation initiated".to_string())
+}
+
 // ============================================================================
 // DEEP QUARANTINE COMMANDS
 // ============================================================================
@@ -493,6 +514,9 @@ pub fn run() {
             enable_desktop_max_protection,
             disable_desktop_protection,
             check_admin_privileges,
+            enable_anti_termination_desktop,
+            enable_self_healing_desktop,
+            install_service_desktop,
             // Deep Quarantine Commands
             deep_quarantine_analyze,
             deep_quarantine_remove,

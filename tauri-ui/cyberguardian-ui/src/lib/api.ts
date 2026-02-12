@@ -29,9 +29,7 @@ import type {
 // ============================================
 
  
-const API_BASE_URL = 'https://cyberguardian-backend-production.up.railway.app';
-
-const API_BASE = "https://cyberguardian-backend-production.up.railway.app";
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 function isTauri() {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -2040,15 +2038,17 @@ export const processMonitorApi = {
   /**
    * Get statistics
    */
-  getStatistics: async (): Promise<ApiResponse<{
-    total_processes: number
-    suspicious_processes: number
-    total_threats: number
-    threats_by_type: Record<string, number>
-    threats_by_severity: Record<string, number>
-    monitoring_active: boolean
-    platform: string
-    last_scan: string
+ getStatistics: async (): Promise<ApiResponse<{
+    statistics: {
+      total_processes: number
+      suspicious_processes: number
+      total_threats: number
+      threats_by_type: Record<string, number>
+      threats_by_severity: Record<string, number>
+      monitoring_active: boolean
+      platform: string
+      last_scan: string
+    }
   }>> => {
     return client.get<any>('/api/process-monitor/stats')
   },

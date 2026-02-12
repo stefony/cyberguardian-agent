@@ -1,6 +1,7 @@
 
 
 import { useState, useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { motion, AnimatePresence } from 'framer-motion';
 import CountUp from 'react-countup';
 import { 
@@ -106,24 +107,34 @@ const fetchData = async (showRefreshing = false) => {
   if (showRefreshing) setRefreshing(true);
 
   try {
-    setLoading(true);
+     if (!showRefreshing) setLoading(true);
+
+    // Check if running in Tauri
+    let statusRes, statsRes;
+    try {
+      
+      const desktopStatus = await invoke<any>('get_desktop_protection_status');
+      statusRes = { success: true, data: desktopStatus };
+      statsRes = { success: true, data: desktopStatus };
+    } catch (tauriError) {
+      console.log("⚠️ Not in Tauri environment, using Railway API");
+      [statusRes, statsRes] = await Promise.all([
+        processProtectionApi.getStatus(),
+        processProtectionApi.getStatistics(),
+      ]);
+    }
 
     const [
-      statusRes,
-      statsRes,
       monitorStatsRes,
       monitorStatusRes,
       processesRes,
       threatsRes,
     ] = await Promise.all([
-      processProtectionApi.getStatus(),
-      processProtectionApi.getStatistics(),
       processMonitorApi.getStatistics(),
       processMonitorApi.getMonitoringStatus(),
       processMonitorApi.getProcesses(50),
       processMonitorApi.getThreats({ limit: 20 }),
     ]);
-
     // Protection status
     if (statusRes.success && statusRes.data) {
       setStatus(statusRes.data);
@@ -140,11 +151,11 @@ const fetchData = async (showRefreshing = false) => {
       setStatistics(null);
     }
 
-    // Monitor stats
-    let nextMonitorStats: MonitorStats | null = null;
-    if (monitorStatsRes.success && monitorStatsRes.data) {
-      nextMonitorStats = monitorStatsRes.data;
-    }
+// Monitor stats
+let nextMonitorStats: MonitorStats | null = null;
+if (monitorStatsRes.success && monitorStatsRes.data?.statistics) {
+  nextMonitorStats = monitorStatsRes.data.statistics;
+}
 
     // Monitoring status (добавяме monitoring_active, ако идва от отделен endpoint)
     if (monitorStatusRes.success && monitorStatusRes.data?.monitoring) {
@@ -197,59 +208,115 @@ const fetchData = async (showRefreshing = false) => {
 };
 
 
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(() => fetchData(true), 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleEnableAntiTermination = async () => {
-    setActionLoading('anti-termination');
+ useEffect(() => {
+  // Initialize Tauri protection on mount
+  const initProtection = async () => {
     try {
+      await invoke('init_tamper_protection');
+      console.log("✅ Tauri protection initialized");
+    } catch (error) {
+      console.log("⚠️ Not in Tauri, skipping init");
+    }
+  };
+  
+  initProtection();
+  fetchData();
+  const interval = setInterval(() => fetchData(true), 10000);
+  return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
+const handleEnableAntiTermination = async () => {
+  console.log("🛡️ CLICKED Anti-Termination button!");
+  setActionLoading('anti-termination');
+  try {
+    // Try Tauri first
+    try {
+      const result = await invoke('enable_anti_termination_desktop');
+      console.log("🛡️ Anti-Termination Response (Tauri):", result);
+    } catch (tauriError) {
+      // Fallback to Railway API
+      console.log("⚠️ Tauri Error:", tauriError);
+      console.log("⚠️ Using Railway API");
       const response = await processProtectionApi.enableAntiTermination();
-      if (response.success) await fetchData();
-    } catch (error) {
-      console.error('Error enabling anti-termination:', error);
-    } finally {
-      setActionLoading(null);
+      console.log("🛡️ Anti-Termination Response (Railway):", response);
     }
-  };
+    await fetchData();
+  } catch (error) {
+    console.error('Error enabling anti-termination:', error);
+  } finally {
+    setActionLoading(null);
+  }
+};
 
-  const handleEnableSelfHealing = async () => {
-    setActionLoading('self-healing');
+const handleEnableSelfHealing = async () => {
+  console.log("🔵 CLICKED Self-Healing button!");
+  setActionLoading('self-healing');
+  try {
+    // Try Tauri first
     try {
+      
+      const result = await invoke('enable_self_healing_desktop');
+      console.log("🔵 Self-Healing Response (Tauri):", result);
+    } catch (tauriError) {
+      // Fallback to Railway API
+      console.log("⚠️ Using Railway API");
       const response = await processProtectionApi.enableSelfHealing();
-      if (response.success) await fetchData();
-    } catch (error) {
-      console.error('Error enabling self-healing:', error);
-    } finally {
-      setActionLoading(null);
+      console.log("🔵 Self-Healing Response (Railway):", response);
     }
-  };
+    await fetchData();
+  } catch (error) {
+    console.error('Error enabling self-healing:', error);
+  } finally {
+    setActionLoading(null);
+  }
+};
 
-  const handleEnableMaxProtection = async () => {
-    setActionLoading('max-protection');
+const handleEnableMaxProtection = async () => {
+  console.log("🚀 CLICKED Maximum Protection button!");
+  setActionLoading('max-protection');
+  try {
+    // Try Tauri first
     try {
+      
+      const result = await invoke('enable_desktop_max_protection');
+      console.log("🚀 Maximum Protection Response (Tauri):", result);
+    } catch (tauriError) {
+      // Fallback to Railway API
+      console.log("⚠️ Using Railway API");
       const response = await processProtectionApi.enableMaximumProtection();
-      if (response.success) await fetchData();
-    } catch (error) {
-      console.error('Error enabling maximum protection:', error);
-    } finally {
-      setActionLoading(null);
+      console.log("🚀 Maximum Protection Response (Railway):", response);
     }
-  };
+    await fetchData();
+  } catch (error) {
+    console.error('Error enabling maximum protection:', error);
+  } finally {
+    setActionLoading(null);
+  }
+};
 
-  const handleInstallService = async () => {
-    setActionLoading('install-service');
+const handleInstallService = async () => {
+  console.log("📦 CLICKED Install as Service button!");
+  setActionLoading('install-service');
+  try {
+    // Try Tauri first
     try {
+      
+      const result = await invoke('install_service_desktop');
+      console.log("📦 Install Service Response (Tauri):", result);
+    } catch (tauriError) {
+      // Fallback to Railway API
+      console.log("⚠️ Using Railway API");
       const response = await processProtectionApi.installService();
-      if (response.success) await fetchData();
-    } catch (error) {
-      console.error('Error installing service:', error);
-    } finally {
-      setActionLoading(null);
+      console.log("📦 Install Service Response (Railway):", response);
     }
-  };
+    await fetchData();
+  } catch (error) {
+    console.error('Error installing service:', error);
+  } finally {
+    setActionLoading(null);
+  }
+};
 
   const handleStartMonitoring = async () => {
     setActionLoading('start-monitoring');
@@ -492,22 +559,13 @@ const fetchData = async (showRefreshing = false) => {
     </div>
     <div className="flex items-center space-x-3">
       {/* Detection Mode Dropdown */}
-      <select
-        value={detectionMode}
-        onChange={(e) => handleModeChange(e.target.value as any)}
-        className="px-4 py-2 rounded-lg bg-dark-bg border-2 border-dark-border text-dark-text font-semibold cursor-pointer hover:border-cyan-500 transition-colors"
-      >
-        <option value="production">Production Mode</option>
-        <option value="demo">Demo Mode</option>
-        <option value="testing">Testing Mode</option>
-      </select>
-      
-      <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+    
+            <span className={`px-3 py-1 rounded-full text-sm font-bold ${
         monitorStats.monitoring_active 
           ? 'bg-green-500/20 text-green-400' 
           : 'bg-gray-500/20 text-gray-400'
       }`}>
-        {monitorStats.monitoring_active ? '🟢 Active' : '🔴 Inactive'}
+         
       </span>
     </div>
   </div>
@@ -544,22 +602,22 @@ const fetchData = async (showRefreshing = false) => {
                 </motion.button>
 
                 {/* Trigger Scan */}
-                <motion.button
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleTriggerScan}
-                  disabled={actionLoading === 'trigger-scan'}
-                  className="p-6 bg-purple-600 hover:bg-purple-700 rounded-xl border-2 border-purple-500/20 font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/30 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <MagnifyingGlassIcon className="h-6 w-6" />
-                      <span>Trigger Scan</span>
+                  <motion.button
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleTriggerScan}
+                    disabled={actionLoading === 'trigger-scan'}
+                    className="p-6 bg-purple-600 hover:bg-purple-700 rounded-xl border-2 border-purple-500/20 font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/30 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <MagnifyingGlassIcon className="h-6 w-6" />
+                        <span>Trigger Scan</span>
+                      </div>
+                      {actionLoading === 'trigger-scan' && (
+                        <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                      )}
                     </div>
-                    {actionLoading === 'trigger-scan' && (
-                      <ArrowPathIcon className="h-5 w-5 animate-spin" />
-                    )}
-                  </div>
                 </motion.button>
 
                 {/* Clear Threats */}
@@ -610,7 +668,7 @@ const fetchData = async (showRefreshing = false) => {
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleEnableAntiTermination}
-                disabled={actionLoading === 'anti-termination' || !status.can_protect}
+                disabled={actionLoading === 'anti-termination'}
                 className={`p-6 rounded-xl border-2 font-semibold transition-all duration-300 ${
                   status.is_protected
                     ? 'bg-green-500/10 border-green-500/20 text-green-400'
@@ -626,9 +684,7 @@ const fetchData = async (showRefreshing = false) => {
                     <ArrowPathIcon className="h-5 w-5 animate-spin" />
                   )}
                 </div>
-                {!status.can_protect && (
-                  <p className="text-xs text-left mt-2 opacity-70">Requires elevated privileges</p>
-                )}
+               
               </motion.button>
 
               {/* Enable Self-Healing */}
@@ -655,7 +711,7 @@ const fetchData = async (showRefreshing = false) => {
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleEnableMaxProtection}
-                disabled={actionLoading === 'max-protection' || !status.can_protect}
+                disabled={actionLoading === 'max-protection'}
                 className="p-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl border-2 border-purple-500/20 font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/30 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="flex items-center justify-between">
@@ -667,9 +723,7 @@ const fetchData = async (showRefreshing = false) => {
                     <ArrowPathIcon className="h-5 w-5 animate-spin" />
                   )}
                 </div>
-                {!status.can_protect && (
-                  <p className="text-xs text-left mt-2 opacity-70">Requires elevated privileges</p>
-                )}
+               
               </motion.button>
 
               {/* Install Service */}
@@ -677,7 +731,7 @@ const fetchData = async (showRefreshing = false) => {
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleInstallService}
-                disabled={actionLoading === 'install-service' || status.service_installed || !status.can_protect}
+                disabled={actionLoading === 'install-service' || status.service_installed}
                 className={`p-6 rounded-xl border-2 font-semibold transition-all duration-300 text-white disabled:opacity-50 disabled:cursor-not-allowed ${
                   status.service_installed
                     ? 'bg-green-500/20 border-green-500/30 text-green-400'

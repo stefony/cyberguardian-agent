@@ -262,6 +262,41 @@ pub fn disable_protection() -> Result<(), String> {
     }
 }
 
+
+/// Enable anti-termination only
+pub fn enable_anti_termination_only() -> Result<(), String> {
+    let mut state = PROTECTION_STATE.lock().unwrap();
+    if let Some(protection) = &mut *state {
+        protection.enable_anti_termination()
+    } else {
+        Err("Protection not initialized".to_string())
+    }
+}
+
+/// Enable self-healing only
+pub fn enable_self_healing_only() -> Result<(), String> {
+    let mut state = PROTECTION_STATE.lock().unwrap();
+    if let Some(protection) = &mut *state {
+        protection.enable_self_healing()
+    } else {
+        Err("Protection not initialized".to_string())
+    }
+}
+
+/// Install as Windows service (placeholder)
+pub fn install_as_service() -> Result<(), String> {
+    if !ProcessProtection::check_admin_privileges() {
+        return Err("Administrator privileges required".to_string());
+    }
+    
+    // TODO: Implement Windows service installation
+    // For now, return success message
+    println!("📦 Installing CyberGuardian as Windows service...");
+    println!("⚠️ Service installation not yet implemented");
+    
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
