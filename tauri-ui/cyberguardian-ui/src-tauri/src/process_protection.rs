@@ -283,18 +283,22 @@ pub fn enable_self_healing_only() -> Result<(), String> {
     }
 }
 
-/// Install as Windows service (placeholder)
+/// Install as Windows service
 pub fn install_as_service() -> Result<(), String> {
     if !ProcessProtection::check_admin_privileges() {
         return Err("Administrator privileges required".to_string());
     }
     
-    // TODO: Implement Windows service installation
-    // For now, return success message
-    println!("📦 Installing CyberGuardian as Windows service...");
-    println!("⚠️ Service installation not yet implemented");
+    #[cfg(windows)]
+    {
+        println!("📦 Installing CyberGuardian as Windows service...");
+        crate::windows_service::install_service()
+    }
     
-    Ok(())
+    #[cfg(not(windows))]
+    {
+        Err("Service installation only supported on Windows".to_string())
+    }
 }
 
 #[cfg(test)]

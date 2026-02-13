@@ -5,22 +5,25 @@ mod service_scanner;
 mod task_scanner;
 mod deep_quarantine;
 
+#[cfg(windows)]
+mod windows_service;
+mod process_monitor;
+
 use tauri::{
     Manager,
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState},
 };
 
-use registry_scanner::{scan_registry, calculate_statistics}; 
+use registry_scanner::{scan_registry, calculate_statistics};
 use service_scanner::{scan_services, calculate_statistics as calculate_service_stats};
-use task_scanner::{scan_tasks, calculate_statistics as calculate_task_stats}; 
+use task_scanner::{scan_tasks, calculate_statistics as calculate_task_stats};
 
 
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
-
 #[tauri::command]
 fn start_file_protection(
     paths: Vec<String>,
@@ -322,6 +325,96 @@ fn install_service_desktop() -> Result<String, String> {
 }
 
 // ============================================================================
+// PROCESS MONITORING COMMANDS
+// ============================================================================
+
+/// Get all running processes from Windows
+#[tauri::command]
+fn get_windows_processes() -> Result<Vec<process_monitor::ProcessInfo>, String> {
+    process_monitor::get_running_processes()
+}
+
+/// Get process monitoring statistics
+#[tauri::command]
+fn get_process_stats() -> Result<process_monitor::ProcessStats, String> {
+    let processes = process_monitor::get_running_processes()?;
+    Ok(process_monitor::get_process_statistics(&processes))
+}
+
+// ============================================================================
+// SERVICE MANAGEMENT COMMANDS
+// ============================================================================
+
+/// Check if service is installed
+#[tauri::command]
+fn check_service_installed() -> Result<bool, String> {
+    #[cfg(windows)]
+    {
+        Ok(crate::windows_service::is_service_installed())
+    }
+    #[cfg(not(windows))]
+    Ok(false)
+}
+
+/// Check if service is running
+#[tauri::command]
+fn check_service_running() -> Result<bool, String> {
+    #[cfg(windows)]
+    {
+        Ok(crate::windows_service::is_service_running())
+    }
+    #[cfg(not(windows))]
+    Ok(false)
+}
+
+/// Get service status string
+#[tauri::command]
+fn get_service_status() -> Result<String, String> {
+    #[cfg(windows)]
+    {
+        Ok(crate::windows_service::get_service_status())
+    }
+    #[cfg(not(windows))]
+    Ok("Not Supported".to_string())
+}
+
+/// Start the Windows service
+#[tauri::command]
+fn start_service_command() -> Result<String, String> {
+    #[cfg(windows)]
+    {
+        crate::windows_service::start_service()?;
+        Ok("Service started successfully".to_string())
+    }
+    #[cfg(not(windows))]
+    Err("Not supported on this platform".to_string())
+}
+
+/// Stop the Windows service
+#[tauri::command]
+fn stop_service_command() -> Result<String, String> {
+    #[cfg(windows)]
+    {
+        crate::windows_service::stop_service()?;
+        Ok("Service stopped successfully".to_string())
+    }
+    #[cfg(not(windows))]
+    Err("Not supported on this platform".to_string())
+}
+
+/// Uninstall the Windows service
+#[tauri::command]
+fn uninstall_service_command() -> Result<String, String> {
+    #[cfg(windows)]
+    {
+        crate::windows_service::uninstall_service()?;
+        Ok("Service uninstalled successfully".to_string())
+    }
+    #[cfg(not(windows))]
+    Err("Not supported on this platform".to_string())
+}
+
+// ============================================================================
 // DEEP QUARANTINE COMMANDS
 // ============================================================================
 
@@ -500,28 +593,38 @@ pub fn run() {
                 api.prevent_close();
             }
         })
-        .invoke_handler(tauri::generate_handler![
-            greet,
-            start_file_protection,
-            create_quarantine_record,
-            start_local_scan,
-            scan_windows_registry,
-            scan_windows_services,
-            scan_windows_tasks,
-            // Process Protection Commands
-            init_tamper_protection,
-            get_desktop_protection_status,
-            enable_desktop_max_protection,
-            disable_desktop_protection,
-            check_admin_privileges,
-            enable_anti_termination_desktop,
-            enable_self_healing_desktop,
-            install_service_desktop,
-            // Deep Quarantine Commands
-            deep_quarantine_analyze,
-            deep_quarantine_remove,
-            deep_quarantine_list_backups
-        ])
+       .invoke_handler(tauri::generate_handler![
+    greet,
+    start_file_protection,
+    create_quarantine_record,
+    start_local_scan,
+    scan_windows_registry,
+    scan_windows_services,
+    scan_windows_tasks,
+    // Process Protection Commands
+    init_tamper_protection,
+    get_desktop_protection_status,
+    enable_desktop_max_protection,
+    disable_desktop_protection,
+    check_admin_privileges,
+    enable_anti_termination_desktop,
+    enable_self_healing_desktop,
+    install_service_desktop,
+    // Service Management Commands
+    check_service_installed,
+    check_service_running,
+    get_service_status,
+    start_service_command,
+    stop_service_command,
+    uninstall_service_command,
+    // Process Monitoring Commands
+    get_windows_processes,
+    get_process_stats,
+    // Deep Quarantine Commands
+    deep_quarantine_analyze,
+    deep_quarantine_remove,
+    deep_quarantine_list_backups
+])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

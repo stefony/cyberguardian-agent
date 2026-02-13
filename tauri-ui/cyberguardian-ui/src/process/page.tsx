@@ -34,6 +34,9 @@ interface ProtectionStatus {
   is_root: boolean;
   username: string;
   recommendations: string[];
+   // NEW: Add service status fields
+  service_status?: string;      // ← ДОБАВИ
+  service_running?: boolean;    // ← ДОБАВИ
 }
 
 interface Statistics {
@@ -102,6 +105,76 @@ const handleModeChange = async (newMode: 'production' | 'demo' | 'testing') => {
     console.error('❌ Error changing detection mode:', error);
   }
 };
+// ============================================================================
+// SERVICE STATUS FUNCTIONS
+// ============================================================================
+
+const checkServiceStatus = async () => {
+  try {
+    const [installedRes, runningRes, statusRes] = await Promise.all([
+      invoke<boolean>('check_service_installed'),
+      invoke<boolean>('check_service_running'),
+      invoke<string>('get_service_status'),
+    ]);
+    
+    return {
+      installed: installedRes,
+      running: runningRes,
+      status: statusRes,
+    };
+  } catch (error) {
+    console.error('Error checking service status:', error);
+    return {
+      installed: false,
+      running: false,
+      status: 'Unknown',
+    };
+  }
+};
+
+const handleStartService = async () => {
+  setActionLoading('start-service');
+  try {
+    const result = await invoke<string>('start_service_command');
+    console.log('✅ Service started:', result);
+    await fetchData();
+  } catch (error) {
+    console.error('❌ Error starting service:', error);
+  } finally {
+    setActionLoading(null);
+  }
+};
+
+const handleStopService = async () => {
+  setActionLoading('stop-service');
+  try {
+    const result = await invoke<string>('stop_service_command');
+    console.log('✅ Service stopped:', result);
+    await fetchData();
+  } catch (error) {
+    console.error('❌ Error stopping service:', error);
+  } finally {
+    setActionLoading(null);
+  }
+};
+
+const handleUninstallService = async () => {
+  // Confirm before uninstalling
+  if (!confirm('Are you sure you want to uninstall the CyberGuardian XDR service? This will remove it from Windows Services.')) {
+    return;
+  }
+  
+  setActionLoading('uninstall-service');
+  try {
+    const result = await invoke<string>('uninstall_service_command');
+    console.log('✅ Service uninstalled:', result);
+    await fetchData();
+  } catch (error) {
+    console.error('❌ Error uninstalling service:', error);
+  } finally {
+    setActionLoading(null);
+  }
+};
 
 const fetchData = async (showRefreshing = false) => {
   if (showRefreshing) setRefreshing(true);
@@ -109,20 +182,31 @@ const fetchData = async (showRefreshing = false) => {
   try {
      if (!showRefreshing) setLoading(true);
 
-    // Check if running in Tauri
-    let statusRes, statsRes;
-    try {
-      
-      const desktopStatus = await invoke<any>('get_desktop_protection_status');
-      statusRes = { success: true, data: desktopStatus };
-      statsRes = { success: true, data: desktopStatus };
-    } catch (tauriError) {
-      console.log("⚠️ Not in Tauri environment, using Railway API");
-      [statusRes, statsRes] = await Promise.all([
-        processProtectionApi.getStatus(),
-        processProtectionApi.getStatistics(),
-      ]);
-    }
+   // Check if running in Tauri
+let statusRes, statsRes;
+try {
+  const desktopStatus = await invoke<any>('get_desktop_protection_status');
+  
+  // Check service status
+  const serviceStatus = await checkServiceStatus();
+  
+  // Merge service status into desktop status
+  const enhancedStatus = {
+    ...desktopStatus,
+    service_status: serviceStatus.status,
+    service_running: serviceStatus.running,
+    service_installed: serviceStatus.installed,
+  };
+  
+  statusRes = { success: true, data: enhancedStatus };
+  statsRes = { success: true, data: enhancedStatus };
+} catch (tauriError) {
+  console.log("⚠️ Not in Tauri environment, using Railway API");
+  [statusRes, statsRes] = await Promise.all([
+    processProtectionApi.getStatus(),
+    processProtectionApi.getStatistics(),
+  ]);
+}
 
     const [
       monitorStatsRes,
@@ -171,13 +255,35 @@ if (monitorStatsRes.success && monitorStatsRes.data?.statistics) {
       setMonitorStats(null);
     }
 
-    // Processes list
-    if (processesRes.success && processesRes.data?.processes) {
-      setProcesses(processesRes.data.processes);
-    } else {
-      console.warn("🟡 processMonitorApi.getProcesses() returned no data");
-      setProcesses([]);
-    }
+   // Processes list - Try Tauri first, then Railway fallback
+try {
+  const tauriProcesses = await invoke<any[]>('get_windows_processes');
+  console.log(`✅ Got ${tauriProcesses.length} processes from Tauri`);
+  
+  // Convert Tauri format to expected format
+  const formattedProcesses = tauriProcesses.map(p => ({
+    pid: p.pid,
+    name: p.name,
+    username: 'N/A', // TODO: Get username from Windows
+    cpu_percent: 0,  // TODO: Get CPU usage
+    memory_mb: 0,    // TODO: Get memory usage
+    exe_path: p.exe_path || p.name,
+    cmdline: p.name,
+    created_at: new Date().toISOString(),
+    suspicious: false, // TODO: Add detection logic
+  }));
+  
+  setProcesses(formattedProcesses);
+} catch (tauriError) {
+  console.log("⚠️ Tauri process enumeration failed, using Railway API");
+  if (processesRes.success && processesRes.data?.processes) {
+    setProcesses(processesRes.data.processes);
+  } else {
+    setProcesses([]);
+  }
+}
+
+
 
     // Threats list
     if (threatsRes.success && threatsRes.data?.threats) {
@@ -301,10 +407,12 @@ const handleInstallService = async () => {
   try {
     // Try Tauri first
     try {
-      
       const result = await invoke('install_service_desktop');
       console.log("📦 Install Service Response (Tauri):", result);
     } catch (tauriError) {
+      // Log the actual Tauri error
+      console.error("❌ Tauri Error:", tauriError);
+      
       // Fallback to Railway API
       console.log("⚠️ Using Railway API");
       const response = await processProtectionApi.installService();
@@ -489,6 +597,36 @@ const handleInstallService = async () => {
               <span>{status.platform}</span>
             </p>
           </motion.div>
+
+          {/* Service Status - NEW CARD */}
+<motion.div
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.4, delay: 0.25 }}
+  whileHover={{ scale: 1.02, y: -4 }}
+  className={`p-6 rounded-xl border-2 hover:shadow-xl transition-all duration-300 ${
+    status.service_running
+      ? 'bg-green-500/10 border-green-500/20 hover:shadow-green-500/20'
+      : status.service_installed
+      ? 'bg-yellow-500/10 border-yellow-500/20 hover:shadow-yellow-500/20'
+      : 'bg-gray-500/10 border-gray-500/20 hover:shadow-gray-500/20'
+  }`}
+>
+  <div className="flex items-center space-x-3 mb-2">
+    <ServerIcon className={`h-6 w-6 ${
+      status.service_running ? 'text-green-400' : 'text-yellow-400'
+    }`} />
+    <p className="text-sm font-semibold text-dark-text/70 uppercase">Service Status</p>
+  </div>
+  <p className={`text-2xl font-black flex items-center space-x-2 ${
+    status.service_running ? 'text-green-400' : 
+    status.service_installed ? 'text-yellow-400' : 'text-gray-400'
+  }`}>
+    <span>{status.service_status || 'Not Installed'}</span>
+    {status.service_running && <span>🟢</span>}
+    {status.service_installed && !status.service_running && <span>🟡</span>}
+  </p>
+</motion.div>
 
           {/* Total Processes */}
           <motion.div
@@ -751,6 +889,76 @@ const handleInstallService = async () => {
                   <p className="text-xs text-left mt-2 opacity-70">Requires elevated privileges</p>
                 )}
               </motion.button>
+
+                  {/* Start Service - NEW BUTTON */}
+      <motion.button
+        whileHover={{ scale: 1.02, y: -2 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={handleStartService}
+        disabled={actionLoading === 'start-service' || !status.service_installed || status.service_running}
+        className={`p-6 rounded-xl border-2 font-semibold transition-all duration-300 text-white disabled:opacity-50 disabled:cursor-not-allowed ${
+          status.service_running
+            ? 'bg-gray-600 border-gray-500/20'
+            : 'bg-green-600 hover:bg-green-700 border-green-500/20 hover:shadow-lg hover:shadow-green-500/30'
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <PlayIcon className="h-6 w-6" />
+            <span>{status.service_running ? '✅ Service Running' : 'Start Service'}</span>
+          </div>
+          {actionLoading === 'start-service' && (
+            <ArrowPathIcon className="h-5 w-5 animate-spin" />
+          )}
+        </div>
+        {!status.service_installed && (
+          <p className="text-xs text-left mt-2 opacity-70">Install service first</p>
+        )}
+      </motion.button>
+
+      {/* Stop Service - NEW BUTTON */}
+      <motion.button
+        whileHover={{ scale: 1.02, y: -2 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={handleStopService}
+        disabled={actionLoading === 'stop-service' || !status.service_running}
+        className="p-6 bg-red-600 hover:bg-red-700 rounded-xl border-2 border-red-500/20 font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-red-500/30 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <StopIcon className="h-6 w-6" />
+            <span>Stop Service</span>
+          </div>
+          {actionLoading === 'stop-service' && (
+            <ArrowPathIcon className="h-5 w-5 animate-spin" />
+          )}
+        </div>
+        {!status.service_running && (
+          <p className="text-xs text-left mt-2 opacity-70">Service not running</p>
+        )}
+      </motion.button>
+
+        {/* Uninstall Service - NEW BUTTON */}
+      <motion.button
+        whileHover={{ scale: 1.02, y: -2 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={handleUninstallService}
+        disabled={actionLoading === 'uninstall-service' || !status.service_installed}
+        className="p-6 bg-orange-600 hover:bg-orange-700 rounded-xl border-2 border-orange-500/20 font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-orange-500/30 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <ServerIcon className="h-6 w-6" />
+            <span>🗑️ Uninstall Service</span>
+          </div>
+          {actionLoading === 'uninstall-service' && (
+            <ArrowPathIcon className="h-5 w-5 animate-spin" />
+          )}
+        </div>
+        {!status.service_installed && (
+          <p className="text-xs text-left mt-2 opacity-70">Service not installed</p>
+        )}
+      </motion.button>
 
             </div>
           </div>
