@@ -89,6 +89,8 @@ export default function ProcessProtectionPage() {
   const [processes, setProcesses] = useState<Process[]>([]);
   const [threats, setThreats] = useState<Threat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const processesPerPage = 10;
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [scanningProcess, setScanningProcess] = useState<number | null>(null);
@@ -1066,7 +1068,9 @@ const handleInstallService = async () => {
   </tr>
 </thead>
               <tbody className="divide-y divide-dark-border">
-                {processes.slice(0, 20).map((proc, index) => (
+                {processes
+  .slice((currentPage - 1) * processesPerPage, currentPage * processesPerPage)
+  .map((proc, index) => (
                   <motion.tr
                     key={proc.pid}
                     initial={{ opacity: 0 }}
@@ -1108,8 +1112,39 @@ const handleInstallService = async () => {
                     </td>
                   </motion.tr>
                 ))}
-              </tbody>
+             </tbody>
             </table>
+
+            {/* Pagination Controls */}
+            {processes.length > processesPerPage && (
+              <div className="px-8 py-4 border-t border-dark-border flex items-center justify-between">
+                <p className="text-sm text-dark-text/70">
+                  Showing {((currentPage - 1) * processesPerPage) + 1} to {Math.min(currentPage * processesPerPage, processes.length)} of {processes.length} processes
+                </p>
+                
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1 rounded-lg bg-dark-bg border border-dark-border hover:bg-purple-600/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                  >
+                    Previous
+                  </button>
+                  
+                  <span className="text-sm text-dark-text">
+                    Page {currentPage} of {Math.ceil(processes.length / processesPerPage)}
+                  </span>
+                  
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(Math.ceil(processes.length / processesPerPage), p + 1))}
+                    disabled={currentPage === Math.ceil(processes.length / processesPerPage)}
+                    className="px-3 py-1 rounded-lg bg-dark-bg border border-dark-border hover:bg-purple-600/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
 
