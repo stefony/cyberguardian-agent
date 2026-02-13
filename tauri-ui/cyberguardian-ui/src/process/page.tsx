@@ -320,6 +320,20 @@ try {
     try {
       await invoke('init_tamper_protection');
       console.log("✅ Tauri protection initialized");
+      
+      // Start background process upload to Railway backend
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        try {
+          const result = await invoke('start_background_upload', { apiToken: token });
+          console.log("✅ Background upload started:", result);
+        } catch (uploadError) {
+          console.error("❌ Failed to start background upload:", uploadError);
+        }
+      } else {
+        console.warn("⚠️ No access token found, skipping background upload");
+      }
+      
     } catch (error) {
       console.log("⚠️ Not in Tauri, skipping init");
     }
@@ -329,7 +343,6 @@ try {
   fetchData();
   const interval = setInterval(() => fetchData(true), 10000);
   return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
 }, []);
 
 const handleEnableAntiTermination = async () => {
