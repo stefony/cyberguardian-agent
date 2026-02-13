@@ -42,7 +42,9 @@
         "Win32_System_Services",      # ← Service Control Manager (SCM) API
         "Win32_Security",              # ← Security and access control
         "Win32_System_Threading",      # ← Process/Thread management
-        "Win32_System_Diagnostics_ToolHelp",  
+        "Win32_System_Diagnostics_ToolHelp",
+        "Win32_System_ProcessStatus",        # ← ДОБАВИ
+        "Win32_System_SystemServices",       # ← ДОБАВИ  
     ] }
 
     # Windows Service wrapper library

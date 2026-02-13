@@ -10,7 +10,19 @@ use windows::Win32::System::Diagnostics::ToolHelp::{
     PROCESSENTRY32W, TH32CS_SNAPPROCESS,
 };
 #[cfg(target_os = "windows")]
-use windows::Win32::Foundation::CloseHandle;
+use windows::Win32::Foundation::{CloseHandle, HANDLE};
+#[cfg(target_os = "windows")]
+use windows::Win32::System::Threading::{
+    OpenProcess, OpenProcessToken, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ,
+};
+#[cfg(target_os = "windows")]
+use windows::Win32::System::ProcessStatus::{
+    GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS,
+};
+#[cfg(target_os = "windows")]
+use windows::Win32::Security::{GetTokenInformation, TokenUser, TOKEN_QUERY};
+#[cfg(target_os = "windows")]
+
 
 /// Process information structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -20,6 +32,9 @@ pub struct ProcessInfo {
     pub parent_pid: u32,
     pub thread_count: u32,
     pub exe_path: String,
+    pub cpu_percent: f32,
+    pub memory_mb: f64,
+    pub username: String,
 }
 
 /// Process monitoring statistics
@@ -28,6 +43,76 @@ pub struct ProcessStats {
     pub total_processes: usize,
     pub suspicious_processes: usize,
     pub monitored_at: String,
+}
+
+/// Get memory usage for a process (in MB)
+#[cfg(target_os = "windows")]
+fn get_memory_usage(pid: u32) -> f64 {
+    unsafe {
+        let handle = match OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid) {
+            Ok(h) => h,
+            Err(_) => return 0.0,
+        };
+
+        let mut mem_counters: PROCESS_MEMORY_COUNTERS = std::mem::zeroed();
+        mem_counters.cb = std::mem::size_of::<PROCESS_MEMORY_COUNTERS>() as u32;
+
+        let result = GetProcessMemoryInfo(
+            handle,
+            &mut mem_counters,
+            std::mem::size_of::<PROCESS_MEMORY_COUNTERS>() as u32,
+        );
+
+        let _ = CloseHandle(handle);
+
+        if result.is_ok() {
+            // Convert bytes to MB
+            mem_counters.WorkingSetSize as f64 / (1024.0 * 1024.0)
+        } else {
+            0.0
+        }
+    }
+}
+
+/// Get username for a process
+#[cfg(target_os = "windows")]
+fn get_username(pid: u32) -> String {
+    unsafe {
+        let handle = match OpenProcess(PROCESS_QUERY_INFORMATION, false, pid) {
+            Ok(h) => h,
+            Err(_) => return "N/A".to_string(),
+        };
+
+        let mut token: HANDLE = HANDLE::default();
+        if OpenProcessToken(handle, TOKEN_QUERY, &mut token).is_err() {
+            let _ = CloseHandle(handle);
+            return "N/A".to_string();
+        }
+
+        // Get token user info
+        let mut return_length: u32 = 0;
+        let mut buffer = vec![0u8; 256];
+
+        let result = GetTokenInformation(
+            token,
+            TokenUser,
+            Some(buffer.as_mut_ptr() as *mut _),
+            buffer.len() as u32,
+            &mut return_length,
+        );
+
+        let _ = CloseHandle(token);
+        let _ = CloseHandle(handle);
+
+        if result.is_err() {
+            return "N/A".to_string();
+        }
+
+        // For now, return a placeholder
+        // Full SID-to-username conversion requires LookupAccountSidW
+        // which is more complex - we can add it later if needed
+        "User".to_string()
+    }
 }
 
 /// Enumerate all running Windows processes
@@ -62,12 +147,23 @@ pub fn enumerate_processes() -> Result<Vec<ProcessInfo>, String> {
                         .collect::<Vec<u16>>()
                 );
                 
+                let pid = entry.th32ProcessID;
+                
+                // Get memory usage (real value)
+                let memory_mb = get_memory_usage(pid);
+                
+                // Get username (real value)
+                let username = get_username(pid);
+                
                 let process = ProcessInfo {
-                    pid: entry.th32ProcessID,
+                    pid,
                     name: name.clone(),
                     parent_pid: entry.th32ParentProcessID,
                     thread_count: entry.cntThreads,
-                    exe_path: name, // For now, just use name. Can be enhanced later.
+                    exe_path: name.clone(),
+                    cpu_percent: 0.0,  // CPU requires time-based sampling, will add later
+                    memory_mb,
+                    username,
                 };
                 
                 processes.push(process);

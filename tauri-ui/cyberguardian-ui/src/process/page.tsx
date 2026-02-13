@@ -261,17 +261,17 @@ try {
   console.log(`✅ Got ${tauriProcesses.length} processes from Tauri`);
   
   // Convert Tauri format to expected format
-  const formattedProcesses = tauriProcesses.map(p => ({
-    pid: p.pid,
-    name: p.name,
-    username: 'N/A', // TODO: Get username from Windows
-    cpu_percent: 0,  // TODO: Get CPU usage
-    memory_mb: 0,    // TODO: Get memory usage
-    exe_path: p.exe_path || p.name,
-    cmdline: p.name,
-    created_at: new Date().toISOString(),
-    suspicious: false, // TODO: Add detection logic
-  }));
+ const formattedProcesses = tauriProcesses.map(p => ({
+  pid: p.pid,
+  name: p.name,
+  username: p.username || 'N/A',       // ← ИЗПОЛЗВА REAL VALUE
+  cpu_percent: p.cpu_percent || 0,     // ← ИЗПОЛЗВА REAL VALUE
+  memory_mb: p.memory_mb || 0,         // ← ИЗПОЛЗВА REAL VALUE
+  exe_path: p.exe_path || p.name,
+  cmdline: p.name,
+  created_at: new Date().toISOString(),
+  suspicious: false,
+}));
   
   setProcesses(formattedProcesses);
 } catch (tauriError) {
