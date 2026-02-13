@@ -1055,17 +1055,16 @@ const handleInstallService = async () => {
 
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-dark-bg">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-dark-text/70 uppercase">PID</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-dark-text/70 uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-dark-text/70 uppercase">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-dark-text/70 uppercase">CPU %</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-dark-text/70 uppercase">Memory</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-dark-text/70 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-dark-text/70 uppercase">Actions</th>
-                </tr>
-              </thead>
+             <thead className="bg-dark-bg">
+  <tr>
+    <th className="px-6 py-3 text-left text-xs font-semibold text-dark-text/70 uppercase">PID</th>
+    <th className="px-6 py-3 text-left text-xs font-semibold text-dark-text/70 uppercase">Name</th>
+    <th className="px-6 py-3 text-left text-xs font-semibold text-dark-text/70 uppercase">User</th>
+    <th className="px-6 py-3 text-left text-xs font-semibold text-dark-text/70 uppercase">Memory</th>
+    <th className="px-6 py-3 text-left text-xs font-semibold text-dark-text/70 uppercase">Status</th>
+    <th className="px-6 py-3 text-left text-xs font-semibold text-dark-text/70 uppercase">Actions</th>
+  </tr>
+</thead>
               <tbody className="divide-y divide-dark-border">
                 {processes.slice(0, 20).map((proc, index) => (
                   <motion.tr
@@ -1080,7 +1079,6 @@ const handleInstallService = async () => {
                     <td className="px-6 py-4 text-sm text-dark-text">{proc.pid}</td>
                     <td className="px-6 py-4 text-sm text-dark-text font-medium">{proc.name}</td>
                     <td className="px-6 py-4 text-sm text-dark-text/70">{proc.username}</td>
-                    <td className="px-6 py-4 text-sm text-dark-text">{proc.cpu_percent.toFixed(1)}%</td>
                     <td className="px-6 py-4 text-sm text-dark-text">{proc.memory_mb.toFixed(1)} MB</td>
                     <td className="px-6 py-4">
                       {proc.suspicious ? (
