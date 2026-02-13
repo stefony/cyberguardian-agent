@@ -8,6 +8,8 @@ mod deep_quarantine;
 #[cfg(windows)]
 mod windows_service;
 mod process_monitor;
+mod api_client; 
+mod background_tasks;
 
 use tauri::{
     Manager,
@@ -470,7 +472,27 @@ async fn deep_quarantine_list_backups() -> Result<BackupList, String> {
         }
     }
 }
-
+#[tauri::command]
+async fn start_background_upload(api_token: String) -> Result<String, String> {
+    println!("🚀 Starting background process upload task...");
+    
+    // Test connection first
+    match background_tasks::test_connection(&api_token).await {
+        Ok(_) => {
+            println!("✅ Backend connection verified");
+            
+            // Start periodic upload task
+            background_tasks::start_process_upload_task(api_token);
+            
+            Ok("Background upload started".to_string())
+        }
+        Err(e) => {
+            let error_msg = format!("Failed to connect to backend: {}", e);
+            eprintln!("❌ {}", error_msg);
+            Err(error_msg)
+        }
+    }
+}
 // ============================================================================
 // MAIN APPLICATION
 // ============================================================================
@@ -623,7 +645,9 @@ pub fn run() {
     // Deep Quarantine Commands
     deep_quarantine_analyze,
     deep_quarantine_remove,
-    deep_quarantine_list_backups
+    deep_quarantine_list_backups,
+    // Background Upload
+    start_background_upload
 ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
