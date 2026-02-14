@@ -129,27 +129,13 @@ const fetchHistory = async () => {
     if (data.success && data.history) {
       setUpdateHistory(data.history);
     } else {
-      console.log('🟡 Using mock update history');
-      const mockHistory: UpdateHistory[] = [
-        { id: 5, from_version: '2.1.3', to_version: '2.1.4', update_type: 'patch', status: 'completed', started_at: '2025-01-05T10:00:00Z', completed_at: '2025-01-05T10:15:00Z', duration_seconds: 900 },
-        { id: 4, from_version: '2.1.2', to_version: '2.1.3', update_type: 'patch', status: 'completed', started_at: '2024-12-20T09:00:00Z', completed_at: '2024-12-20T09:12:00Z', duration_seconds: 720 },
-        { id: 3, from_version: '2.1.1', to_version: '2.1.2', update_type: 'patch', status: 'completed', started_at: '2024-12-05T14:30:00Z', completed_at: '2024-12-05T14:45:00Z', duration_seconds: 900 },
-        { id: 2, from_version: '2.1.0', to_version: '2.1.1', update_type: 'patch', status: 'completed', started_at: '2024-11-15T11:00:00Z', completed_at: '2024-11-15T11:10:00Z', duration_seconds: 600 },
-        { id: 1, from_version: '2.0.5', to_version: '2.1.0', update_type: 'minor', status: 'completed', started_at: '2024-11-01T10:00:00Z', completed_at: '2024-11-01T10:25:00Z', duration_seconds: 1500 }
-      ];
-      setUpdateHistory(mockHistory);
+      // No mock data - empty history is OK
+      setUpdateHistory([]);
     }
   } catch (error) {
     console.error('Error fetching history:', error);
-    console.log('🟡 Using mock update history (error fallback)');
-    const mockHistory: UpdateHistory[] = [
-      { id: 5, from_version: '2.1.3', to_version: '2.1.4', update_type: 'patch', status: 'completed', started_at: '2025-01-05T10:00:00Z', completed_at: '2025-01-05T10:15:00Z', duration_seconds: 900 },
-      { id: 4, from_version: '2.1.2', to_version: '2.1.3', update_type: 'patch', status: 'completed', started_at: '2024-12-20T09:00:00Z', completed_at: '2024-12-20T09:12:00Z', duration_seconds: 720 },
-      { id: 3, from_version: '2.1.1', to_version: '2.1.2', update_type: 'patch', status: 'completed', started_at: '2024-12-05T14:30:00Z', completed_at: '2024-12-05T14:45:00Z', duration_seconds: 900 },
-      { id: 2, from_version: '2.1.0', to_version: '2.1.1', update_type: 'patch', status: 'completed', started_at: '2024-11-15T11:00:00Z', completed_at: '2024-11-15T11:10:00Z', duration_seconds: 600 },
-      { id: 1, from_version: '2.0.5', to_version: '2.1.0', update_type: 'minor', status: 'completed', started_at: '2024-11-01T10:00:00Z', completed_at: '2024-11-01T10:25:00Z', duration_seconds: 1500 }
-    ];
-    setUpdateHistory(mockHistory);
+    // No mock data fallback - professional empty state will show
+    setUpdateHistory([]);
   }
 };
 
