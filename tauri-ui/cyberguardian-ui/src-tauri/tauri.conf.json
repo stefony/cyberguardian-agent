@@ -62,6 +62,7 @@
   },
   "plugins": {
     "updater": {
+      "active": true,
       "endpoints": [
         "https://cyberguardian-backend-production.up.railway.app/api/updates/tauri/{{target}}/{{current_version}}"
       ],
