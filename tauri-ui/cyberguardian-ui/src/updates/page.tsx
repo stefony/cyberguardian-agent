@@ -217,31 +217,24 @@ const downloadUpdate = async () => {
       });
       
       if (logResponse.success) {
-        updateId = logResponse.update_id;
-      }
+  updateId = logResponse.update_id;
+  
+  // ВАЖНО: Запазваме updateId в localStorage ПРЕДИ install
+  if (updateId !== null) {
+    localStorage.setItem('pending_update_id', updateId.toString());
+    localStorage.setItem('pending_update_from', versionInfo?.version || '1.5.0');
+    localStorage.setItem('pending_update_to', update.version);
+  }
+}
     } catch (err) {
       console.error('Failed to log update attempt:', err);
     }
     
-    // Download and install
+    // Download and install (приложението се затваря тук!)
     await update.downloadAndInstall();
     
-    // Update status to completed
-    if (updateId) {
-      try {
-        await fetchWithAuth(`/api/updates/history/${updateId}/status`, {
-          method: 'PUT',
-          body: JSON.stringify({
-            status: 'completed'
-          })
-        });
-      } catch (err) {
-        console.error('Failed to update history status:', err);
-      }
-    }
-    
-    // Update history will be refreshed on restart
-    alert('Update installed! Please restart the application.');
+    // NOTE: Кодът след downloadAndInstall() НИКОГА НЕ СЕ ИЗПЪЛНЯВА
+    // защото приложението се затваря при инсталация!
     
   } catch (error) {
     console.error('Error downloading update:', error);
@@ -279,6 +272,43 @@ const downloadUpdate = async () => {
     };
     loadData();
   }, []);
+
+  // Check for pending update after restart
+useEffect(() => {
+  const checkPendingUpdate = async () => {
+    const pendingUpdateId = localStorage.getItem('pending_update_id');
+    const fromVersion = localStorage.getItem('pending_update_from');
+    const toVersion = localStorage.getItem('pending_update_to');
+    
+    if (pendingUpdateId && fromVersion && toVersion) {
+      console.log(`Completing pending update: ${fromVersion} → ${toVersion}`);
+      
+      try {
+        await fetchWithAuth(`/api/updates/history/${pendingUpdateId}/status`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            status: 'completed'
+          })
+        });
+        
+        console.log('Update history marked as completed');
+        
+        // Refresh history to show the new entry
+        await fetchHistory();
+        
+      } catch (err) {
+        console.error('Failed to complete pending update:', err);
+      } finally {
+        // Clear localStorage regardless of success/failure
+        localStorage.removeItem('pending_update_id');
+        localStorage.removeItem('pending_update_from');
+        localStorage.removeItem('pending_update_to');
+      }
+    }
+  };
+  
+  checkPendingUpdate();
+}, []);
 
   const formatBytes = (bytes?: number) => {
     if (!bytes) return 'Unknown';
