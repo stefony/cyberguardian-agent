@@ -173,18 +173,18 @@ const fetchHistory = async () => {
     if (data.success && data.history) {
       setUpdateHistory(data.history);
     } else {
-      // No mock data - empty history is OK
       setUpdateHistory([]);
     }
   } catch (error) {
     console.error('Error fetching history:', error);
-    // No mock data fallback - professional empty state will show
     setUpdateHistory([]);
   }
 };
 
- const downloadUpdate = async () => {
+const downloadUpdate = async () => {
   setDownloading(true);
+  let updateId: number | null = null;
+  
   try {
     // Use Tauri updater to download and install
     const update = await check();
@@ -204,17 +204,63 @@ const fetchHistory = async () => {
       return;
     }
     
+    // Log update attempt to database
+    try {
+      const logResponse = await fetchWithAuth('/api/updates/history/log', {
+        method: 'POST',
+        body: JSON.stringify({
+          from_version: versionInfo?.version || '1.5.0',
+          to_version: update.version,
+          update_type: getUpdateType(versionInfo?.version || '1.5.0', update.version),
+          release_notes: update.body
+        })
+      });
+      
+      if (logResponse.success) {
+        updateId = logResponse.update_id;
+      }
+    } catch (err) {
+      console.error('Failed to log update attempt:', err);
+    }
+    
     // Download and install
     await update.downloadAndInstall();
+    
+    // Update status to completed
+    if (updateId) {
+      try {
+        await fetchWithAuth(`/api/updates/history/${updateId}/status`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            status: 'completed'
+          })
+        });
+      } catch (err) {
+        console.error('Failed to update history status:', err);
+      }
+    }
     
     // Update history will be refreshed on restart
     alert('Update installed! Please restart the application.');
     
-    // Note: We can't auto-restart without relaunch()
-    // User will need to manually restart
-    
   } catch (error) {
     console.error('Error downloading update:', error);
+    
+    // Update status to failed
+    if (updateId) {
+      try {
+        await fetchWithAuth(`/api/updates/history/${updateId}/status`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            status: 'failed',
+            error_message: String(error)
+          })
+        });
+      } catch (err) {
+        console.error('Failed to update history status:', err);
+      }
+    }
+    
     alert('Failed to download update: ' + error);
   } finally {
     setDownloading(false);
