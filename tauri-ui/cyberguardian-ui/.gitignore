@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Tauri signing keys (DO NOT COMMIT!)
+tauri-signing.key
+tauri-signing.key.pub
