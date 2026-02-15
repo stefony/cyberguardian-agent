@@ -1,4 +1,3 @@
-
 import { httpFetch } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,6 +20,8 @@ import {
   ClockIcon as ClockSolid
 } from '@heroicons/react/24/solid';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { check } from '@tauri-apps/plugin-updater';
+// import { relaunch } from '@tauri-apps/api/process'; // Will add later
 
 const API_URL = (import.meta as any).env.VITE_API_URL || 'https://cyberguardian-backend-production.up.railway.app';
 
@@ -109,17 +110,48 @@ const fetchVersion = async () => {
 const checkForUpdates = async (force: boolean = false) => {
   setChecking(true);
   try {
-    const data = await fetchWithAuth(`/api/updates/check?force=${force}`);
-
-    if (data.success) {
-      setUpdateInfo(data);
+    // Use Tauri updater plugin
+    const update = await check();
+    
+    if (update) {
+      setUpdateInfo({
+        available: true,
+        current_version: update.currentVersion,
+        latest_version: update.version,
+        update_type: getUpdateType(update.currentVersion, update.version),
+        release_date: update.date,
+        release_notes: update.body || '',
+        download_url: '', // Handled by Tauri
+        size_bytes: 0, // Unknown
+      });
+    } else {
+      setUpdateInfo({
+        available: false,
+        current_version: versionInfo?.version || '1.4.0',
+        message: 'You are already on the latest version'
+      });
     }
   } catch (error) {
     console.error('Error checking updates:', error);
-    // No mock data fallback
+    setUpdateInfo({
+      available: false,
+      current_version: versionInfo?.version || '1.4.0',
+      message: 'Failed to check for updates'
+    });
   } finally {
     setChecking(false);
   }
+};
+
+// Helper function to determine update type
+const getUpdateType = (current: string, latest: string): string => {
+  const [cMaj, cMin, cPat] = current.split('.').map(Number);
+  const [lMaj, lMin, lPat] = latest.split('.').map(Number);
+  
+  if (lMaj > cMaj) return 'major';
+  if (lMin > cMin) return 'minor';
+  if (lPat > cPat) return 'patch';
+  return 'none';
 };
 
 const fetchHistory = async () => {
@@ -139,26 +171,43 @@ const fetchHistory = async () => {
   }
 };
 
-  const downloadUpdate = async () => {
+ const downloadUpdate = async () => {
   setDownloading(true);
   try {
-    const data = await fetchWithAuth('/api/updates/download', {
-      method: 'POST'
-    });
-      
-      if (data.success) {
-        alert('Update downloaded successfully!');
-        await fetchHistory();
-      } else {
-        alert(data.message || 'Failed to download update');
-      }
-    } catch (error) {
-      console.error('Error downloading update:', error);
-      alert('Error downloading update');
-    } finally {
-      setDownloading(false);
+    // Use Tauri updater to download and install
+    const update = await check();
+    
+    if (!update) {
+      alert('No updates available');
+      return;
     }
-  };
+    
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `Update to v${update.version}?\n\n${update.body}\n\nThe app will restart after installation.`
+    );
+    
+    if (!confirmed) {
+      setDownloading(false);
+      return;
+    }
+    
+    // Download and install
+    await update.downloadAndInstall();
+    
+    // Update history will be refreshed on restart
+    alert('Update installed! Please restart the application.');
+    
+    // Note: We can't auto-restart without relaunch()
+    // User will need to manually restart
+    
+  } catch (error) {
+    console.error('Error downloading update:', error);
+    alert('Failed to download update: ' + error);
+  } finally {
+    setDownloading(false);
+  }
+};
 
   useEffect(() => {
     const loadData = async () => {
