@@ -21,6 +21,7 @@ import {
 } from '@heroicons/react/24/solid';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { check } from '@tauri-apps/plugin-updater';
+import { getVersion } from '@tauri-apps/api/app';
 // import { relaunch } from '@tauri-apps/api/process'; // Will add later
 
 const API_URL = (import.meta as any).env.VITE_API_URL || 'https://cyberguardian-backend-production.up.railway.app';
@@ -95,12 +96,23 @@ export default function UpdatesPage() {
   const [downloading, setDownloading] = useState(false);
 
 // Fail gracefully, NO fake data
+// Read version directly from Tauri config
 const fetchVersion = async () => {
   try {
-    const data = await fetchWithAuth('/api/updates/version');
-    if (data.success && data.version) {
-      setVersionInfo(data.version);
-    }
+    const version = await getVersion();
+    
+    // Parse version string (e.g., "1.5.0")
+    const [major, minor, patch] = version.split('.').map(Number);
+    
+    setVersionInfo({
+      version: version,
+      major: major,
+      minor: minor,
+      patch: patch,
+      codename: "Sentinel", // You can customize this
+      build_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+      release_notes: "Enhanced threat detection and auto-update capabilities"
+    });
   } catch (error) {
     console.error('Error fetching version:', error);
     // No mock fallback
@@ -127,7 +139,7 @@ const checkForUpdates = async (force: boolean = false) => {
     } else {
       setUpdateInfo({
         available: false,
-        current_version: versionInfo?.version || '1.4.0',
+        current_version: versionInfo?.version || 'Unknown',
         message: 'You are already on the latest version'
       });
     }
@@ -135,7 +147,7 @@ const checkForUpdates = async (force: boolean = false) => {
     console.error('Error checking updates:', error);
     setUpdateInfo({
       available: false,
-      current_version: versionInfo?.version || '1.4.0',
+      current_version: versionInfo?.version || 'Unknown',
       message: 'Failed to check for updates'
     });
   } finally {
