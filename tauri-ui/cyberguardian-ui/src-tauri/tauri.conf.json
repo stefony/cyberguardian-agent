@@ -59,5 +59,13 @@
         "startMenuFolder": "CyberGuardian XDR"
       }
     }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://cyberguardian-backend-production.up.railway.app/api/updates/tauri/{{target}}/{{current_version}}"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVBMUQ5Mzk0QkRBRUZFMjYKUldRbS9xNjlsSk1kNnJQODhMK2dKeDA4azQzY0Fyc0ppa2JrRGVrdWlZR3EvZ1B6UWtYQlhkdlEK"
+    }
   }
 }
