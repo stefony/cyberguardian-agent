@@ -206,6 +206,8 @@ const downloadUpdate = async () => {
     
     // Log update attempt to database
     try {
+      console.log('🔵 CALLING BACKEND to log update attempt...');
+      
       const logResponse = await fetchWithAuth('/api/updates/history/log', {
         method: 'POST',
         body: JSON.stringify({
@@ -216,19 +218,39 @@ const downloadUpdate = async () => {
         })
       });
       
+      console.log('🔵 BACKEND RESPONSE:', logResponse);
+      
       if (logResponse.success) {
-  updateId = logResponse.update_id;
-  
-  // ВАЖНО: Запазваме updateId в localStorage ПРЕДИ install
-  if (updateId !== null) {
-    localStorage.setItem('pending_update_id', updateId.toString());
-    localStorage.setItem('pending_update_from', versionInfo?.version || '1.5.0');
-    localStorage.setItem('pending_update_to', update.version);
-  }
-}
+        updateId = logResponse.update_id;
+        
+        // ВАЖНО: Запазваме updateId в localStorage ПРЕДИ install
+        if (updateId !== null) {
+          console.log('🔵 SAVING TO LOCALSTORAGE:', {
+            updateId,
+            from: versionInfo?.version || '1.5.0',
+            to: update.version
+          });
+          
+          localStorage.setItem('pending_update_id', updateId.toString());
+          localStorage.setItem('pending_update_from', versionInfo?.version || '1.5.0');
+          localStorage.setItem('pending_update_to', update.version);
+          
+          console.log('🔵 LOCALSTORAGE SAVED:', {
+            pending_update_id: localStorage.getItem('pending_update_id'),
+            pending_update_from: localStorage.getItem('pending_update_from'),
+            pending_update_to: localStorage.getItem('pending_update_to')
+          });
+        } else {
+          console.log('🔴 updateId is NULL!');
+        }
+      } else {
+        console.log('🔴 logResponse.success is FALSE!');
+      }
     } catch (err) {
-      console.error('Failed to log update attempt:', err);
+      console.error('🔴 Failed to log update attempt:', err);
     }
+    
+    console.log('🔵 STARTING DOWNLOAD AND INSTALL...');
     
     // Download and install (приложението се затваря тук!)
     await update.downloadAndInstall();
@@ -237,7 +259,7 @@ const downloadUpdate = async () => {
     // защото приложението се затваря при инсталация!
     
   } catch (error) {
-    console.error('Error downloading update:', error);
+    console.error('🔴 Error downloading update:', error);
     
     // Update status to failed
     if (updateId) {
@@ -273,17 +295,27 @@ const downloadUpdate = async () => {
     loadData();
   }, []);
 
-  // Check for pending update after restart
+// Check for pending update after restart
 useEffect(() => {
   const checkPendingUpdate = async () => {
+    console.log('🟢 CHECKING FOR PENDING UPDATE ON STARTUP...');
+    
     const pendingUpdateId = localStorage.getItem('pending_update_id');
     const fromVersion = localStorage.getItem('pending_update_from');
     const toVersion = localStorage.getItem('pending_update_to');
     
+    console.log('🟢 LOCALSTORAGE VALUES:', {
+      pendingUpdateId,
+      fromVersion,
+      toVersion
+    });
+    
     if (pendingUpdateId && fromVersion && toVersion) {
-      console.log(`Completing pending update: ${fromVersion} → ${toVersion}`);
+      console.log(`🟢 FOUND PENDING UPDATE: ${fromVersion} → ${toVersion}, ID: ${pendingUpdateId}`);
       
       try {
+        console.log('🟢 CALLING BACKEND to mark update as completed...');
+        
         await fetchWithAuth(`/api/updates/history/${pendingUpdateId}/status`, {
           method: 'PUT',
           body: JSON.stringify({
@@ -291,19 +323,25 @@ useEffect(() => {
           })
         });
         
-        console.log('Update history marked as completed');
+        console.log('🟢 UPDATE HISTORY MARKED AS COMPLETED!');
         
         // Refresh history to show the new entry
+        console.log('🟢 REFRESHING HISTORY...');
         await fetchHistory();
+        console.log('🟢 HISTORY REFRESHED!');
         
       } catch (err) {
-        console.error('Failed to complete pending update:', err);
+        console.error('🔴 Failed to complete pending update:', err);
       } finally {
         // Clear localStorage regardless of success/failure
+        console.log('🟢 CLEARING LOCALSTORAGE...');
         localStorage.removeItem('pending_update_id');
         localStorage.removeItem('pending_update_from');
         localStorage.removeItem('pending_update_to');
+        console.log('🟢 LOCALSTORAGE CLEARED!');
       }
+    } else {
+      console.log('🟡 NO PENDING UPDATE FOUND (one or more values missing)');
     }
   };
   
