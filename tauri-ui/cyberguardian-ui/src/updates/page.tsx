@@ -168,15 +168,18 @@ const getUpdateType = (current: string, latest: string): string => {
 
 const fetchHistory = async () => {
   try {
+    console.log('📊 Fetching update history...');
     const data = await fetchWithAuth('/api/updates/history?limit=10');
 
     if (data.success && data.history) {
+      console.log(`✅ Fetched ${data.history.length} update records`);
       setUpdateHistory(data.history);
     } else {
+      console.log('ℹ️ No update history found');
       setUpdateHistory([]);
     }
   } catch (error) {
-    console.error('Error fetching history:', error);
+    console.error('❌ Error fetching history:', error);
     setUpdateHistory([]);
   }
 };
@@ -209,44 +212,44 @@ const downloadUpdate = async () => {
       const logResponse = await fetchWithAuth('/api/updates/history/log', {
         method: 'POST',
         body: JSON.stringify({
-          from_version: versionInfo?.version || '1.5.0',
+          from_version: versionInfo?.version || '1.9.0',
           to_version: update.version,
-          update_type: getUpdateType(versionInfo?.version || '1.5.0', update.version),
+          update_type: getUpdateType(versionInfo?.version || '1.9.0', update.version),
           release_notes: update.body
         })
       });
       
       if (logResponse.success) {
         updateId = logResponse.update_id;
+        
+        // 🔥 NEW: Save to localStorage for post-restart completion
+        localStorage.setItem('pending_update_id', String(updateId));
+        localStorage.setItem('pending_update_to_version', update.version);
+        localStorage.setItem('pending_update_from_version', versionInfo?.version || '1.9.0');
+        
+        console.log('✅ Saved pending update to localStorage:', {
+          updateId,
+          to_version: update.version,
+          from_version: versionInfo?.version || '1.9.0'
+        });
       }
     } catch (err) {
       console.error('Failed to log update attempt:', err);
+      alert('Failed to log update. Continue anyway?');
+      // Don't return - allow update to proceed
     }
     
-    // Download and install
+    // Download and install (app will close immediately)
+    console.log('🚀 Starting download and install...');
     await update.downloadAndInstall();
     
-    // Update status to completed
-    if (updateId) {
-      try {
-        await fetchWithAuth(`/api/updates/history/${updateId}/status`, {
-          method: 'PUT',
-          body: JSON.stringify({
-            status: 'completed'
-          })
-        });
-      } catch (err) {
-        console.error('Failed to update history status:', err);
-      }
-    }
-    
-    // Update history will be refreshed on restart
-    alert('Update installed! Please restart the application.');
+    // ⚠️ CODE BELOW THIS LINE NEVER EXECUTES (app closes)
+    // Keeping for reference only - cleanup happens on restart via useEffect
     
   } catch (error) {
     console.error('Error downloading update:', error);
     
-    // Update status to failed
+    // Update status to failed if we have updateId
     if (updateId) {
       try {
         await fetchWithAuth(`/api/updates/history/${updateId}/status`, {
@@ -256,6 +259,11 @@ const downloadUpdate = async () => {
             error_message: String(error)
           })
         });
+        
+        // Clear localStorage on failure
+        localStorage.removeItem('pending_update_id');
+        localStorage.removeItem('pending_update_to_version');
+        localStorage.removeItem('pending_update_from_version');
       } catch (err) {
         console.error('Failed to update history status:', err);
       }
@@ -266,19 +274,94 @@ const downloadUpdate = async () => {
     setDownloading(false);
   }
 };
-
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await Promise.all([
-        fetchVersion(),
-        checkForUpdates(),
-        fetchHistory()
-      ]);
-      setLoading(false);
-    };
-    loadData();
-  }, []);
+useEffect(() => {
+  const loadData = async () => {
+    setLoading(true);
+    
+    // 🔥 NEW: Check for pending update completion after restart
+    try {
+      const pendingUpdateId = localStorage.getItem('pending_update_id');
+      const pendingToVersion = localStorage.getItem('pending_update_to_version');
+      const pendingFromVersion = localStorage.getItem('pending_update_from_version');
+      
+      if (pendingUpdateId && pendingToVersion) {
+        console.log('🔍 Found pending update in localStorage:', {
+          updateId: pendingUpdateId,
+          expectedVersion: pendingToVersion,
+          fromVersion: pendingFromVersion
+        });
+        
+        // Get current version to verify update succeeded
+        const currentVersion = await getVersion();
+        console.log('📱 Current app version:', currentVersion);
+        
+        if (currentVersion === pendingToVersion) {
+          // ✅ SUCCESS: Version matches - update completed successfully
+          console.log('✅ Update successful! Marking as completed...');
+          
+          try {
+            await fetchWithAuth(`/api/updates/history/${pendingUpdateId}/status`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                status: 'completed'
+              })
+            });
+            
+            console.log('✅ Update history marked as completed');
+            
+            // Show success notification
+            alert(`✅ Successfully updated from v${pendingFromVersion} to v${currentVersion}!`);
+          } catch (err) {
+            console.error('❌ Failed to mark update as completed:', err);
+            // Continue anyway - user can see it in history
+          }
+        } else {
+          // ❌ FAILED: Version doesn't match - update failed
+          console.warn('⚠️ Version mismatch! Expected:', pendingToVersion, 'Got:', currentVersion);
+          
+          try {
+            await fetchWithAuth(`/api/updates/history/${pendingUpdateId}/status`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                status: 'failed',
+                error_message: `Version mismatch after restart. Expected ${pendingToVersion} but got ${currentVersion}`
+              })
+            });
+            
+            console.log('❌ Update history marked as failed');
+          } catch (err) {
+            console.error('❌ Failed to mark update as failed:', err);
+          }
+        }
+        
+        // Cleanup localStorage regardless of success/failure
+        localStorage.removeItem('pending_update_id');
+        localStorage.removeItem('pending_update_to_version');
+        localStorage.removeItem('pending_update_from_version');
+        console.log('🧹 Cleaned up localStorage');
+      } else {
+        console.log('ℹ️ No pending updates found');
+      }
+    } catch (error) {
+      console.error('❌ Error checking pending updates:', error);
+      // Cleanup localStorage on error
+      localStorage.removeItem('pending_update_id');
+      localStorage.removeItem('pending_update_to_version');
+      localStorage.removeItem('pending_update_from_version');
+    }
+    
+    // Load normal data
+    await Promise.all([
+      fetchVersion(),
+      checkForUpdates(),
+      fetchHistory() // This will now show the completed update!
+    ]);
+    
+    setLoading(false);
+  };
+  
+  loadData();
+}, []);
 
   const formatBytes = (bytes?: number) => {
     if (!bytes) return 'Unknown';
