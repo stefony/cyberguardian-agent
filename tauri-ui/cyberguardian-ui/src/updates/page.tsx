@@ -278,8 +278,12 @@ useEffect(() => {
   const loadData = async () => {
     setLoading(true);
     
-    // 🔥 NEW: Check for pending update completion after restart
+    // 🔥 Check for pending update completion after restart
     try {
+      const currentVersion = await getVersion();
+      console.log('📱 Current app version:', currentVersion);
+      
+      // PRIMARY: Check localStorage
       const pendingUpdateId = localStorage.getItem('pending_update_id');
       const pendingToVersion = localStorage.getItem('pending_update_to_version');
       const pendingFromVersion = localStorage.getItem('pending_update_from_version');
@@ -290,10 +294,6 @@ useEffect(() => {
           expectedVersion: pendingToVersion,
           fromVersion: pendingFromVersion
         });
-        
-        // Get current version to verify update succeeded
-        const currentVersion = await getVersion();
-        console.log('📱 Current app version:', currentVersion);
         
         if (currentVersion === pendingToVersion) {
           // ✅ SUCCESS: Version matches - update completed successfully
@@ -308,15 +308,12 @@ useEffect(() => {
             });
             
             console.log('✅ Update history marked as completed');
-            
-            // Show success notification
             alert(`✅ Successfully updated from v${pendingFromVersion} to v${currentVersion}!`);
           } catch (err) {
             console.error('❌ Failed to mark update as completed:', err);
-            // Continue anyway - user can see it in history
           }
         } else {
-          // ❌ FAILED: Version doesn't match - update failed
+          // ❌ FAILED: Version doesn't match
           console.warn('⚠️ Version mismatch! Expected:', pendingToVersion, 'Got:', currentVersion);
           
           try {
@@ -334,14 +331,51 @@ useEffect(() => {
           }
         }
         
-        // Cleanup localStorage regardless of success/failure
+        // Cleanup localStorage
         localStorage.removeItem('pending_update_id');
         localStorage.removeItem('pending_update_to_version');
         localStorage.removeItem('pending_update_from_version');
         console.log('🧹 Cleaned up localStorage');
+        
       } else {
-        console.log('ℹ️ No pending updates found');
+        // FALLBACK: Check backend for pending updates
+        console.log('ℹ️ No pending updates in localStorage, checking backend...');
+        
+        try {
+          const response = await fetchWithAuth(
+            `/api/updates/history/check-pending?current_version=${currentVersion}`
+          );
+          
+          if (response.success && response.pending_update) {
+            const { id, from_version, to_version } = response.pending_update;
+            
+            console.log('🔍 Found pending update in backend:', {
+              updateId: id,
+              from: from_version,
+              to: to_version
+            });
+            
+            // Mark as completed
+            console.log('✅ Marking backend pending update as completed...');
+            
+            await fetchWithAuth(`/api/updates/history/${id}/status`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                status: 'completed'
+              })
+            });
+            
+            console.log('✅ Backend pending update marked as completed');
+            alert(`✅ Successfully updated from v${from_version} to v${to_version}!`);
+            
+          } else {
+            console.log('ℹ️ No pending updates found in backend');
+          }
+        } catch (err) {
+          console.error('❌ Failed to check backend for pending updates:', err);
+        }
       }
+      
     } catch (error) {
       console.error('❌ Error checking pending updates:', error);
       // Cleanup localStorage on error
