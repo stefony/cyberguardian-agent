@@ -95,14 +95,21 @@ const fetchSettings = async () => {
     // Fetch system info
 const fetchSystemInfo = async () => {
   try {
-    const response = await settingsApi.getSystemInfo();
+    const userAgent = navigator.userAgent;
+    let os = "Unknown";
+    
+    if (userAgent.includes("Windows")) os = "Windows";
+    else if (userAgent.includes("Mac")) os = "macOS";
+    else if (userAgent.includes("Linux")) os = "Linux";
 
-    if (response.success && response.data) {
-      setSystemInfo(response.data);
-    } else {
-      console.warn("🟡 settingsApi.getSystemInfo() returned no data:", response);
-      setSystemInfo(null);
-    }
+    setSystemInfo({
+      os: os,
+      os_version: "",
+      python_version: "N/A",
+      cpu_count: navigator.hardwareConcurrency || 0,
+      total_memory_gb: (navigator as any).deviceMemory || 0,
+      hostname: "Local Machine"
+    });
   } catch (err) {
     console.error("Error fetching system info:", err);
     setSystemInfo(null);
@@ -247,27 +254,38 @@ const fetchEmailAccounts = async () => {
       }
     };
 
-    // Save settings
-    const handleSave = async () => {
-      if (!settings) return;
+  // Save settings
+  const handleSave = async () => {
+    console.log('🔵 handleSave called');
+    console.log('🔵 settings:', settings);
+    
+    if (!settings) {
+      console.log('❌ No settings to save!');
+      return;
+    }
+    
+    try {
+      console.log('🔵 Calling settingsApi.saveSettings...');
+      setIsSaving(true);
+      const response = await settingsApi.saveSettings(settings);
+      console.log('🔵 Response:', response);
       
-      try {
-        setIsSaving(true);
-        const response = await settingsApi.saveSettings(settings);
-        
-        if (response.success) {
-          setSaveSuccess(true);
-          setTimeout(() => setSaveSuccess(false), 3000);
-        } else {
-          alert(response.error || "Failed to save settings");
-        }
-      } catch (err) {
-        console.error("Error saving settings:", err);
-        alert("Failed to save settings");
-      } finally {
-        setIsSaving(false);
+      if (response.success) {
+        console.log('✅ Settings saved successfully!');
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+      } else {
+        console.log('❌ Save failed:', response.error);
+        alert(response.error || "Failed to save settings");
       }
-    };
+    } catch (err) {
+      console.error("❌ Error saving settings:", err);
+      alert("Failed to save settings");
+    } finally {
+      console.log('🔵 Resetting saving state');
+      setIsSaving(false);
+    }
+  };
 
     // Reset settings
     const handleReset = async () => {
@@ -296,16 +314,25 @@ const fetchEmailAccounts = async () => {
       fetchEmailAccounts();
     }, []);
 
-    // Update settings helper
+ // Update settings helper
     const updateSettings = (section: keyof Settings, key: string, value: any) => {
-      if (!settings) return;
-      setSettings({
+      console.log('🔵 updateSettings called:', section, key, value);
+      
+      if (!settings) {
+        console.log('❌ No settings object!');
+        return;
+      }
+      
+      const newSettings = {
         ...settings,
         [section]: {
           ...(settings[section] as any),
           [key]: value,
         },
-      });
+      };
+      
+      console.log('🔵 New settings:', newSettings);
+      setSettings(newSettings);
     };
 
     // Toggle component
@@ -372,22 +399,29 @@ const fetchEmailAccounts = async () => {
               </button>
 
               <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="px-4 py-2 rounded-lg bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 border-2 border-purple-500/30 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {saveSuccess ? (
-                  <>
-                    <Check className="h-4 w-4" />
-                    Saved!
-                  </>
-                ) : (
-                  <>
-                    <Save className={`h-4 w-4 ${isSaving ? 'animate-spin' : ''}`} />
-                    Save
-                  </>
-                )}
-              </button>
+  onClick={(e) => {
+    console.log('🔵 SAVE BUTTON CLICKED!');
+    console.log('🔵 isSaving:', isSaving);
+    console.log('🔵 settings:', settings);
+    e.preventDefault();
+    e.stopPropagation();
+    handleSave();
+  }}
+  disabled={isSaving}
+  className="px-4 py-2 rounded-lg bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 border-2 border-purple-500/30 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+>
+  {saveSuccess ? (
+    <>
+      <Check className="h-4 w-4" />
+      Saved!
+    </>
+  ) : (
+    <>
+      <Save className={`h-4 w-4 ${isSaving ? 'animate-spin' : ''}`} />
+      Save
+    </>
+  )}
+</button>
             </div>
           </div>
         </div>
@@ -788,10 +822,7 @@ const fetchEmailAccounts = async () => {
                       <span className="text-muted-foreground">Hostname</span>
                       <span className="font-medium">{systemInfo.hostname}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Python Version</span>
-                      <span className="font-medium">{systemInfo.python_version}</span>
-                    </div>
+                   
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">CPU Cores</span>
                       <span className="font-medium">{systemInfo.cpu_count}</span>
