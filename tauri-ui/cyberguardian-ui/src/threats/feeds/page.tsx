@@ -62,6 +62,7 @@ export default function ThreatFeedsPage() {
   const [stats, setStats] = useState<FeedStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshingId, setRefreshingId] = useState<number | null>(null);
+  const [refreshingAll, setRefreshingAll] = useState(false);
 
   useEffect(() => {
     fetchFeeds();
@@ -112,9 +113,8 @@ const fetchFeeds = async () => {
     setRefreshingId(feedId);
     try {
       const data = await fetchWithAuth(`/api/threat-intel/feeds/${feedId}/refresh`, {
-  method: "POST"
-});
-
+        method: "POST"
+      });
       if (data.success) {
         await fetchFeeds();
       }
@@ -124,6 +124,22 @@ const fetchFeeds = async () => {
       setRefreshingId(null);
     }
   };
+
+  const handleRefreshAll = async () => {
+  setRefreshingAll(true);
+  try {
+    const data = await fetchWithAuth('/api/threat-intel/feeds/update', {
+      method: 'POST'
+    });
+    if (data.success) {
+      await fetchFeeds();
+    }
+  } catch (error) {
+    console.error('Failed to refresh all feeds:', error);
+  } finally {
+    setRefreshingAll(false);
+  }
+};
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A";
@@ -176,14 +192,16 @@ const fetchFeeds = async () => {
         </div>
 
         <button
-          onClick={fetchFeeds}
-          className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg 
-                     transition-all duration-300 flex items-center gap-2
-                     hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/50"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Refresh All
-        </button>
+  onClick={handleRefreshAll}
+  disabled={refreshingAll}
+  className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg 
+             transition-all duration-300 flex items-center gap-2
+             hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/50
+             disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  <RefreshCw className={`w-4 h-4 ${refreshingAll ? 'animate-spin' : ''}`} />
+  {refreshingAll ? 'Updating...' : 'Refresh All'}
+</button>
       </div>
 
       {/* Statistics */}
@@ -383,7 +401,7 @@ const fetchFeeds = async () => {
                 {feed.enabled ? "Disable" : "Enable"}
               </button>
 
-              <button
+            <button
                 onClick={() => refreshFeed(feed.id)}
                 disabled={!feed.enabled || refreshingId === feed.id}
                 className="px-4 py-2 bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 
@@ -398,7 +416,7 @@ const fetchFeeds = async () => {
                   }`}
                 />
                 Refresh
-              </button>
+            </button>
 
               <a
                 href={feed.url}
