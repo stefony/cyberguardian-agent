@@ -256,33 +256,32 @@ const fetchEmailAccounts = async () => {
 
   // Save settings
   const handleSave = async () => {
-    console.log('🔵 handleSave called');
-    console.log('🔵 settings:', settings);
+     
     
     if (!settings) {
-      console.log('❌ No settings to save!');
+      
       return;
     }
     
     try {
-      console.log('🔵 Calling settingsApi.saveSettings...');
+      
       setIsSaving(true);
       const response = await settingsApi.saveSettings(settings);
-      console.log('🔵 Response:', response);
+       
       
       if (response.success) {
         console.log('✅ Settings saved successfully!');
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
-        console.log('❌ Save failed:', response.error);
+         
         alert(response.error || "Failed to save settings");
       }
     } catch (err) {
       console.error("❌ Error saving settings:", err);
       alert("Failed to save settings");
     } finally {
-      console.log('🔵 Resetting saving state');
+       
       setIsSaving(false);
     }
   };
@@ -306,7 +305,7 @@ const fetchEmailAccounts = async () => {
       }
     };
 
-    // Initial load
+// Initial load
     useEffect(() => {
       fetchSettings();
       fetchSystemInfo();
@@ -314,12 +313,47 @@ const fetchEmailAccounts = async () => {
       fetchEmailAccounts();
     }, []);
 
+useEffect(() => {
+  if (!settings) return;
+  
+  // Theme
+  const root = document.documentElement;
+  if (settings.appearance.theme === 'dark') {
+    root.classList.add('dark');
+    root.classList.remove('light');
+    localStorage.setItem('theme', 'dark');
+  } else if (settings.appearance.theme === 'light') {
+    root.classList.remove('dark');
+    root.classList.add('light');
+    localStorage.setItem('theme', 'light');
+  } else {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (prefersDark) root.classList.add('dark');
+    else root.classList.remove('dark');
+    localStorage.setItem('theme', 'auto');
+  }
+  
+  // Compact mode
+  if (settings.appearance.compact_mode) {
+    root.classList.add('compact');
+  } else {
+    root.classList.remove('compact');
+  }
+  
+  // Animations
+  if (!settings.appearance.animations_enabled) {
+    root.classList.add('no-animations');
+  } else {
+    root.classList.remove('no-animations');
+  }
+}, [settings?.appearance]);
+
  // Update settings helper
     const updateSettings = (section: keyof Settings, key: string, value: any) => {
-      console.log('🔵 updateSettings called:', section, key, value);
+       
       
       if (!settings) {
-        console.log('❌ No settings object!');
+         
         return;
       }
       
@@ -331,7 +365,7 @@ const fetchEmailAccounts = async () => {
         },
       };
       
-      console.log('🔵 New settings:', newSettings);
+       
       setSettings(newSettings);
     };
 
@@ -400,9 +434,7 @@ const fetchEmailAccounts = async () => {
 
               <button
   onClick={(e) => {
-    console.log('🔵 SAVE BUTTON CLICKED!');
-    console.log('🔵 isSaving:', isSaving);
-    console.log('🔵 settings:', settings);
+     
     e.preventDefault();
     e.stopPropagation();
     handleSave();
@@ -492,27 +524,7 @@ const fetchEmailAccounts = async () => {
                 </h3>
 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Theme</div>
-                      <div className="text-sm text-muted-foreground">Choose your preferred theme</div>
-                    </div>
-                    <select
-                      value={settings.appearance.theme}
-                      onChange={(e) => updateSettings('appearance', 'theme', e.target.value)}
-                      className="px-4 py-2 rounded-lg bg-card border-2 border-border text-foreground transition-all duration-300 hover:border-cyan-400 hover:bg-cyan-500/5 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer relative z-50"
-                      style={{ 
-                        pointerEvents: 'auto',
-                        colorScheme: 'dark'
-                      }}
-                    >
-                      <option value="dark" className="bg-[#0a0e27] text-white">Dark</option>
-                      <option value="light" className="bg-[#0a0e27] text-white">Light</option>
-                      <option value="auto" className="bg-[#0a0e27] text-white">Auto</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Compact Mode</div>
                       <div className="text-sm text-muted-foreground">Reduce spacing and padding</div>

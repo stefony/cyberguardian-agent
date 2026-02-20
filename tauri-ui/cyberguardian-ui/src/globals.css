@@ -598,3 +598,21 @@
 .animate-shimmer {
   animation: shimmer 3s ease-in-out infinite;
 }
+
+/* Compact Mode */
+html.compact .section {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+html.compact .card-premium {
+  padding: 0.75rem;
+}
+html.compact .space-y-4 > * + * {
+  margin-top: 0.5rem;
+}
+
+/* No Animations */
+html.no-animations * {
+  animation: none !important;
+  transition: none !important;
+}

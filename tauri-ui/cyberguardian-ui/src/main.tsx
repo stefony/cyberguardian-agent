@@ -7,6 +7,9 @@ import App from "./App";
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
 
+const savedTheme = localStorage.getItem('theme') || 'dark';
+if (savedTheme === 'dark') document.documentElement.classList.add('dark');
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
