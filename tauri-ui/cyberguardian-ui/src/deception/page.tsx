@@ -96,12 +96,46 @@ const toggleHoneypot = async (honeypot: HoneypotResponse) => {
   }
 };
 
-  // Initial load
-  useEffect(() => {
-    fetchHoneypots();
-    fetchLogs();
-    fetchStatus();
+ useEffect(() => {
+    initializeAndFetch();
   }, [statusFilter, typeFilter]);
+
+const initializeAndFetch = async () => {
+    // First check if honeypots exist
+    try {
+      const response = await deceptionApi.getHoneypots();
+      if (response.success && response.data && response.data.length === 0) {
+        // No honeypots - auto-initialize with local IP
+        try {
+          const { invoke } = await import('@tauri-apps/api/core');
+          const localIp = await invoke<string>('get_local_ip');
+          console.log('🎯 Initializing honeypots for subnet:', localIp);
+          
+          await fetch('https://cyberguardian-backend-production.up.railway.app/api/deception/initialize', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            },
+            body: JSON.stringify({ local_ip: localIp })
+          });
+          
+          console.log('✅ Honeypots initialized!');
+        } catch (ipErr) {
+          console.warn('⚠️ Could not get local IP for honeypot init:', ipErr);
+        }
+      }
+    } catch (err) {
+      console.error('Error during init check:', err);
+    }
+    
+    // Fetch all data
+    await fetchHoneypots();
+    await fetchLogs();
+    await fetchStatus();
+  };
+
+
 
   // Format timestamp
   const formatTime = (timestamp: string) => {
