@@ -174,9 +174,14 @@ const fetchLiveFeed = async () => {
       </div>
 
       {/* Event count */}
-      <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
-        <Wifi className="w-4 h-4" />
-        <span>{events.length} events detected</span>
+      <div className="flex items-start gap-2 mb-4 text-sm text-muted-foreground">
+        <Wifi className="w-4 h-4 mt-0.5" />
+        <div>
+          <span>{events.length} events detected</span>
+          <p className="text-xs text-cyan-400 font-medium mt-0.5">
+            Global threat intelligence • Not local attacks
+          </p>
+        </div>
       </div>
 
       {/* Events list */}
