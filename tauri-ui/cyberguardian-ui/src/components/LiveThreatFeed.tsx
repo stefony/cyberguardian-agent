@@ -1,7 +1,7 @@
 "use client";
-import { httpFetch } from "@/lib/api";
+import { httpFetch, honeypotApi } from "@/lib/api";
 import { useEffect, useState, useRef } from "react";
-import { Activity, MapPin, Clock, AlertCircle, Shield, Wifi } from "lucide-react";
+import { Activity, MapPin, Clock, AlertCircle, Shield, Wifi, Globe } from "lucide-react";
 
 
 // Types
@@ -56,17 +56,16 @@ export default function LiveThreatFeed() {
   const [isLive, setIsLive] = useState(true);
   const [newEventIds, setNewEventIds] = useState<Set<string>>(new Set());
   const prevEventsRef = useRef<ThreatEvent[]>([]);
+  const [topCountries, setTopCountries] = useState<Record<string, number>>({});
 
-  useEffect(() => {
+ useEffect(() => {
     fetchLiveFeed();
-
-    // Auto-refresh every 5 seconds
+    fetchTopCountries();
     const interval = setInterval(() => {
       if (isLive) {
         fetchLiveFeed();
       }
     }, 5000);
-
     return () => clearInterval(interval);
   }, [isLive]);
 
@@ -103,6 +102,17 @@ const fetchLiveFeed = async () => {
     setIsLoading(false);
   }
 };
+
+const fetchTopCountries = async () => {
+    try {
+      const res = await honeypotApi.getStatistics();
+      if (res.success && res.data?.top_countries) {
+        setTopCountries(res.data.top_countries);
+      }
+    } catch (e) {
+      // silent fail
+    }
+  };
 
   const getSeverityColor = (severity: string) => {
     const colors: Record<string, string> = {
@@ -173,16 +183,47 @@ const fetchLiveFeed = async () => {
         </div>
       </div>
 
-      {/* Event count */}
+     {/* Event count */}
       <div className="flex items-start gap-2 mb-4 text-sm text-muted-foreground">
         <Wifi className="w-4 h-4 mt-0.5" />
-        <div>
+        <div className="flex-1">
           <span>{events.length} events detected</span>
           <p className="text-xs text-cyan-400 font-medium mt-0.5">
             Global threat intelligence • Not local attacks
           </p>
         </div>
       </div>
+
+      {/* Top Attack Origins */}
+      {Object.keys(topCountries).length > 0 && (
+        <div className="mb-4 p-3 rounded-lg bg-card/50 border border-border">
+          <div className="flex items-center gap-2 mb-2">
+            <Globe className="w-4 h-4 text-blue-400" />
+            <span className="text-xs font-semibold text-blue-400">Attack Origins</span>
+          </div>
+          <div className="space-y-1.5">
+            {Object.entries(topCountries)
+              .sort(([, a], [, b]) => b - a)
+              .slice(0, 5)
+              .map(([country, count]) => {
+                const max = Math.max(...Object.values(topCountries));
+                const pct = Math.round((count / max) * 100);
+                return (
+                  <div key={country} className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-24 truncate">{country}</span>
+                    <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 rounded-full"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground w-6 text-right">{count}</span>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
 
       {/* Events list */}
       <div 
