@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Check, ArrowLeft } from 'lucide-react';
+import { open } from '@tauri-apps/plugin-shell';
 
 export default function PricingPage() {
   const navigate = useNavigate();
@@ -69,9 +70,9 @@ export default function PricingPage() {
 
       if (data.url) {
         console.log('🔵 Opening URL:', data.url);
-        // ✅ Use window.open (works reliably in Tauri)
-        window.open(data.url, '_blank');
-        console.log('✅ URL opened successfully');
+        // ✅ Use Tauri shell API (works in desktop app)
+        await open(data.url);
+        console.log('✅ URL opened successfully in browser');
       } else {
         throw new Error('No checkout URL received from server');
       }

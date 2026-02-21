@@ -26,6 +26,23 @@ use task_scanner::{scan_tasks, calculate_statistics as calculate_task_stats};
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
+
+#[tauri::command]
+fn get_local_ip() -> Result<String, String> {
+    use std::net::UdpSocket;
+    
+    let socket = UdpSocket::bind("0.0.0.0:0")
+        .map_err(|e| format!("Failed to bind socket: {}", e))?;
+    
+    socket.connect("8.8.8.8:80")
+        .map_err(|e| format!("Failed to connect socket: {}", e))?;
+    
+    let local_addr = socket.local_addr()
+        .map_err(|e| format!("Failed to get local addr: {}", e))?;
+    
+    Ok(local_addr.ip().to_string())
+}
+
 #[tauri::command]
 fn start_file_protection(
     paths: Vec<String>,
@@ -618,6 +635,7 @@ pub fn run() {
         })
        .invoke_handler(tauri::generate_handler![
     greet,
+    get_local_ip,
     start_file_protection,
     create_quarantine_record,
     start_local_scan,

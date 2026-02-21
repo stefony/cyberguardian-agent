@@ -26,9 +26,19 @@ export default function LoginPage() {
     }
 
     try {
-      const deviceId = `web-${navigator.userAgent
-        .substring(0, 20)
-        .replace(/\s/g, '-')}`;
+  const deviceId = `web-${navigator.userAgent
+    .substring(0, 20)
+    .replace(/\s/g, '-')}`;
+  
+  // Get local IP via Tauri
+  let localIp: string | null = null;
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    localIp = await invoke<string>('get_local_ip');
+    console.log('🔵 Local IP detected:', localIp);
+  } catch (ipErr) {
+    console.warn('⚠️ Could not get local IP:', ipErr);
+  }
       console.log('🔵 Activating license...', {
         licenseKey,
         deviceId,
@@ -43,11 +53,12 @@ export default function LoginPage() {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      license_key: licenseKey,
-      device_id: deviceId,
-      hostname: window.location.hostname,
-    }),
+   body: JSON.stringify({
+  license_key: licenseKey,
+  device_id: deviceId,
+  hostname: window.location.hostname,
+  local_ip: localIp,
+}),
   }
 );
 
