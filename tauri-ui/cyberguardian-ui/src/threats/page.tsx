@@ -288,18 +288,25 @@ const fetchShapData = async (threat: ThreatResponse) => {
   setShapLoading(true);
 
   try {
-    const response = await httpFetch('/ml/explain', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        timestamp: threat.timestamp,
-        source_ip: threat.source_ip,
-        source_port: 80,
-        payload: threat.description,
-        request_type: 'HTTP',
-        country: 'BG',
-      }),
-    });
+    console.log('All localStorage keys:', Object.keys(localStorage));
+  const authToken = localStorage.getItem('access_token') || 
+                  sessionStorage.getItem('access_token') || '';
+
+const response = await httpFetch('/api/ml/explain', {
+  method: 'POST',
+  headers: { 
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${authToken}`
+  },
+  body: JSON.stringify({
+    timestamp: threat.timestamp,
+    source_ip: threat.source_ip,
+    source_port: 80,
+    payload: threat.description,
+    request_type: 'HTTP',
+    country: 'BG',
+  }),
+});
     const data = await response.json();
     if (data.success) {
       setShapData(data.explanation);
@@ -448,6 +455,136 @@ const fetchShapData = async (threat: ThreatResponse) => {
         </div>
       )}
 
+      {/* ML Threat Analysis Panel */}
+<div className="w-full bg-gray-800/40 border border-gray-700/50 rounded-xl p-5 mb-4">
+  <div className="flex items-center gap-2 mb-4">
+    <div className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+    <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">
+      ML Threat Analysis
+    </span>
+    {selectedThreat && (
+      <span className="ml-auto text-xs text-gray-400">
+        {selectedThreat.threat_type} — {selectedThreat.source_ip}
+      </span>
+    )}
+  </div>
+
+  {!selectedThreat && (
+    <div className="flex items-center gap-8">
+      <div className="flex-1">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-xs text-gray-400">ML Prediction</span>
+          <span className="text-xs font-bold px-2 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30">
+            SYSTEM CLEAN
+          </span>
+        </div>
+        <p className="text-xs text-gray-500 mb-3">
+          Click any threat row to see live SHAP analysis
+        </p>
+        {!selectedThreat && (
+  <button
+    onClick={() => fetchShapData({
+      id: 1,
+      threat_type: 'lolbins_abuse',
+      severity: 'high',
+      source_ip: 'PID:1234',
+      description: 'Test LOLBin abuse detected',
+      confidence_score: 87.5,
+      timestamp: new Date().toISOString(),
+      status: 'active'
+    } as ThreatResponse)}
+    className="mt-3 text-xs px-3 py-1 bg-cyan-500/20 border border-cyan-500/30 rounded text-cyan-400 hover:bg-cyan-500/30 transition-colors"
+  >
+    🧪 Test SHAP Analysis
+  </button>
+)}
+        {[
+          { label: 'payload_entropy', value: 85, color: 'bg-red-500',     sign: '+0.42' },
+          { label: 'has_base64',      value: 65, color: 'bg-red-400',     sign: '+0.31' },
+          { label: 'has_cmd',         value: 50, color: 'bg-orange-400',  sign: '+0.28' },
+          { label: 'payload_len',     value: 35, color: 'bg-yellow-500',  sign: '+0.19' },
+          { label: 'geo_risk',        value: 15, color: 'bg-green-500',   sign: '-0.08' },
+        ].map((item, idx) => (
+          <div key={idx} className="mb-2 opacity-40">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-mono text-gray-400">{item.label}</span>
+              <span className="text-xs font-bold text-gray-500">{item.sign}</span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-1.5">
+              <div className={`h-1.5 rounded-full ${item.color}`} style={{ width: `${item.value}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="text-center opacity-30">
+        <Shield className="h-16 w-16 text-green-400 mx-auto" />
+        <p className="text-xs text-green-400 mt-2">Protected</p>
+      </div>
+    </div>
+  )}
+
+  {selectedThreat && shapLoading && (
+    <div className="text-center py-4">
+      <RefreshCw className="h-6 w-6 animate-spin mx-auto text-cyan-400" />
+      <p className="text-xs text-gray-400 mt-2">Analyzing with SHAP...</p>
+    </div>
+  )}
+
+  {selectedThreat && shapData && !shapData.error && (
+    <div className="flex items-start gap-8">
+      <div className="flex-1">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-xs text-gray-400">ML Prediction</span>
+          <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+            shapData.prediction === 'malicious'
+              ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+              : 'bg-green-500/20 text-green-400 border border-green-500/30'
+          }`}>
+            {shapData.prediction?.toUpperCase()}
+          </span>
+        </div>
+        {shapData.top_features?.map((feat: any, idx: number) => (
+          <div key={idx} className="mb-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-mono text-gray-300">{feat.feature}</span>
+              <span className={`text-xs font-bold ${
+                feat.impact === 'increases_risk' ? 'text-red-400' : 'text-green-400'
+              }`}>
+                {feat.impact === 'increases_risk' ? '+' : ''}{feat.shap_value}
+              </span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-1.5">
+              <div
+                className={`h-1.5 rounded-full transition-all duration-500 ${
+                  feat.impact === 'increases_risk' ? 'bg-red-500' : 'bg-green-500'
+                }`}
+                style={{ width: `${Math.min(feat.magnitude * 300, 100)}%` }}
+              />
+            </div>
+          </div>
+        ))}
+        {shapData.explanation && (
+          <div className="mt-3 p-2 bg-cyan-500/10 border border-cyan-500/20 rounded text-xs text-cyan-300">
+            💡 {shapData.explanation}
+          </div>
+        )}
+      </div>
+      <div className="text-center">
+        <div className={`text-3xl font-bold ${
+          shapData.prediction === 'malicious' ? 'text-red-400' : 'text-green-400'
+        }`}>
+          {selectedThreat.severity?.toUpperCase()}
+        </div>
+        <div className="text-xs text-gray-400 mt-1">Severity</div>
+        <div className="text-2xl font-bold text-cyan-400 mt-3">
+          {(selectedThreat.confidence_score || 0).toFixed(1)}%
+        </div>
+        <div className="text-xs text-gray-400 mt-1">Confidence</div>
+      </div>
+    </div>
+  )}
+</div>
+
       {/* Filters & Table */}
       <div className="section">
         <div className="card-premium p-6">
@@ -581,7 +718,7 @@ const fetchShapData = async (threat: ThreatResponse) => {
                 <tbody>
                   {threats?.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="text-center py-16">
+                  <td colSpan={10} className="text-center py-16">
   <div className="flex flex-col items-center gap-3">
     <Shield className="h-12 w-12 text-green-500/40" />
     <p className="text-green-400 font-semibold">System Protected</p>
