@@ -36,6 +36,10 @@ export default function ThreatsPage() {
   
   // 🆕 Copy to clipboard state
   const [copiedIp, setCopiedIp] = useState<string | null>(null);
+  // 🆕 SHAP Explain modal
+const [selectedThreat, setSelectedThreat] = useState<ThreatResponse | null>(null);
+const [shapData, setShapData] = useState<any>(null);
+const [shapLoading, setShapLoading] = useState(false);
 
   // Fetch threats with correlations
   const fetchThreats = useCallback(async () => {
@@ -274,6 +278,38 @@ export default function ThreatsPage() {
     await opener.openUrl(url);
   } catch {
     window.open(url, '_blank', 'noopener,noreferrer');
+  }
+};
+
+// 🆕 Fetch SHAP explanation
+const fetchShapData = async (threat: ThreatResponse) => {
+  setSelectedThreat(threat);
+  setShapData(null);
+  setShapLoading(true);
+
+  try {
+    const response = await httpFetch('/ml/explain', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        timestamp: threat.timestamp,
+        source_ip: threat.source_ip,
+        source_port: 80,
+        payload: threat.description,
+        request_type: 'HTTP',
+        country: 'BG',
+      }),
+    });
+    const data = await response.json();
+    if (data.success) {
+      setShapData(data.explanation);
+    } else {
+      setShapData({ error: 'Explanation not available' });
+    }
+  } catch (err) {
+    setShapData({ error: 'Failed to fetch explanation' });
+  } finally {
+    setShapLoading(false);
   }
 };
 
@@ -549,10 +585,12 @@ export default function ThreatsPage() {
                   ) : (
                     threats?.map((threat) => (
                       <tr
-                        key={threat.id}
-                        className={`
-                          group
-                          transition-all duration-300
+  key={threat.id}
+  onClick={() => fetchShapData(threat)}
+  style={{ cursor: 'pointer' }}
+  className={`
+    group
+    transition-all duration-300
                           ${getRowHoverGradient(threat.severity)}
                           hover:shadow-lg
                           ${threat.severity === 'critical' ? 'hover:shadow-red-500/20' : ''}
@@ -780,6 +818,130 @@ export default function ThreatsPage() {
           )}
         </div>
       </div>
+      {/* 🆕 SHAP Confidence Breakdown Modal */}
+{selectedThreat && (
+  <div
+    className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    onClick={() => { setSelectedThreat(null); setShapData(null); }}
+  >
+    <div
+      className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-lg w-full shadow-2xl"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-bold text-white">🔍 Threat Analysis</h3>
+          <p className="text-sm text-gray-400 mt-1">
+            {selectedThreat.threat_type} — {selectedThreat.source_ip}
+          </p>
+        </div>
+        <button
+          onClick={() => { setSelectedThreat(null); setShapData(null); }}
+          className="text-gray-400 hover:text-white transition-colors text-xl"
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Threat Info */}
+      <div className="mb-4 p-3 bg-gray-800 rounded-lg">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs text-gray-400">Severity</span>
+          <span className={`text-xs font-bold ${
+            selectedThreat.severity === 'critical' ? 'text-red-400' :
+            selectedThreat.severity === 'high' ? 'text-orange-400' :
+            selectedThreat.severity === 'medium' ? 'text-yellow-400' :
+            'text-blue-400'
+          }`}>{selectedThreat.severity.toUpperCase()}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-400">Confidence</span>
+          <span className="text-xs font-bold text-green-400">
+            {(selectedThreat.confidence_score || 0).toFixed(1)}%
+          </span>
+        </div>
+        <p className="text-xs text-gray-300 mt-2">{selectedThreat.description}</p>
+      </div>
+
+      {/* SHAP Section */}
+      <div>
+        <h4 className="text-sm font-semibold text-white mb-3">
+          🧠 ML Confidence Breakdown
+        </h4>
+
+        {shapLoading && (
+          <div className="text-center py-6">
+            <RefreshCw className="h-6 w-6 animate-spin mx-auto text-cyan-400" />
+            <p className="text-xs text-gray-400 mt-2">Analyzing with SHAP...</p>
+          </div>
+        )}
+
+        {shapData?.error && (
+          <div className="text-center py-4 text-gray-500 text-sm">
+            {shapData.error}
+          </div>
+        )}
+
+        {shapData && !shapData.error && (
+          <>
+            {/* Prediction */}
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-xs text-gray-400">ML Prediction</span>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                shapData.prediction === 'malicious'
+                  ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                  : 'bg-green-500/20 text-green-400 border border-green-500/30'
+              }`}>
+                {shapData.prediction?.toUpperCase()}
+              </span>
+            </div>
+
+            {/* Top Features */}
+            <div className="space-y-2">
+              {shapData.top_features?.map((feat: any, idx: number) => (
+                <div key={idx}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-mono text-gray-300">
+                      {feat.feature}
+                    </span>
+                    <span className={`text-xs font-bold ${
+                      feat.impact === 'increases_risk' ? 'text-red-400' : 'text-green-400'
+                    }`}>
+                      {feat.impact === 'increases_risk' ? '+' : ''}{feat.shap_value}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-1.5">
+                    <div
+                      className={`h-1.5 rounded-full transition-all duration-500 ${
+                        feat.impact === 'increases_risk' ? 'bg-red-500' : 'bg-green-500'
+                      }`}
+                      style={{ width: `${Math.min(feat.magnitude * 300, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Explanation */}
+            {shapData.explanation && (
+              <div className="mt-4 p-2 bg-cyan-500/10 border border-cyan-500/20 rounded text-xs text-cyan-300">
+                💡 {shapData.explanation}
+              </div>
+            )}
+
+            {/* Method */}
+            <div className="mt-2 text-right">
+              <span className="text-xs text-gray-500 font-mono">
+                via {shapData.method}
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+)}
     </main>
     </ProtectedRoute>
   );
