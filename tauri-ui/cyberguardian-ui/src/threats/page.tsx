@@ -597,26 +597,50 @@ export default function ThreatsPage() {
                           </div>
                         </td>
 
-                        {/* 🆕 Type - LOLBins badge */}
-                        <td className="px-2">
-                          {threat.threat_type === 'lolbins_abuse' ? (
-                            <div className="flex flex-col gap-1">
-                              <span className="px-2 py-0.5 bg-orange-500/20 border border-orange-500/30 rounded text-xs text-orange-400 font-medium whitespace-nowrap transition-all duration-300 group-hover:bg-orange-500/30 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-orange-500/50">
-                                ⚠️ LOLBins Abuse
-                              </span>
-                              <button
-                                onClick={(e) => openExternalUrl(e, 'https://attack.mitre.org/techniques/T1218/')}
-                                className="text-xs text-cyan-400 hover:text-cyan-300 hover:underline transition-colors duration-200 font-mono text-left"
-                              >
-                                MITRE T1218 ↗
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="font-semibold text-sm transition-colors duration-300 group-hover:text-purple-400 truncate">
-                              {threat.threat_type}
-                            </span>
-                          )}
-                        </td>
+                        {/* Type - Enhanced badges */}
+<td className="px-2">
+  {threat.threat_type === 'lolbins_abuse' ? (
+    <div className="flex flex-col gap-1">
+      <span className="px-2 py-0.5 bg-orange-500/20 border border-orange-500/30 rounded text-xs text-orange-400 font-medium whitespace-nowrap transition-all duration-300 group-hover:bg-orange-500/30 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-orange-500/50">
+        ⚠️ LOLBins Abuse
+      </span>
+      <button
+        onClick={(e) => openExternalUrl(e, 'https://attack.mitre.org/techniques/T1218/')}
+        className="text-xs text-cyan-400 hover:text-cyan-300 hover:underline transition-colors duration-200 font-mono text-left"
+      >
+        MITRE T1218 ↗
+      </button>
+    </div>
+  ) : threat.threat_type === 'wmi_abuse' ? (
+    <div className="flex flex-col gap-1">
+      <span className="px-2 py-0.5 bg-red-500/20 border border-red-500/30 rounded text-xs text-red-400 font-medium whitespace-nowrap transition-all duration-300 group-hover:bg-red-500/30 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-red-500/50">
+        🔴 WMI Abuse
+      </span>
+      <button
+        onClick={(e) => openExternalUrl(e, 'https://attack.mitre.org/techniques/T1047/')}
+        className="text-xs text-cyan-400 hover:text-cyan-300 hover:underline transition-colors duration-200 font-mono text-left"
+      >
+        MITRE T1047 ↗
+      </button>
+    </div>
+  ) : threat.threat_type === 'powershell_abuse' ? (
+    <div className="flex flex-col gap-1">
+      <span className="px-2 py-0.5 bg-blue-500/20 border border-blue-500/30 rounded text-xs text-blue-400 font-medium whitespace-nowrap transition-all duration-300 group-hover:bg-blue-500/30 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-blue-500/50">
+        💙 PowerShell Abuse
+      </span>
+      <button
+        onClick={(e) => openExternalUrl(e, 'https://attack.mitre.org/techniques/T1059/001/')}
+        className="text-xs text-cyan-400 hover:text-cyan-300 hover:underline transition-colors duration-200 font-mono text-left"
+      >
+        MITRE T1059.001 ↗
+      </button>
+    </div>
+  ) : (
+    <span className="font-semibold text-sm transition-colors duration-300 group-hover:text-purple-400 truncate">
+      {threat.threat_type}
+    </span>
+  )}
+</td>
 
                         {/* Description */}
                         <td className="px-3 text-sm" title={threat.description}>
