@@ -37,91 +37,82 @@ export default function ThreatsPage() {
   // 🆕 Copy to clipboard state
   const [copiedIp, setCopiedIp] = useState<string | null>(null);
 
- // Fetch threats with correlations
-const fetchThreats = useCallback(async () => {
-  try {
-    setIsLoading(true);
+  // Fetch threats with correlations
+  const fetchThreats = useCallback(async () => {
+    try {
+      setIsLoading(true);
 
-    // Build query params
-    const params: Record<string, string> = {};
-    if (severityFilter !== "all") params.severity = severityFilter;
-    if (statusFilter !== "all") params.status = statusFilter;
+      const params: Record<string, string> = {};
+      if (severityFilter !== "all") params.severity = severityFilter;
+      if (statusFilter !== "all") params.status = statusFilter;
 
-    const response = await threatsApi.getThreats(params);
+      const response = await threatsApi.getThreats(params);
 
-    if (response.success && response.data) {
-      const items = Array.isArray(response.data)
-        ? response.data
-        : normalizeThreatList(response.data);
+      if (response.success && response.data) {
+        const items = Array.isArray(response.data)
+          ? response.data
+          : normalizeThreatList(response.data);
 
-      // Fetch correlations for each threat
-      const threatsWithCorrelations = await Promise.all(
-        items.map(async (threat) => {
-          try {
-            const correlationResponse = await httpFetch(
-          `/api/threats/${threat.id}/correlations`
-);
+        const threatsWithCorrelations = await Promise.all(
+          items.map(async (threat) => {
+            try {
+              const correlationResponse = await httpFetch(
+                `/api/threats/${threat.id}/correlations`
+              );
+              const correlationData = await correlationResponse.json();
+              return {
+                ...threat,
+                correlation: correlationData.success ? correlationData.correlations : null,
+              };
+            } catch (err) {
+              console.error(`Failed to fetch correlations for threat ${threat.id}:`, err);
+              return {
+                ...threat,
+                correlation: null,
+                created_at: threat.created_at ?? new Date().toISOString(),
+                updated_at: threat.updated_at ?? new Date().toISOString(),
+              };
+            }
+          })
+        );
 
-            const correlationData = await correlationResponse.json();
-
-            return {
-              ...threat,
-              correlation: correlationData.success ? correlationData.correlations : null,
-            };
-          } catch (err) {
-            console.error(`Failed to fetch correlations for threat ${threat.id}:`, err);
-            return {
-              ...threat,
-              correlation: null,
-              created_at: threat.created_at ?? new Date().toISOString(),
-              updated_at: threat.updated_at ?? new Date().toISOString(),
-            };
-          }
-        })
-      );
-
-      setThreats(threatsWithCorrelations);
-      setError(null);
-    } else {
-      console.warn("🟡 API returned no threats data:", response);
+        setThreats(threatsWithCorrelations);
+        setError(null);
+      } else {
+        console.warn("🟡 API returned no threats data:", response);
+        setThreats([]);
+        setError(null);
+      }
+    } catch (err) {
+      console.error("Error fetching threats:", err);
       setThreats([]);
-      setError(null);
+      setError("Failed to fetch threats");
+    } finally {
+      setIsLoading(false);
     }
-  } catch (err) {
-    console.error("Error fetching threats:", err);
-    setThreats([]);
-    setError("Failed to fetch threats");
-  } finally {
-    setIsLoading(false);
-  }
-}, [severityFilter, statusFilter]);
-
+  }, [severityFilter, statusFilter]);
 
   // Fetch stats
-const fetchStats = useCallback(async () => {
-  try {
-    const response = await threatsApi.getStats();
-
-    if (response.success && response.data) {
-      setStats(response.data as ThreatStats);
-    } else {
-      console.warn("🟡 Threat stats request did not succeed:", response);
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await threatsApi.getStats();
+      if (response.success && response.data) {
+        setStats(response.data as ThreatStats);
+      } else {
+        console.warn("🟡 Threat stats request did not succeed:", response);
+        setStats(null);
+      }
+    } catch (err) {
+      console.error("Error fetching stats:", err);
       setStats(null);
     }
-  } catch (err) {
-    console.error("Error fetching stats:", err);
-    setStats(null);
-  }
-}, []);
-
+  }, []);
 
   // Block threat
   const blockThreat = async (threatId: number) => {
     try {
       const response = await threatsApi.blockThreat(threatId);
-      
       if (response.success) {
-        // Refresh threats
         await fetchThreats();
         await fetchStats();
       } else {
@@ -137,9 +128,7 @@ const fetchStats = useCallback(async () => {
   const dismissThreat = async (threatId: number) => {
     try {
       const response = await threatsApi.dismissThreat(threatId);
-      
       if (response.success) {
-        // Refresh threats
         await fetchThreats();
         await fetchStats();
       } else {
@@ -160,11 +149,8 @@ const fetchStats = useCallback(async () => {
   // Listen for live threat updates via WebSocket
   useEffect(() => {
     if (!lastMessage) return;
-    
     if (lastMessage.type === 'threat_update') {
       console.log('🚨 New threat received via WebSocket!', lastMessage.data);
-      
-      // Refresh threats list
       fetchThreats();
       fetchStats();
     }
@@ -179,26 +165,15 @@ const fetchStats = useCallback(async () => {
 
   // Toggle select all
   const toggleSelectAll = () => {
-    console.log('🔵 toggleSelectAll CALLED!');
-    console.log('🔵 Current isSelectAll:', isSelectAll);
-    console.log('🔵 Threats array:', threats);
-    
     if (isSelectAll) {
       setSelectedThreats(new Set());
       setIsSelectAll(false);
     } else {
       const allIds = new Set(threats.map(t => t.id));
-      console.log('🔵 All IDs:', Array.from(allIds));
       setSelectedThreats(allIds);
       setIsSelectAll(true);
     }
   };
-
-  // Debug: Log when selection changes
-  useEffect(() => {
-    console.log('🔍 Selected Threats Size:', selectedThreats.size);
-    console.log('🔍 Selected Threats IDs:', Array.from(selectedThreats));
-  }, [selectedThreats]);
 
   // Toggle single threat selection
   const toggleThreatSelection = (threatId: number) => {
@@ -215,16 +190,13 @@ const fetchStats = useCallback(async () => {
   // Batch block threats
   const batchBlockThreats = async () => {
     if (selectedThreats.size === 0) return;
-    
     if (!confirm(`Block ${selectedThreats.size} threats?`)) return;
-    
     try {
       const response = await threatsApi.batchAction({
         threat_ids: Array.from(selectedThreats),
         action: 'block',
         reason: 'Bulk block action'
       });
-      
       if (response.success) {
         await fetchThreats();
         await fetchStats();
@@ -242,16 +214,13 @@ const fetchStats = useCallback(async () => {
   // Batch dismiss threats
   const batchDismissThreats = async () => {
     if (selectedThreats.size === 0) return;
-    
     if (!confirm(`Dismiss ${selectedThreats.size} threats?`)) return;
-    
     try {
       const response = await threatsApi.batchAction({
         threat_ids: Array.from(selectedThreats),
         action: 'dismiss',
         reason: 'Bulk dismiss action'
       });
-      
       if (response.success) {
         await fetchThreats();
         await fetchStats();
@@ -269,16 +238,13 @@ const fetchStats = useCallback(async () => {
   // Batch delete threats
   const batchDeleteThreats = async () => {
     if (selectedThreats.size === 0) return;
-    
     if (!confirm(`Permanently delete ${selectedThreats.size} threats? This cannot be undone!`)) return;
-    
     try {
       const response = await threatsApi.batchAction({
         threat_ids: Array.from(selectedThreats),
         action: 'delete',
         reason: 'Bulk delete action'
       });
-      
       if (response.success) {
         await fetchThreats();
         await fetchStats();
@@ -299,6 +265,17 @@ const fetchStats = useCallback(async () => {
     setCopiedIp(ip);
     setTimeout(() => setCopiedIp(null), 2000);
   };
+
+  // 🆕 Open external URL via Tauri
+ const openExternalUrl = async (e: React.MouseEvent, url: string) => {
+  e.stopPropagation();
+  try {
+    const opener = await import('@tauri-apps/plugin-opener');
+    await opener.openUrl(url);
+  } catch {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+};
 
   // Severity badge class
   const getSeverityBadgeClass = (severity: string) => {
@@ -337,6 +314,9 @@ const fetchStats = useCallback(async () => {
     }
   };
 
+  // 🆕 LOLBins count for stats card
+  const lolbinsCount = threats.filter(t => t.threat_type === 'lolbins_abuse').length;
+
   return (
     <ProtectedRoute>
     <main className="pb-12">
@@ -369,7 +349,7 @@ const fetchStats = useCallback(async () => {
       {/* Stats Cards */}
       {stats && (
         <div className="section">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="card-premium p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/30">
               <div className="flex items-center gap-3 mb-2">
                 <Shield className="h-5 w-5 text-blue-500" />
@@ -409,6 +389,18 @@ const fetchStats = useCallback(async () => {
                 {stats.status_breakdown.blocked || 0}
               </div>
             </div>
+
+            {/* 🆕 LOLBins Stats Card */}
+            <div className="card-premium p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-orange-500/30 border border-orange-500/20">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-lg">⚠️</span>
+                <div className="text-sm text-muted-foreground">LOLBins</div>
+              </div>
+              <div className="text-2xl font-bold text-orange-400">
+                {lolbinsCount}
+              </div>
+              <div className="text-xs text-orange-400/60 mt-1 font-mono">T1218</div>
+            </div>
           </div>
         </div>
       )}
@@ -427,10 +419,7 @@ const fetchStats = useCallback(async () => {
               value={severityFilter}
               onChange={(e) => setSeverityFilter(e.target.value)}
               className="px-4 py-2 rounded-lg bg-card border-2 border-border text-foreground ml-auto transition-all duration-300 hover:border-purple-400 hover:bg-purple-500/5 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer relative z-50"
-              style={{ 
-                pointerEvents: 'auto',
-                colorScheme: 'dark'
-              }}
+              style={{ pointerEvents: 'auto', colorScheme: 'dark' }}
             >
               <option value="all" className="bg-[#0a0e27] text-white">All Severities</option>
               <option value="critical" className="bg-[#0a0e27] text-white">Critical</option>
@@ -443,10 +432,7 @@ const fetchStats = useCallback(async () => {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-2 rounded-lg bg-card border-2 border-border text-foreground transition-all duration-300 hover:border-cyan-400 hover:bg-cyan-500/5 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer relative z-50"
-              style={{ 
-                pointerEvents: 'auto',
-                colorScheme: 'dark'
-              }}
+              style={{ pointerEvents: 'auto', colorScheme: 'dark' }}
             >
               <option value="all" className="bg-[#0a0e27] text-white">All Statuses</option>
               <option value="active" className="bg-[#0a0e27] text-white">Active</option>
@@ -523,9 +509,8 @@ const fetchStats = useCallback(async () => {
 
           {/* Table */}
           {!isLoading && (
-             <div className="overflow-x-auto">
+            <div className="overflow-x-auto">
               <table className="table w-full table-fixed">
-              
                 <thead>
                   <tr>
                     <th className="px-2">
@@ -559,7 +544,7 @@ const fetchStats = useCallback(async () => {
                     </tr>
                   ) : (
                     threats?.map((threat) => (
-                      <tr 
+                      <tr
                         key={threat.id}
                         className={`
                           group
@@ -585,13 +570,13 @@ const fetchStats = useCallback(async () => {
                             />
                           </div>
                         </td>
-                        
+
                         {/* Time */}
                         <td className="px-2 font-mono text-xs transition-colors duration-300 group-hover:text-blue-400">
                           {formatTime(threat.timestamp)}
                         </td>
-                        
-                        {/* Source IP - 🆕 Enhanced with copy functionality */}
+
+                        {/* Source IP */}
                         <td className="px-2 font-mono text-xs">
                           <div className="flex items-center gap-1">
                             <span className="text-blue-400 transition-all duration-300 group-hover:text-blue-300 group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] truncate">
@@ -611,20 +596,36 @@ const fetchStats = useCallback(async () => {
                             </button>
                           </div>
                         </td>
-                        
-                        {/* Type */}
-                        <td className="px-2 font-semibold text-sm transition-colors duration-300 group-hover:text-purple-400 truncate">
-                          {threat.threat_type}
+
+                        {/* 🆕 Type - LOLBins badge */}
+                        <td className="px-2">
+                          {threat.threat_type === 'lolbins_abuse' ? (
+                            <div className="flex flex-col gap-1">
+                              <span className="px-2 py-0.5 bg-orange-500/20 border border-orange-500/30 rounded text-xs text-orange-400 font-medium whitespace-nowrap transition-all duration-300 group-hover:bg-orange-500/30 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-orange-500/50">
+                                ⚠️ LOLBins Abuse
+                              </span>
+                              <button
+                                onClick={(e) => openExternalUrl(e, 'https://attack.mitre.org/techniques/T1218/')}
+                                className="text-xs text-cyan-400 hover:text-cyan-300 hover:underline transition-colors duration-200 font-mono text-left"
+                              >
+                                MITRE T1218 ↗
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="font-semibold text-sm transition-colors duration-300 group-hover:text-purple-400 truncate">
+                              {threat.threat_type}
+                            </span>
+                          )}
                         </td>
-                        
-                        {/* Description - FIXED with proper truncation */}
+
+                        {/* Description */}
                         <td className="px-3 text-sm" title={threat.description}>
                           <div className="truncate transition-colors duration-300 group-hover:text-foreground">
                             {threat.description}
                           </div>
                         </td>
-                        
-                        {/* Severity - 🆕 Enhanced badge with pulse */}
+
+                        {/* Severity */}
                         <td className="px-2">
                           <span className={`
                             ${getSeverityBadgeClass(threat.severity)}
@@ -643,17 +644,14 @@ const fetchStats = useCallback(async () => {
                             {threat.severity}
                           </span>
                         </td>
-                        
-                        {/* Confidence Score - 🆕 Enhanced with shimmer */}
+
+                        {/* Confidence Score */}
                         <td className="px-2">
                           <div className="flex items-center gap-2">
                             <div className="w-14 bg-gray-700 rounded-full h-2 overflow-hidden relative group-hover:shadow-md flex-shrink-0">
-                              {/* Shimmer effect */}
                               <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
                               </div>
-                              
-                              {/* Fill bar */}
                               <div
                                 className={`
                                   h-2 rounded-full transition-all duration-500
@@ -661,7 +659,7 @@ const fetchStats = useCallback(async () => {
                                     (threat.confidence_score || 0) >= 60 ? 'bg-yellow-500 group-hover:shadow-yellow-500/50' :
                                     'bg-red-500 group-hover:shadow-red-500/50'}
                                 `}
-                                style={{ 
+                                style={{
                                   width: `${threat.confidence_score || 0}%`,
                                   animation: 'fillBar 1s ease-out'
                                 }}
@@ -672,8 +670,8 @@ const fetchStats = useCallback(async () => {
                             </span>
                           </div>
                         </td>
-                        
-                        {/* IOC Match - 🆕 Enhanced badge */}
+
+                        {/* IOC Match */}
                         <td className="px-2">
                           {threat.correlation && threat.correlation.match_count > 0 ? (
                             <div className="flex flex-col gap-1">
@@ -694,8 +692,8 @@ const fetchStats = useCallback(async () => {
                             </span>
                           )}
                         </td>
-                        
-                        {/* Status - 🆕 Enhanced badge */}
+
+                        {/* Status */}
                         <td className="px-2">
                           <span className={`
                             ${getStatusBadgeClass(threat.status)}
@@ -714,8 +712,8 @@ const fetchStats = useCallback(async () => {
                             {threat.status}
                           </span>
                         </td>
-                        
-                        {/* Actions - 🆕 Enhanced buttons */}
+
+                        {/* Actions */}
                         <td className="px-2">
                           <div className="flex gap-1.5">
                             {threat.status === "active" && (
@@ -758,5 +756,3 @@ const fetchStats = useCallback(async () => {
     </ProtectedRoute>
   );
 }
-
-

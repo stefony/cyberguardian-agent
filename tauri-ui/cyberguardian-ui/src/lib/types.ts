@@ -20,6 +20,7 @@ export type ThreatType =
   | 'xss'
   | 'privilege_escalation'
   | 'suspicious_activity'
+  | 'lolbins_abuse'
 
 export interface Threat {
   id: string
@@ -44,9 +45,10 @@ export interface ThreatResponse {
   description: string;
   status: string;
   details?: any;
-  confidence_score?: number;  // ← ДОБАВИ ТОЗИ РЕД
+  confidence_score?: number;
   created_at: string;
   updated_at: string;
+  mitre_technique?: string;  // ← ТУК (top level, не в correlation!)
   correlation?: {
     threat_id: number;
     matched_iocs: any[];
