@@ -328,8 +328,12 @@ export default function ThreatsPage() {
               Threat Management
             </h1>
             <p className="mt-2 text-muted-foreground">
-              Monitor and respond to security threats in real-time
-            </p>
+  Monitor and respond to security threats in real-time — detects{" "}
+  <span className="text-orange-400 font-medium">LOLBins Abuse</span>,{" "}
+  <span className="text-red-400 font-medium">WMI Abuse</span>,{" "}
+  <span className="text-blue-400 font-medium">PowerShell Attacks</span>,{" "}
+  <span className="text-purple-400 font-medium">Process Injection</span> and more
+</p>
           </div>
           
           <button
@@ -510,7 +514,7 @@ export default function ThreatsPage() {
           {/* Table */}
           {!isLoading && (
             <div className="overflow-x-auto">
-              <table className="table w-full table-fixed">
+              <table className="table w-full min-w-[900px]">
                 <thead>
                   <tr>
                     <th className="px-2">
