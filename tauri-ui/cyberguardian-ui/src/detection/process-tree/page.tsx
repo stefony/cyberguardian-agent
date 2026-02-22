@@ -380,7 +380,7 @@ return (
           )}
         >
           <Filter className="h-3.5 w-3.5" />
-          {showSuspiciousOnly ? 'Suspicious Only' : 'All Processes'}
+          {showSuspiciousOnly ? 'Suspicious Only' : 'All Processes · Click to see anomalies'}
         </button>
 
         {/* Spacer */}
