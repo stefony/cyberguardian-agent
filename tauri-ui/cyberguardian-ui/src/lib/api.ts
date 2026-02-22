@@ -2143,6 +2143,52 @@ export const processMonitorApi = {
   }>> => {
     return client.get<any>('/api/process-monitor/get-mode')
   },
+
+  // Runtime Blocking
+  enableBlocking: async (): Promise<ApiResponse<{
+    blocking_enabled: boolean
+    message: string
+  }>> => {
+    return client.post<any>('/api/process-monitor/blocking/enable', {})
+  },
+
+  disableBlocking: async (): Promise<ApiResponse<{
+    blocking_enabled: boolean
+    message: string
+  }>> => {
+    return client.post<any>('/api/process-monitor/blocking/disable', {})
+  },
+
+  getBlockingStatus: async (): Promise<ApiResponse<{
+    blocking_enabled: boolean
+    total_blocked: number
+    blocked_processes: Array<{
+      pid: number
+      process_name: string
+      reason: string
+      mitre_technique: string
+      timestamp: string
+      success: boolean
+      error: string | null
+    }>
+  }>> => {
+    return client.get<any>('/api/process-monitor/blocking/status')
+  },
+
+  getBlockedProcesses: async (limit?: number): Promise<ApiResponse<{
+    total: number
+    blocked: Array<{
+      pid: number
+      process_name: string
+      reason: string
+      mitre_technique: string
+      timestamp: string
+      success: boolean
+      error: string | null
+    }>
+  }>> => {
+    return client.get<any>(`/api/process-monitor/blocked${limit ? `?limit=${limit}` : ''}`)
+  },
 }
 
 // ============================================

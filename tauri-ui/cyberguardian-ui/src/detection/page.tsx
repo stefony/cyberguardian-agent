@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, ChangeEvent, useEffect, useCallback } from "react";
-import { Shield, Activity, Search, Upload, AlertTriangle, XCircle, ExternalLink } from "lucide-react";
+import { Shield, Activity, Search, Upload, AlertTriangle, XCircle, ExternalLink, Ban, ShieldOff, ShieldCheck } from "lucide-react";
 import { detectionApi } from "@/lib/api";
+import { processMonitorApi } from "@/lib/api";
 import ProtectedRoute from '@/components/ProtectedRoute';
  
 
@@ -75,6 +76,11 @@ export default function DetectionPage() {
   const [isVtUploading, setIsVtUploading] = useState(false);
 const [vtResult, setVtResult] = useState<any>(null);
 const [vtError, setVtError] = useState<string | null>(null);
+// Runtime Blocking states
+  const [blockingEnabled, setBlockingEnabled] = useState(false);
+  const [blockedProcesses, setBlockedProcesses] = useState<any[]>([]);
+  const [totalBlocked, setTotalBlocked] = useState(0);
+  const [isTogglingBlock, setIsTogglingBlock] = useState(false);
 
 
   // Fetch detection status
@@ -89,6 +95,35 @@ const fetchStatus = useCallback(async () => {
     // No mock data fallback
   }
 }, []);
+
+const fetchBlockingStatus = useCallback(async () => {
+    try {
+      const response = await processMonitorApi.getBlockingStatus();
+      if (response.success && response.data) {
+        setBlockingEnabled(response.data.blocking_enabled);
+        setBlockedProcesses(response.data.blocked_processes || []);
+        setTotalBlocked(response.data.total_blocked || 0);
+      }
+    } catch (err) {
+      console.error("Error fetching blocking status:", err);
+    }
+  }, []);
+
+  const handleToggleBlocking = async () => {
+    setIsTogglingBlock(true);
+    try {
+      const response = blockingEnabled
+        ? await processMonitorApi.disableBlocking()
+        : await processMonitorApi.enableBlocking();
+      if (response.success) {
+        await fetchBlockingStatus();
+      }
+    } catch (err) {
+      console.error("Error toggling blocking:", err);
+    } finally {
+      setIsTogglingBlock(false);
+    }
+  };
 
 // Fetch scans
 const fetchScans = useCallback(async () => {
@@ -108,10 +143,11 @@ const fetchScans = useCallback(async () => {
 }, []);
 
   // Initial load
-  useEffect(() => {
+useEffect(() => {
     fetchScans();
     fetchStatus();
-  }, [fetchScans, fetchStatus]);
+    fetchBlockingStatus();
+  }, [fetchScans, fetchStatus, fetchBlockingStatus]);
 
   // File upload handler
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -562,7 +598,122 @@ const fetchScans = useCallback(async () => {
           </div>
         </div>
       )}
+{/* Runtime Blocking */}
+      <div className="section">
+        <div className="bg-card border border-border rounded-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Ban className="h-5 w-5 text-red-500" />
+              Runtime Blocking
+            </h2>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Total blocked:</span>
+                <span className="font-bold text-red-500">{totalBlocked}</span>
+              </div>
+              <button
+                onClick={handleToggleBlocking}
+                disabled={isTogglingBlock}
+                className={`
+                  flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm
+                  transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed
+                  ${blockingEnabled
+                    ? 'bg-red-500/10 text-red-500 border-2 border-red-500/50 hover:bg-red-500/20 hover:shadow-lg hover:shadow-red-500/30'
+                    : 'bg-green-500/10 text-green-500 border-2 border-green-500/50 hover:bg-green-500/20 hover:shadow-lg hover:shadow-green-500/30'
+                  }
+                `}
+              >
+                {isTogglingBlock ? (
+                  <Activity className="h-4 w-4 animate-spin" />
+                ) : blockingEnabled ? (
+                  <ShieldOff className="h-4 w-4" />
+                ) : (
+                  <ShieldCheck className="h-4 w-4" />
+                )}
+                {blockingEnabled ? 'Disable Blocking' : 'Enable Blocking'}
+              </button>
+            </div>
+          </div>
 
+          {/* Status Banner */}
+          <div className={`
+            p-4 rounded-lg border mb-6 flex items-center gap-3
+            ${blockingEnabled
+              ? 'bg-red-500/10 border-red-500/30'
+              : 'bg-gray-500/10 border-gray-500/30'
+            }
+          `}>
+            {blockingEnabled ? (
+              <>
+                <div className="flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </div>
+                <div>
+                  <p className="font-semibold text-red-500">Runtime Blocking ACTIVE</p>
+                  <p className="text-xs text-muted-foreground">Processes with critical severity (WMI/PowerShell abuse) will be automatically killed</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <ShieldOff className="h-5 w-5 text-gray-400" />
+                <div>
+                  <p className="font-semibold text-gray-400">Runtime Blocking INACTIVE</p>
+                  <p className="text-xs text-muted-foreground">Detection only — no processes will be killed automatically</p>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Blocked Processes Table */}
+          {blockedProcesses.length === 0 ? (
+            <div className="text-center py-8">
+              <Shield className="h-8 w-8 mx-auto text-gray-500 mb-3" />
+              <p className="text-muted-foreground">No processes blocked yet</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4 text-sm font-semibold">PID</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold">Process</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold">Reason</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold">MITRE</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold">Time</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {blockedProcesses.map((proc, index) => (
+                    <tr key={index} className="border-b border-border hover:bg-red-500/5 transition-colors duration-200">
+                      <td className="py-3 px-4 font-mono text-sm">{proc.pid}</td>
+                      <td className="py-3 px-4 font-semibold">{proc.process_name}</td>
+                      <td className="py-3 px-4 text-sm text-muted-foreground max-w-xs truncate">{proc.reason}</td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-1 rounded-full bg-orange-500/10 text-orange-500 text-xs font-semibold">
+                          {proc.mitre_technique || '—'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-sm">
+                        {new Date(proc.timestamp).toLocaleString('en-US', {
+                          month: 'short', day: 'numeric',
+                          hour: '2-digit', minute: '2-digit'
+                        })}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${proc.success ? 'bg-red-500/10 text-red-500' : 'bg-yellow-500/10 text-yellow-500'}`}>
+                          {proc.success ? 'Killed' : 'Failed'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
       {/* Recent Scans */}
       <div className="section">
         <div className="bg-card border border-border rounded-lg p-6">

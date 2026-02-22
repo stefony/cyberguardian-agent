@@ -373,11 +373,11 @@ export default function LiveThreatFeed() {
       </div>
 
       {/* Event count */}
-      <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
+      <div className="flex items-start gap-2 mb-4 text-sm text-muted-foreground">
         <Wifi className="w-4 h-4" />
         <div>
           <span>{events.length} events detected</span>
-          <p className="text-xs text-muted-foreground/60 mt-0.5">
+         <p className="text-xs text-cyan-400 mt-0.5 font-medium">
             Global threat intelligence • Not local attacks
           </p>
         </div>
