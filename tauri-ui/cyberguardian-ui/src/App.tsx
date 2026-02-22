@@ -4,6 +4,7 @@ import Layout from "./layout";
 import DashboardPage from "./dashboard/page";
 import ThreatsPage from "./threats/page";
 import DetectionPage from "./detection/page";
+import ProcessTreePage from "./detection/process-tree/page";
 import ProtectionPage from "./protection/page";
 import ScansPage from "./scans/page";
 import ExecutivePage from "./executive/page";
@@ -73,6 +74,7 @@ export default function App() {
           <Route path="threats/feeds" element={<FeedsPage />} />
 
           <Route path="detection" element={<DetectionPage />} />
+          <Route path="detection/process-tree" element={<ProcessTreePage />} />
           <Route path="protection" element={<ProtectionPage />} />
           <Route path="scans" element={<ScansPage />} />
           <Route path="settings" element={<SettingsPage />} />

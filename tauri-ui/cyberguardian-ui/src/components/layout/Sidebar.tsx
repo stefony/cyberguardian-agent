@@ -27,6 +27,7 @@ import {
   FileJson,       // Configuration
   Gauge,          // Performance
   TrendingUp,
+  GitBranch, 
 } from 'lucide-react'
 
 interface SubItem {
@@ -66,10 +67,14 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    label: 'Detection',
-    href: '/detection',
-    icon: Zap,
-  },
+  label: 'Detection',
+  href: '/detection',
+  icon: Zap,
+  subItems: [
+    { label: 'Overview', href: '/detection' },
+    { label: 'Process Tree', href: '/detection/process-tree' },
+  ],
+},
    {
     label: 'Protection',
     href: '/protection',
