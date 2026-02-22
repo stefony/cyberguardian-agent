@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
- 
+ import { invoke } from '@tauri-apps/api/core'
 import { cn } from '@/lib/utils'
 import {
   GitBranch,
@@ -278,6 +278,22 @@ export default function ProcessTreePage() {
 
   // Initial load
   useEffect(() => { fetchTree() }, [fetchTree])
+
+  // Trigger Desktop Agent upload при зареждане
+useEffect(() => {
+  const triggerUpload = async () => {
+    try {
+      const token = localStorage.getItem('access_token') || localStorage.getItem('token') || ''
+      await invoke('start_background_upload', { apiToken: token })
+      console.log('✅ Background upload triggered')
+      // Изчакай 2 сек за да се качат процесите, после refresh
+      setTimeout(() => fetchTree(), 2000)
+    } catch (e) {
+      console.warn('⚠️ Could not trigger background upload (non-Tauri env):', e)
+    }
+  }
+  triggerUpload()
+}, []) 
 
   // Auto-refresh every 30s
   useEffect(() => {
