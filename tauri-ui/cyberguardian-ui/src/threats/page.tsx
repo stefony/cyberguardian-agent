@@ -363,8 +363,11 @@ const fetchShapData = async (threat: ThreatResponse) => {
             <h1 className="heading-accent gradient-cyber text-3xl md:text-4xl font-bold tracking-tight">
               Threat Management
             </h1>
-            <p className="mt-2 text-muted-foreground">
-  Monitor and respond to security threats in real-time — detects{" "}
+            <p className="mt-2 text-muted-foreground text-sm">
+  Monitor and respond to security threats in real-time
+</p>
+<p className="mt-1 text-xs text-muted-foreground/70">
+  Detects{" "}
   <span className="text-orange-400 font-medium">LOLBins Abuse</span>,{" "}
   <span className="text-red-400 font-medium">WMI Abuse</span>,{" "}
   <span className="text-blue-400 font-medium">PowerShell Attacks</span>,{" "}
@@ -578,9 +581,15 @@ const fetchShapData = async (threat: ThreatResponse) => {
                 <tbody>
                   {threats?.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="text-center py-8 text-muted-foreground">
-                        No threats found
-                      </td>
+                      <td colSpan={10} className="text-center py-16">
+  <div className="flex flex-col items-center gap-3">
+    <Shield className="h-12 w-12 text-green-500/40" />
+    <p className="text-green-400 font-semibold">System Protected</p>
+    <p className="text-xs text-muted-foreground">
+      No threats detected — monitoring active
+    </p>
+  </div>
+</td>
                     </tr>
                   ) : (
                     threats?.map((threat) => (
