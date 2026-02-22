@@ -84,7 +84,7 @@ interface ProcessRowProps {
 }
 
 function ProcessRow({ node, depth, searchQuery, showSuspiciousOnly }: ProcessRowProps) {
-  const [expanded, setExpanded] = useState(depth < 2)
+ const [expanded, setExpanded] = useState(depth < 2)
   const hasChildren = node.children.length > 0
 
   const matchesSearch = !searchQuery ||
@@ -251,8 +251,6 @@ export default function ProcessTreePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showSuspiciousOnly, setShowSuspiciousOnly] = useState(false)
   const [autoRefresh, setAutoRefresh] = useState(true)
-  const [currentPage, setCurrentPage] = useState(1)
-  const ITEMS_PER_PAGE = 10
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080'
@@ -312,13 +310,12 @@ useEffect(() => {
     nodes.reduce((acc, n) => acc + 1 + countNodes(n.children), 0)
 
   const totalProcesses = countNodes(tree)
-// Pagination
-const totalPages = Math.ceil(tree.length / ITEMS_PER_PAGE)
-const paginatedTree = tree.slice(
-  (currentPage - 1) * ITEMS_PER_PAGE,
-  currentPage * ITEMS_PER_PAGE
-)
-  return (
+ 
+
+const flattenTree = (nodes: ProcessNode[]): ProcessNode[] =>
+  nodes.reduce((acc, n) => [...acc, n, ...flattenTree(n.children)], [] as ProcessNode[])
+
+return (
     <div className="flex flex-col h-full min-h-screen bg-dark-bg text-foreground">
 
       {/* ── Header ── */}
@@ -367,14 +364,14 @@ const paginatedTree = tree.slice(
             type="text"
             placeholder="Search process, PID, user..."
             value={searchQuery}
-           onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1) }}
+           onChange={e => setSearchQuery(e.target.value)}
             className="w-full rounded-lg border border-dark-border bg-dark-bg pl-9 pr-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-purple-500/50"
           />
         </div>
 
         {/* Filter suspicious */}
         <button
-          onClick={() => { setShowSuspiciousOnly(v => !v); setCurrentPage(1) }}
+          onClick={() => setShowSuspiciousOnly(v => !v)}
           className={cn(
             'flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors',
             showSuspiciousOnly
@@ -474,81 +471,51 @@ const paginatedTree = tree.slice(
           </div>
         )}
 
-        {!loading && !error && paginatedTree.map(root => (
+        {!loading && !error && (
+  showSuspiciousOnly
+    ? flattenTree(tree)
+        .filter(n => n.suspicious)
+        .map(node => (
           <ProcessRow
-            key={`${root.pid}-${root.name}`}
-            node={root}
+            key={`${node.pid}-${node.name}`}
+            node={{ ...node, children: [] }}
             depth={0}
             searchQuery={searchQuery}
-            showSuspiciousOnly={showSuspiciousOnly}
+            showSuspiciousOnly={false}
           />
-        ))}
+        ))
+    : tree.map(root => (
+        <ProcessRow
+          key={`${root.pid}-${root.name}`}
+          node={root}
+          depth={0}
+          searchQuery={searchQuery}
+          showSuspiciousOnly={false}
+        />
+      ))
+)}
+        
       </div>
 
-     {/* ── Footer Pagination ── */}
+     {/* ── Footer Legend ── */}
 <div className="border-t border-dark-border bg-dark-surface/60 px-6 py-2.5">
-  <div className="flex items-center justify-between">
-    
-    {/* Legend */}
-    <div className="flex items-center gap-6 text-[11px] text-muted-foreground">
-      <div className="flex items-center gap-1.5">
-        <AlertTriangle className="h-3 w-3 text-red-400" />
-        <span>Suspicious process</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <div className="h-2 w-2 rounded-full bg-cyber-green/60" />
-        <span>Clean process</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-orange-900/60 text-orange-300 border-orange-700 font-mono">T1059</span>
-        <span>MITRE ATT&CK technique</span>
-      </div>
+  <div className="flex items-center gap-6 text-[11px] text-muted-foreground">
+    <div className="flex items-center gap-1.5">
+      <AlertTriangle className="h-3 w-3 text-red-400" />
+      <span>Suspicious process</span>
     </div>
-
-    {/* Pagination */}
-    <div className="flex items-center gap-2">
-      <span className="text-[11px] text-muted-foreground">
-        Page {currentPage} of {totalPages} · {tree.length} root processes
-      </span>
-      <button
-        onClick={() => setCurrentPage(1)}
-        disabled={currentPage === 1}
-        className="px-2 py-1 text-xs rounded border border-dark-border bg-dark-bg text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-      >«</button>
-      <button
-        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-        disabled={currentPage === 1}
-        className="px-2 py-1 text-xs rounded border border-dark-border bg-dark-bg text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-      >‹</button>
-      
-      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-        const page = Math.max(1, Math.min(currentPage - 2, totalPages - 4)) + i
-        return (
-          <button
-            key={page}
-            onClick={() => setCurrentPage(page)}
-            className={cn(
-              'px-2.5 py-1 text-xs rounded border transition-colors',
-              page === currentPage
-                ? 'border-purple-500 bg-purple-500/20 text-purple-300'
-                : 'border-dark-border bg-dark-bg text-muted-foreground hover:text-foreground'
-            )}
-          >{page}</button>
-        )
-      })}
-
-      <button
-        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-        disabled={currentPage === totalPages}
-        className="px-2 py-1 text-xs rounded border border-dark-border bg-dark-bg text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-      >›</button>
-      <button
-        onClick={() => setCurrentPage(totalPages)}
-        disabled={currentPage === totalPages}
-        className="px-2 py-1 text-xs rounded border border-dark-border bg-dark-bg text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-      >»</button>
+    <div className="flex items-center gap-1.5">
+      <div className="h-2 w-2 rounded-full bg-cyber-green/60" />
+      <span>Clean process</span>
     </div>
-
+    <div className="flex items-center gap-1.5">
+      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-orange-900/60 text-orange-300 border-orange-700 font-mono">T1059</span>
+      <span>MITRE ATT&CK technique</span>
+    </div>
+    <div className="ml-auto flex items-center gap-1.5">
+      <CheckCircle className="h-3 w-3 text-cyber-green" />
+      <span>Auto-refresh every 30 seconds</span>
+    </div>
   </div>
 </div>
 
