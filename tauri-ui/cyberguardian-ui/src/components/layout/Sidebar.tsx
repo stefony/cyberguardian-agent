@@ -23,11 +23,12 @@ import {
   Database,
   Fingerprint,
   ShieldAlert,
-  RefreshCw,      // Updates
-  FileJson,       // Configuration
-  Gauge,          // Performance
+  RefreshCw,
+  FileJson,
+  Gauge,
   TrendingUp,
-  GitBranch, 
+  GitBranch,
+  FilterX,
 } from 'lucide-react'
 
 interface SubItem {
@@ -128,10 +129,15 @@ const navItems: NavItem[] = [
     icon: Zap,
   },
   {
-    label: 'Incidents',
-    href: '/incidents',
-    icon: GitBranch,
-  },
+  label: 'Incidents',
+  href: '/incidents',
+  icon: GitBranch,
+},
+{
+  label: 'FP Control',
+  href: '/fp-control',
+  icon: FilterX,
+},
   {
     label: 'Analytics',
     href: '/analytics',

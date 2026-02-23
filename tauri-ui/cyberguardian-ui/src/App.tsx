@@ -31,6 +31,7 @@ import IOCsPage from "./threats/iocs/page";
 import MITREPage from "./threats/mitre/page";
 import FeedsPage from "./threats/feeds/page";
 import IncidentsPage from "./incidents/page";
+import FPControlPage from "./fp-control/page";
 
 import LoginPage from "./auth/login/page";
 import PricingPage from "./pricing/page";
@@ -102,6 +103,7 @@ export default function App() {
           <Route path="ml" element={<MLModelsPage />} />
           <Route path="emails" element={<EmailsPage />} />
           <Route path="incidents" element={<IncidentsPage />} />
+          <Route path="fp-control" element={<FPControlPage />} />
         </Route>
 
         {/* fallback */}
