@@ -128,6 +128,11 @@ const navItems: NavItem[] = [
     icon: Zap,
   },
   {
+    label: 'Incidents',
+    href: '/incidents',
+    icon: GitBranch,
+  },
+  {
     label: 'Analytics',
     href: '/analytics',
     icon: BarChart3,
