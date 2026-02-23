@@ -18,6 +18,8 @@ type Incident = {
   confidence_score: number;
   mitre_techniques: string[];
   suppressed: boolean;
+  fp_score: number;
+  fp_reasons: string[];
   events: any[];
 };
 
@@ -173,11 +175,22 @@ export default function IncidentsPage() {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <div className="text-sm font-bold text-purple-400">
-                            {incident.confidence_score.toFixed(0)}%
-                          </div>
-                          <div className="text-xs text-muted-foreground">confidence</div>
-                        </div>
+  <div className="text-sm font-bold text-purple-400">
+    {incident.confidence_score.toFixed(0)}%
+  </div>
+  <div className="text-xs text-muted-foreground">confidence</div>
+</div>
+<div className="text-right">
+  <div className={`text-sm font-bold ${
+    incident.fp_score >= 70 ? "text-green-400" :
+    incident.fp_score >= 50 ? "text-yellow-400" :
+    incident.fp_score >= 30 ? "text-orange-400" :
+    "text-red-400"
+  }`}>
+    FP {incident.fp_score?.toFixed(0) ?? 0}%
+  </div>
+  <div className="text-xs text-muted-foreground">fp risk</div>
+</div>
                         <div className="text-sm text-muted-foreground">
                           {incident.event_count} events
                         </div>
@@ -211,9 +224,21 @@ export default function IncidentsPage() {
                             </div>
                           </div>
                           <div>
-                            <div className="text-muted-foreground mb-1">First Seen</div>
-                            <div>{new Date(incident.first_seen).toLocaleString()}</div>
-                          </div>
+  <div className="text-muted-foreground mb-1">First Seen</div>
+  <div>{new Date(incident.first_seen).toLocaleString()}</div>
+</div>
+{incident.fp_reasons && incident.fp_reasons.length > 0 && (
+  <div className="col-span-2 md:col-span-4">
+    <div className="text-muted-foreground mb-1">FP Risk Reasons</div>
+    <div className="flex flex-wrap gap-2">
+      {incident.fp_reasons.map((reason, i) => (
+        <span key={i} className="px-2 py-0.5 rounded bg-green-500/10 text-green-400 text-xs border border-green-500/20">
+          ✓ {reason}
+        </span>
+      ))}
+    </div>
+  </div>
+)}
                         </div>
 
                         {/* Events */}
