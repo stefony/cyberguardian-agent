@@ -651,7 +651,7 @@ useEffect(() => {
                 </div>
                 <div>
                   <p className="font-semibold text-red-500">Runtime Blocking ACTIVE</p>
-                  <p className="text-xs text-muted-foreground">Auto-kills critical processes: T1047 · T1059 · T1055 · T1003 · T1218 · T1574 · T1547 · T1543 · T1021 — 9 MITRE techniques</p>
+                  <p className="text-xs text-muted-foreground">Auto-kills critical processes: T1047 · T1059 · T1055 · T1003 · T1218 · T1574 · T1547 · T1543 · T1021 · T1562 · T1496 — 11 MITRE techniques</p>
                 </div>
               </>
             ) : (
@@ -659,7 +659,7 @@ useEffect(() => {
                 <ShieldOff className="h-5 w-5 text-gray-400" />
                 <div>
                   <p className="font-semibold text-gray-400">Runtime Blocking INACTIVE</p>
-                  <p className="text-xs text-muted-foreground">Detection only — covers T1047 WMI · T1059 PowerShell · T1055 Injection · T1003 Credential Dump · T1218 LOLBins · T1574 DLL Hijack · T1547 Persistence · T1543 Services · T1021 Remote</p>
+                  <p className="text-xs text-muted-foreground">Detection only — T1047 · T1059 · T1055 · T1003 · T1218 · T1574 · T1547 · T1543 · T1021 · T1562 · T1496 — 11 MITRE techniques</p>
                 </div>
               </>
             )}
