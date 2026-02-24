@@ -659,7 +659,7 @@ useEffect(() => {
                 <ShieldOff className="h-5 w-5 text-gray-400" />
                 <div>
                   <p className="font-semibold text-gray-400">Runtime Blocking INACTIVE</p>
-                  <p className="text-xs text-muted-foreground">Detection only — no processes will be killed automatically</p>
+                  <p className="text-xs text-muted-foreground">Detection only — covers T1047 WMI · T1059 PowerShell · T1055 Injection · T1003 Credential Dump · T1218 LOLBins</p>
                 </div>
               </>
             )}
