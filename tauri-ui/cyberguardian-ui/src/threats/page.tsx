@@ -690,7 +690,7 @@ const response = await httpFetch('/api/ml/explain', {
           {/* Table */}
           {!isLoading && (
             <div className="overflow-x-auto">
-              <table className="table w-full min-w-[900px]">
+              <table className="table w-full min-w-[1100px]">
                 <thead>
                   <tr>
                     <th className="px-2">
@@ -831,7 +831,7 @@ const response = await httpFetch('/api/ml/explain', {
 </td>
 
                         {/* Description */}
-                        <td className="px-3 text-sm" title={threat.description}>
+                        <td className="px-3 text-sm max-w-[220px]" title={threat.description}>
                           <div className="truncate transition-colors duration-300 group-hover:text-foreground">
                             {threat.description}
                           </div>
