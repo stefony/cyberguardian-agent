@@ -2,8 +2,7 @@
 //! Enumerates running processes and detects suspicious activity
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use std::thread;
 
 #[cfg(target_os = "windows")]
@@ -24,8 +23,6 @@ use windows::Win32::System::ProcessStatus::{
 };
 #[cfg(target_os = "windows")]
 use windows::Win32::Security::{GetTokenInformation, TokenUser, TOKEN_QUERY};
-#[cfg(target_os = "windows")]
-use windows::Win32::System::SystemInformation::GetSystemTimes;
 
 /// Process information structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -54,7 +51,7 @@ fn filetime_to_u64(ft: FILETIME) -> u64 {
     ((ft.dwHighDateTime as u64) << 32) | (ft.dwLowDateTime as u64)
 }
 
-/// Get CPU usage for a process (two-pass measurement)
+/// Get CPU usage for a process (two-pass measurement with wall clock)
 #[cfg(target_os = "windows")]
 fn get_cpu_usage(pid: u32) -> f32 {
     unsafe {
@@ -63,61 +60,42 @@ fn get_cpu_usage(pid: u32) -> f32 {
             Err(_) => return 0.0,
         };
 
-        // PASS 1: Вземаме initial times
-        let mut creation_time1 = FILETIME::default();
-        let mut exit_time1 = FILETIME::default();
-        let mut kernel_time1 = FILETIME::default();
-        let mut user_time1 = FILETIME::default();
+        let mut creation = FILETIME::default();
+        let mut exit = FILETIME::default();
+        let mut kernel1 = FILETIME::default();
+        let mut user1 = FILETIME::default();
 
-        let mut sys_idle1 = FILETIME::default();
-        let mut sys_kernel1 = FILETIME::default();
-        let mut sys_user1 = FILETIME::default();
-
-        if GetProcessTimes(handle, &mut creation_time1, &mut exit_time1, &mut kernel_time1, &mut user_time1).is_err() {
+        if GetProcessTimes(handle, &mut creation, &mut exit, &mut kernel1, &mut user1).is_err() {
             let _ = CloseHandle(handle);
             return 0.0;
         }
-        let _ = GetSystemTimes(Some(&mut sys_idle1), Some(&mut sys_kernel1), Some(&mut sys_user1));
 
-        let proc_time1 = filetime_to_u64(kernel_time1) + filetime_to_u64(user_time1);
-        let sys_time1 = filetime_to_u64(sys_kernel1) + filetime_to_u64(sys_user1);
+        let proc_time1 = filetime_to_u64(kernel1) + filetime_to_u64(user1);
+        let wall1 = std::time::Instant::now();
 
-        // Изчакваме 100ms
-        thread::sleep(Duration::from_millis(100));
+        thread::sleep(Duration::from_millis(150));
 
-        // PASS 2: Вземаме times след интервала
-        let mut creation_time2 = FILETIME::default();
-        let mut exit_time2 = FILETIME::default();
-        let mut kernel_time2 = FILETIME::default();
-        let mut user_time2 = FILETIME::default();
+        let mut kernel2 = FILETIME::default();
+        let mut user2 = FILETIME::default();
 
-        let mut sys_idle2 = FILETIME::default();
-        let mut sys_kernel2 = FILETIME::default();
-        let mut sys_user2 = FILETIME::default();
-
-        if GetProcessTimes(handle, &mut creation_time2, &mut exit_time2, &mut kernel_time2, &mut user_time2).is_err() {
+        if GetProcessTimes(handle, &mut creation, &mut exit, &mut kernel2, &mut user2).is_err() {
             let _ = CloseHandle(handle);
             return 0.0;
         }
-        let _ = GetSystemTimes(Some(&mut sys_idle2), Some(&mut sys_kernel2), Some(&mut sys_user2));
 
         let _ = CloseHandle(handle);
 
-        let proc_time2 = filetime_to_u64(kernel_time2) + filetime_to_u64(user_time2);
-        let sys_time2 = filetime_to_u64(sys_kernel2) + filetime_to_u64(sys_user2);
+        let proc_time2 = filetime_to_u64(kernel2) + filetime_to_u64(user2);
+        let wall_elapsed = wall1.elapsed().as_nanos() as f32 / 100.0; // конвертираме в 100ns units
 
         let proc_delta = proc_time2.saturating_sub(proc_time1) as f32;
-        let sys_delta = sys_time2.saturating_sub(sys_time1) as f32;
 
-        if sys_delta == 0.0 {
+        if wall_elapsed == 0.0 {
             return 0.0;
         }
 
-        // Изчисляваме % (нормализирано по брой CPU ядра)
         let num_cpus = num_cpus::get() as f32;
-        let cpu = (proc_delta / sys_delta) * 100.0 * num_cpus;
-
-        // Ограничаваме до 100%
+        let cpu = (proc_delta / wall_elapsed) * 100.0 / num_cpus;
         cpu.min(100.0).max(0.0)
     }
 }
