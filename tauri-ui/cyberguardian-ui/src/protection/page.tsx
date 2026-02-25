@@ -476,21 +476,27 @@ const goToPage = (pageNumber: number) => {
                   </div>
                 </label>
 
-                <div>
-                  <label className="text-sm block mb-1">Threat Threshold</label>
-                  <input
-                    type="number"
-                    value={threatThreshold}
-                    onChange={async (e) => {
-                      const newValue = Number(e.target.value);
-                      setThreatThreshold(newValue);
-                      await saveSettings(undefined, newValue);
-                    }}
-                    min={0}
-                    max={100}
-                    className="w-full px-3 py-1 rounded-lg bg-card border-2 border-border text-foreground focus:border-cyan-500 focus:outline-none"
-                  />
-                </div>
+               <div>
+  <label className="text-sm block mb-1">Threat Threshold</label>
+  <input
+    type="number"
+    value={threatThreshold}
+    onChange={(e) => {
+      const newValue = Number(e.target.value);
+      setThreatThreshold(newValue);
+      // ✅ Debounce - изчака 800ms след последната промяна
+      if ((window as any)._thresholdTimeout) {
+        clearTimeout((window as any)._thresholdTimeout);
+      }
+      (window as any)._thresholdTimeout = setTimeout(async () => {
+        await saveSettings(undefined, newValue);
+      }, 800);
+    }}
+    min={0}
+    max={100}
+    className="w-full px-3 py-1 rounded-lg bg-card border-2 border-border text-foreground focus:border-cyan-500 focus:outline-none"
+  />
+</div>
               </div>
             </div>
           </div>
