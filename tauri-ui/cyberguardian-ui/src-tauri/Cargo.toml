@@ -27,6 +27,7 @@
     md5 = "0.7"
     chrono = { version = "0.4", features = ["serde"] }
     dirs = "5.0"
+    num_cpus = "1.16"
 
     # File System Watcher dependencies
     notify = "6.1"
@@ -38,15 +39,16 @@
     # Windows API for process protection and service management
     [target.'cfg(windows)'.dependencies]
     windows = { version = "0.58", features = [
-        "Win32_Foundation",
-        "Win32_UI_Shell",
-        "Win32_System_Services",      # ← Service Control Manager (SCM) API
-        "Win32_Security",              # ← Security and access control
-        "Win32_System_Threading",      # ← Process/Thread management
-        "Win32_System_Diagnostics_ToolHelp",
-        "Win32_System_ProcessStatus",        # ← ДОБАВИ
-        "Win32_System_SystemServices",       # ← ДОБАВИ  
-    ] }
+    "Win32_Foundation",
+    "Win32_UI_Shell",
+    "Win32_System_Services",
+    "Win32_Security",
+    "Win32_System_Threading",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_ProcessStatus",
+    "Win32_System_SystemServices",
+    "Win32_System_SystemInformation",
+] }
 
     # Windows Service wrapper library
     windows-service = "0.7"

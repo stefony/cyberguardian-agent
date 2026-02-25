@@ -3,6 +3,8 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::time::{Duration, Instant};
+use std::thread;
 
 #[cfg(target_os = "windows")]
 use windows::Win32::System::Diagnostics::ToolHelp::{
@@ -10,10 +12,11 @@ use windows::Win32::System::Diagnostics::ToolHelp::{
     PROCESSENTRY32W, TH32CS_SNAPPROCESS,
 };
 #[cfg(target_os = "windows")]
-use windows::Win32::Foundation::{CloseHandle, HANDLE};
+use windows::Win32::Foundation::{CloseHandle, HANDLE, FILETIME};
 #[cfg(target_os = "windows")]
 use windows::Win32::System::Threading::{
-    OpenProcess, OpenProcessToken, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ,
+    OpenProcess, OpenProcessToken, GetProcessTimes,
+    PROCESS_QUERY_INFORMATION, PROCESS_VM_READ,
 };
 #[cfg(target_os = "windows")]
 use windows::Win32::System::ProcessStatus::{
@@ -22,7 +25,7 @@ use windows::Win32::System::ProcessStatus::{
 #[cfg(target_os = "windows")]
 use windows::Win32::Security::{GetTokenInformation, TokenUser, TOKEN_QUERY};
 #[cfg(target_os = "windows")]
-
+use windows::Win32::System::SystemInformation::GetSystemTimes;
 
 /// Process information structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,6 +46,85 @@ pub struct ProcessStats {
     pub total_processes: usize,
     pub suspicious_processes: usize,
     pub monitored_at: String,
+}
+
+/// Helper: convert FILETIME to u64
+#[cfg(target_os = "windows")]
+fn filetime_to_u64(ft: FILETIME) -> u64 {
+    ((ft.dwHighDateTime as u64) << 32) | (ft.dwLowDateTime as u64)
+}
+
+/// Get CPU usage for a process (two-pass measurement)
+#[cfg(target_os = "windows")]
+fn get_cpu_usage(pid: u32) -> f32 {
+    unsafe {
+        let handle = match OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid) {
+            Ok(h) => h,
+            Err(_) => return 0.0,
+        };
+
+        // PASS 1: Вземаме initial times
+        let mut creation_time1 = FILETIME::default();
+        let mut exit_time1 = FILETIME::default();
+        let mut kernel_time1 = FILETIME::default();
+        let mut user_time1 = FILETIME::default();
+
+        let mut sys_idle1 = FILETIME::default();
+        let mut sys_kernel1 = FILETIME::default();
+        let mut sys_user1 = FILETIME::default();
+
+        if GetProcessTimes(handle, &mut creation_time1, &mut exit_time1, &mut kernel_time1, &mut user_time1).is_err() {
+            let _ = CloseHandle(handle);
+            return 0.0;
+        }
+        let _ = GetSystemTimes(Some(&mut sys_idle1), Some(&mut sys_kernel1), Some(&mut sys_user1));
+
+        let proc_time1 = filetime_to_u64(kernel_time1) + filetime_to_u64(user_time1);
+        let sys_time1 = filetime_to_u64(sys_kernel1) + filetime_to_u64(sys_user1);
+
+        // Изчакваме 100ms
+        thread::sleep(Duration::from_millis(100));
+
+        // PASS 2: Вземаме times след интервала
+        let mut creation_time2 = FILETIME::default();
+        let mut exit_time2 = FILETIME::default();
+        let mut kernel_time2 = FILETIME::default();
+        let mut user_time2 = FILETIME::default();
+
+        let mut sys_idle2 = FILETIME::default();
+        let mut sys_kernel2 = FILETIME::default();
+        let mut sys_user2 = FILETIME::default();
+
+        if GetProcessTimes(handle, &mut creation_time2, &mut exit_time2, &mut kernel_time2, &mut user_time2).is_err() {
+            let _ = CloseHandle(handle);
+            return 0.0;
+        }
+        let _ = GetSystemTimes(Some(&mut sys_idle2), Some(&mut sys_kernel2), Some(&mut sys_user2));
+
+        let _ = CloseHandle(handle);
+
+        let proc_time2 = filetime_to_u64(kernel_time2) + filetime_to_u64(user_time2);
+        let sys_time2 = filetime_to_u64(sys_kernel2) + filetime_to_u64(sys_user2);
+
+        let proc_delta = proc_time2.saturating_sub(proc_time1) as f32;
+        let sys_delta = sys_time2.saturating_sub(sys_time1) as f32;
+
+        if sys_delta == 0.0 {
+            return 0.0;
+        }
+
+        // Изчисляваме % (нормализирано по брой CPU ядра)
+        let num_cpus = num_cpus::get() as f32;
+        let cpu = (proc_delta / sys_delta) * 100.0 * num_cpus;
+
+        // Ограничаваме до 100%
+        cpu.min(100.0).max(0.0)
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn get_cpu_usage(_pid: u32) -> f32 {
+    0.0
 }
 
 /// Get memory usage for a process (in MB)
@@ -66,12 +148,16 @@ fn get_memory_usage(pid: u32) -> f64 {
         let _ = CloseHandle(handle);
 
         if result.is_ok() {
-            // Convert bytes to MB
             mem_counters.WorkingSetSize as f64 / (1024.0 * 1024.0)
         } else {
             0.0
         }
     }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn get_memory_usage(_pid: u32) -> f64 {
+    0.0
 }
 
 /// Get username for a process
@@ -89,7 +175,6 @@ fn get_username(pid: u32) -> String {
             return "N/A".to_string();
         }
 
-        // Get token user info
         let mut return_length: u32 = 0;
         let mut buffer = vec![0u8; 256];
 
@@ -108,37 +193,36 @@ fn get_username(pid: u32) -> String {
             return "N/A".to_string();
         }
 
-        // For now, return a placeholder
-        // Full SID-to-username conversion requires LookupAccountSidW
-        // which is more complex - we can add it later if needed
         "User".to_string()
     }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn get_username(_pid: u32) -> String {
+    "N/A".to_string()
 }
 
 /// Enumerate all running Windows processes
 #[cfg(target_os = "windows")]
 pub fn enumerate_processes() -> Result<Vec<ProcessInfo>, String> {
     use std::mem;
-    
+
     println!("🔍 Starting Windows process enumeration...");
-    
+
     unsafe {
-        // Create snapshot of all processes
         let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
             .map_err(|e| format!("Failed to create process snapshot: {:?}", e))?;
-        
+
         if snapshot.is_invalid() {
             return Err("Invalid snapshot handle".to_string());
         }
-        
+
         let mut processes = Vec::new();
         let mut entry: PROCESSENTRY32W = mem::zeroed();
         entry.dwSize = mem::size_of::<PROCESSENTRY32W>() as u32;
-        
-        // Get first process
+
         if Process32FirstW(snapshot, &mut entry).is_ok() {
             loop {
-                // Extract process name from wchar array
                 let name = String::from_utf16_lossy(
                     &entry.szExeFile
                         .iter()
@@ -146,37 +230,33 @@ pub fn enumerate_processes() -> Result<Vec<ProcessInfo>, String> {
                         .copied()
                         .collect::<Vec<u16>>()
                 );
-                
+
                 let pid = entry.th32ProcessID;
-                
-                // Get memory usage (real value)
                 let memory_mb = get_memory_usage(pid);
-                
-                // Get username (real value)
                 let username = get_username(pid);
-                
+                let cpu_percent = get_cpu_usage(pid);
+
                 let process = ProcessInfo {
                     pid,
                     name: name.clone(),
                     parent_pid: entry.th32ParentProcessID,
                     thread_count: entry.cntThreads,
                     exe_path: name.clone(),
-                    cpu_percent: 0.0,  // CPU requires time-based sampling, will add later
+                    cpu_percent,
                     memory_mb,
                     username,
                 };
-                
+
                 processes.push(process);
-                
-                // Get next process
+
                 if Process32NextW(snapshot, &mut entry).is_err() {
                     break;
                 }
             }
         }
-        
+
         let _ = CloseHandle(snapshot);
-        
+
         println!("✅ Enumerated {} processes", processes.len());
         Ok(processes)
     }
@@ -192,7 +272,7 @@ pub fn get_process_statistics(processes: &[ProcessInfo]) -> ProcessStats {
     let suspicious_count = processes.iter()
         .filter(|p| is_suspicious_process(&p.name))
         .count();
-    
+
     ProcessStats {
         total_processes: processes.len(),
         suspicious_processes: suspicious_count,
@@ -211,7 +291,7 @@ fn is_suspicious_process(name: &str) -> bool {
         "regsvr32.exe",
         "rundll32.exe",
     ];
-    
+
     let name_lower = name.to_lowercase();
     suspicious_names.iter().any(|&s| name_lower.contains(s))
 }

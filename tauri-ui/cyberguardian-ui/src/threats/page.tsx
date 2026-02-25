@@ -689,7 +689,7 @@ const response = await httpFetch('/api/ml/explain', {
 
           {/* Table */}
           {!isLoading && (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" style={{ overflowX: 'scroll' }}>
               <table className="table w-full min-w-[1100px]">
                 <thead>
                   <tr>
