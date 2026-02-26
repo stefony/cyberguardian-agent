@@ -11,7 +11,7 @@
 
     [build-dependencies]
     tauri-build = { version = "2", features = [] }
-    embed-manifest = "1.4"
+    
     
 
     [dependencies]
