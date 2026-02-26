@@ -66,7 +66,7 @@ fn filetime_to_u64(ft: FILETIME) -> u64 {
 #[cfg(target_os = "windows")]
 fn get_raw_cpu_time(pid: u32) -> u64 {
     unsafe {
-        let handle = match OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid) {
+        let handle = match OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) {
             Ok(h) => h,
             Err(_) => return 0,
         };
@@ -127,7 +127,7 @@ fn calculate_cpu_percent(pid: u32) -> f32 {
 #[cfg(target_os = "windows")]
 fn get_memory_usage(pid: u32) -> f64 {
     unsafe {
-        let handle = match OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid) {
+        let handle = match OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) {
             Ok(h) => h,
             Err(_) => return 0.0,
         };
