@@ -15,7 +15,7 @@ use windows::Win32::Foundation::{CloseHandle, HANDLE, FILETIME};
 #[cfg(target_os = "windows")]
 use windows::Win32::System::Threading::{
     OpenProcess, OpenProcessToken, GetProcessTimes,
-    PROCESS_QUERY_INFORMATION, PROCESS_VM_READ,
+    PROCESS_QUERY_INFORMATION,
 };
 #[cfg(target_os = "windows")]
 use windows::Win32::System::ProcessStatus::{
@@ -66,8 +66,7 @@ fn filetime_to_u64(ft: FILETIME) -> u64 {
 #[cfg(target_os = "windows")]
 fn get_raw_cpu_time(pid: u32) -> u64 {
     unsafe {
-        let handle = match OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) {
-            Ok(h) => h,
+       let handle = match OpenProcess(PROCESS_QUERY_INFORMATION, false, pid) {
             Err(_) => return 0,
         };
 
