@@ -12,18 +12,18 @@
   "app": {
     "withGlobalTauri": true,
     "windows": [
-      {
-        "title": "CyberGuardian XDR",
-        "width": 1200,
-        "height": 800,
-        "resizable": true,
-        "fullscreen": false,
-        "center": true,
-        "visible": true,
-        "skipTaskbar": false,
-        "devtools": true
-      }
-    ],
+  {
+    "title": "CyberGuardian XDR",
+    "width": 1200,
+    "height": 800,
+    "resizable": true,
+    "fullscreen": false,
+    "center": true,
+    "visible": true,
+    "skipTaskbar": false,
+    "devtools": true
+  }
+],
     "security": {
       "csp": null
     },
@@ -51,13 +51,14 @@
       },
       "wix": null,
       "nsis": {
-        "installerIcon": "icons/icon.ico",
-        "installMode": "perMachine",
-        "languages": ["English"],
-        "displayLanguageSelector": false,
-        "compression": "lzma",
-        "startMenuFolder": "CyberGuardian XDR"
-      }
+  "installerIcon": "icons/icon.ico",
+  "installMode": "perMachine",
+  "languages": ["English"],
+  "displayLanguageSelector": false,
+  "compression": "lzma",
+  "startMenuFolder": "CyberGuardian XDR",
+  "template": null
+}
     }
   },
   "plugins": {
