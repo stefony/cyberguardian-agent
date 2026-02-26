@@ -29,12 +29,15 @@ pub fn start_process_upload_task(api_token: String) {
             let api_processes: Vec<crate::api_client::ProcessInfo> = processes
                 .into_iter()
                 .map(|p| crate::api_client::ProcessInfo {
-                    pid: p.pid,
-                    name: p.name,
-                    parent_pid: p.parent_pid,
-                    thread_count: p.thread_count,
-                    exe_path: p.exe_path,
-                })
+    pid: p.pid,
+    name: p.name,
+    parent_pid: p.parent_pid,
+    thread_count: p.thread_count,
+    exe_path: p.exe_path,
+    cpu_percent: p.cpu_percent,
+    memory_mb: p.memory_mb,
+    username: p.username.clone(),
+})
                 .collect();
             
             // Send to backend

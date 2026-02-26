@@ -15,6 +15,9 @@ pub struct ProcessInfo {
     pub parent_pid: u32,
     pub thread_count: u32,
     pub exe_path: String,
+    pub cpu_percent: f32,
+    pub memory_mb: f64,
+    pub username: String,
 }
 
 /// API Response structure
