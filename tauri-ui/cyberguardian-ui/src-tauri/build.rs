@@ -1,9 +1,5 @@
 fn main() {
     #[cfg(target_os = "windows")]
-    {
-        let mut res = winres::WindowsResource::new();
-        res.set_manifest_file("app.manifest");
-        res.compile().unwrap();
-    }
+    embed_manifest::embed_manifest(embed_manifest::new_manifest("app.manifest")).unwrap();
     tauri_build::build()
 }
