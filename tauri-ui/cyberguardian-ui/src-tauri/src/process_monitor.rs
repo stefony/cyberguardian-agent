@@ -12,7 +12,7 @@ use windows::Win32::System::Diagnostics::ToolHelp::{
 use windows::Win32::Foundation::{CloseHandle, HANDLE};
 #[cfg(target_os = "windows")]
 use windows::Win32::System::Threading::{
-    OpenProcess, OpenProcessToken, PROCESS_QUERY_INFORMATION,
+    OpenProcess, OpenProcessToken, PROCESS_QUERY_INFORMATION, PROCESS_ACCESS_RIGHTS,
 };
 #[cfg(target_os = "windows")]
 use windows::Win32::System::ProcessStatus::{
@@ -20,6 +20,9 @@ use windows::Win32::System::ProcessStatus::{
 };
 #[cfg(target_os = "windows")]
 use windows::Win32::Security::{GetTokenInformation, TokenUser, TOKEN_QUERY};
+
+#[cfg(target_os = "windows")]
+const PROCESS_QUERY_LIMITED: PROCESS_ACCESS_RIGHTS = PROCESS_ACCESS_RIGHTS(0x1000);
 
 /// Process information structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,7 +49,7 @@ pub struct ProcessStats {
 #[cfg(target_os = "windows")]
 fn get_memory_usage(pid: u32) -> f64 {
     unsafe {
-        let handle = match OpenProcess(PROCESS_QUERY_INFORMATION, false, pid) {
+        let handle = match OpenProcess(PROCESS_QUERY_LIMITED, false, pid) {
             Ok(h) => h,
             Err(_) => return 0.0,
         };
