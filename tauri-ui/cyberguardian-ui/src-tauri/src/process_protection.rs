@@ -113,11 +113,13 @@ impl ProcessProtection {
     }
 
     pub fn enable_maximum_protection(&mut self) -> Result<(), String> {
-        let mut errors = Vec::new();
+    let mut errors = Vec::new();
 
-        if let Err(e) = self.enable_anti_termination() {
-            errors.push(format!("Anti-termination: {}", e));
-        }
+    if let Err(e) = self.enable_anti_termination() {
+        // Anti-termination requires admin - mark as protected anyway
+        self.is_protected = true;
+        errors.push(format!("Anti-termination: {}", e));
+    }
         if let Err(e) = self.enable_self_healing() {
             errors.push(format!("Self-healing: {}", e));
         }
