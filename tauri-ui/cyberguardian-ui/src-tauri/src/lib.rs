@@ -530,6 +530,14 @@ pub fn run() {
         .setup(|app| {
             println!("🔧 Setup starting...");
 
+            // Auto-initialize protection if running as admin
+            if process_protection::ProcessProtection::check_admin_privileges() {
+                println!("🛡️ Admin detected - auto-initializing protection...");
+                let _ = process_protection::init_protection();
+                let _ = process_protection::enable_max_protection();
+                println!("✅ Protection auto-enabled");
+            }
+
             let dashboard_item =
                 MenuItem::with_id(app, "dashboard", "Open Dashboard", true, None::<&str>)?;
             let protection_item =
@@ -639,42 +647,42 @@ pub fn run() {
                 api.prevent_close();
             }
         })
-       .invoke_handler(tauri::generate_handler![
-    greet,
-    get_local_ip,
-    start_file_protection,
-    create_quarantine_record,
-    start_local_scan,
-    scan_windows_registry,
-    scan_windows_services,
-    scan_windows_tasks,
-    // Process Protection Commands
-    init_tamper_protection,
-    get_desktop_protection_status,
-    enable_desktop_max_protection,
-    disable_desktop_protection,
-    check_admin_privileges,
-    restart_as_admin,
-    enable_anti_termination_desktop,
-    enable_self_healing_desktop,
-    install_service_desktop,
-    // Service Management Commands
-    check_service_installed,
-    check_service_running,
-    get_service_status,
-    start_service_command,
-    stop_service_command,
-    uninstall_service_command,
-    // Process Monitoring Commands
-    get_windows_processes,
-    get_process_stats,
-    // Deep Quarantine Commands
-    deep_quarantine_analyze,
-    deep_quarantine_remove,
-    deep_quarantine_list_backups,
-    // Background Upload
-    start_background_upload
-])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            get_local_ip,
+            start_file_protection,
+            create_quarantine_record,
+            start_local_scan,
+            scan_windows_registry,
+            scan_windows_services,
+            scan_windows_tasks,
+            // Process Protection Commands
+            init_tamper_protection,
+            get_desktop_protection_status,
+            enable_desktop_max_protection,
+            disable_desktop_protection,
+            check_admin_privileges,
+            restart_as_admin,
+            enable_anti_termination_desktop,
+            enable_self_healing_desktop,
+            install_service_desktop,
+            // Service Management Commands
+            check_service_installed,
+            check_service_running,
+            get_service_status,
+            start_service_command,
+            stop_service_command,
+            uninstall_service_command,
+            // Process Monitoring Commands
+            get_windows_processes,
+            get_process_stats,
+            // Deep Quarantine Commands
+            deep_quarantine_analyze,
+            deep_quarantine_remove,
+            deep_quarantine_list_backups,
+            // Background Upload
+            start_background_upload
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
