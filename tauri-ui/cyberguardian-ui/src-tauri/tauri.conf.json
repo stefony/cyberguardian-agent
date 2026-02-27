@@ -46,19 +46,20 @@
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
       "timestampUrl": "",
+      "requestedExecutionLevel": "requireAdministrator",
       "webviewInstallMode": {
         "type": "embedBootstrapper"
       },
       "wix": null,
       "nsis": {
-  "installerIcon": "icons/icon.ico",
-  "installMode": "perMachine",
-  "languages": ["English"],
-  "displayLanguageSelector": false,
-  "compression": "lzma",
-  "startMenuFolder": "CyberGuardian XDR",
-  "template": null
-}
+        "installerIcon": "icons/icon.ico",
+        "installMode": "perMachine",
+        "languages": ["English"],
+        "displayLanguageSelector": false,
+        "compression": "lzma",
+        "startMenuFolder": "CyberGuardian XDR",
+        "template": null
+      }
     }
   },
   "plugins": {
