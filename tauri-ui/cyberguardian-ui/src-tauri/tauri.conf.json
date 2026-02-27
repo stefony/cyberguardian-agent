@@ -46,7 +46,6 @@
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
       "timestampUrl": "",
-      "requestedExecutionLevel": "requireAdministrator",
       "webviewInstallMode": {
         "type": "embedBootstrapper"
       },
