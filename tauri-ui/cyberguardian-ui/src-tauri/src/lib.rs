@@ -321,6 +321,12 @@ fn disable_desktop_protection() -> Result<String, String> {
 fn check_admin_privileges() -> Result<bool, String> {
     Ok(process_protection::ProcessProtection::check_admin_privileges())
 }
+/// Restart application as Administrator (UAC elevation)
+#[tauri::command]
+fn restart_as_admin() -> Result<String, String> {
+    process_protection::restart_as_admin()?;
+    Ok("Restarting as Administrator...".to_string())
+}
 
 /// Enable anti-termination protection
 #[tauri::command]
@@ -648,6 +654,7 @@ pub fn run() {
     enable_desktop_max_protection,
     disable_desktop_protection,
     check_admin_privileges,
+    restart_as_admin,
     enable_anti_termination_desktop,
     enable_self_healing_desktop,
     install_service_desktop,

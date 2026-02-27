@@ -705,12 +705,28 @@ const initDesktopProtection = async () => {
                     </button>
                   )}
                 </>
-              ) : (
-                <div className="px-6 py-3 bg-amber-500/20 backdrop-blur-lg text-amber-200 rounded-xl border border-amber-400/30 flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5" />
-                  <span className="font-semibold">Requires Administrator</span>
-                </div>
-              )}
+             ) : (
+  <div className="flex flex-col items-end gap-2">
+    <div className="px-4 py-2 bg-amber-500/20 backdrop-blur-lg text-amber-200 rounded-xl border border-amber-400/30 flex items-center gap-2 text-sm">
+      <AlertTriangle className="w-4 h-4" />
+      <span className="font-semibold">Requires Administrator</span>
+    </div>
+    <button
+      onClick={async () => {
+        try {
+          await invokeTauri('restart_as_admin');
+        } catch (error) {
+          toast.error(`Failed to restart as admin: ${error}`);
+        }
+      }}
+      disabled={actionLoading}
+      className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:shadow-2xl hover:scale-105 transition-all disabled:opacity-50 flex items-center gap-2 font-bold"
+    >
+      <Shield className="w-5 h-5" />
+      <span>Restart as Administrator</span>
+    </button>
+  </div>
+)}
             </div>
           </div>
           

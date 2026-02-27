@@ -300,6 +300,53 @@ pub fn install_as_service() -> Result<(), String> {
         Err("Service installation only supported on Windows".to_string())
     }
 }
+/// Restart the application as Administrator (Windows UAC elevation)
+#[cfg(target_os = "windows")]
+pub fn restart_as_admin() -> Result<(), String> {
+    use windows::Win32::UI::Shell::ShellExecuteW;
+    use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+    use windows::core::PCWSTR;
+    use std::ffi::OsStr;
+    use std::os::windows::ffi::OsStrExt;
+
+    fn to_wide(s: &str) -> Vec<u16> {
+        OsStr::new(s).encode_wide().chain(std::iter::once(0)).collect()
+    }
+
+    // Get current executable path
+    let exe_path = std::env::current_exe()
+        .map_err(|e| format!("Cannot get exe path: {}", e))?;
+    let exe_str = exe_path.to_str()
+        .ok_or("Invalid exe path")?;
+
+    let operation = to_wide("runas");
+    let file = to_wide(exe_str);
+    let empty = to_wide("");
+
+    unsafe {
+        let result = ShellExecuteW(
+            None,
+            PCWSTR(operation.as_ptr()),
+            PCWSTR(file.as_ptr()),
+            PCWSTR(empty.as_ptr()),
+            PCWSTR(empty.as_ptr()),
+            SW_SHOWNORMAL,
+        );
+
+        // ShellExecuteW returns > 32 on success
+        if result.0 as usize > 32 {
+            // Exit current (non-admin) instance
+            std::process::exit(0);
+        } else {
+           Err(format!("ShellExecuteW failed with code: {:?}", result.0))
+        }
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn restart_as_admin() -> Result<(), String> {
+    Err("UAC elevation only supported on Windows".to_string())
+}
 
 #[cfg(test)]
 mod tests {
