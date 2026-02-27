@@ -2144,36 +2144,26 @@ export const processMonitorApi = {
     return client.get<any>('/api/process-monitor/get-mode')
   },
 
-  // Runtime Blocking
-  enableBlocking: async (): Promise<ApiResponse<{
-    blocking_enabled: boolean
-    message: string
-  }>> => {
-    return client.post<any>('/api/process-monitor/blocking/enable', {})
+  // Runtime Blocking — Tauri local commands
+  enableBlocking: async () => {
+    const { invoke } = await import('@tauri-apps/api/core').catch(() => ({ invoke: null }))
+    if (!invoke) return { success: false, error: 'Tauri not available' }
+    const data = await invoke<any>('enable_runtime_blocking')
+    return { success: true, data }
+  },
+  disableBlocking: async () => {
+    const { invoke } = await import('@tauri-apps/api/core').catch(() => ({ invoke: null }))
+    if (!invoke) return { success: false, error: 'Tauri not available' }
+    const data = await invoke<any>('disable_runtime_blocking')
+    return { success: true, data }
+  },
+  getBlockingStatus: async () => {
+    const { invoke } = await import('@tauri-apps/api/core').catch(() => ({ invoke: null }))
+    if (!invoke) return { success: false, error: 'Tauri not available' }
+    const data = await invoke<any>('get_runtime_blocking_status')
+    return { success: true, data }
   },
 
-  disableBlocking: async (): Promise<ApiResponse<{
-    blocking_enabled: boolean
-    message: string
-  }>> => {
-    return client.post<any>('/api/process-monitor/blocking/disable', {})
-  },
-
-  getBlockingStatus: async (): Promise<ApiResponse<{
-    blocking_enabled: boolean
-    total_blocked: number
-    blocked_processes: Array<{
-      pid: number
-      process_name: string
-      reason: string
-      mitre_technique: string
-      timestamp: string
-      success: boolean
-      error: string | null
-    }>
-  }>> => {
-    return client.get<any>('/api/process-monitor/blocking/status')
-  },
 
   getBlockedProcesses: async (limit?: number): Promise<ApiResponse<{
     total: number

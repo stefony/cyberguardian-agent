@@ -517,6 +517,47 @@ async fn start_background_upload(api_token: String) -> Result<String, String> {
     }
 }
 // ============================================================================
+// RUNTIME BLOCKING COMMANDS
+// ============================================================================
+
+#[tauri::command]
+fn enable_runtime_blocking() -> Result<serde_json::Value, String> {
+    process_monitor::enable_blocking();
+    let (enabled, procs, threats) = process_monitor::get_blocking_status();
+    Ok(serde_json::json!({
+        "success": true,
+        "blocking_enabled": enabled,
+        "total_blocked": procs.len(),
+        "blocked_processes": procs,
+        "message": "Runtime blocking enabled"
+    }))
+}
+
+#[tauri::command]
+fn disable_runtime_blocking() -> Result<serde_json::Value, String> {
+    process_monitor::disable_blocking();
+    let (enabled, procs, threats) = process_monitor::get_blocking_status();
+    Ok(serde_json::json!({
+        "success": true,
+        "blocking_enabled": enabled,
+        "total_blocked": procs.len(),
+        "blocked_processes": procs,
+        "message": "Runtime blocking disabled"
+    }))
+}
+
+#[tauri::command]
+fn get_runtime_blocking_status() -> Result<serde_json::Value, String> {
+    let (enabled, procs, threats) = process_monitor::get_blocking_status();
+    Ok(serde_json::json!({
+        "success": true,
+        "blocking_enabled": enabled,
+        "total_blocked": procs.len(),
+        "blocked_processes": procs,
+        "threats_detected": threats
+    }))
+}
+// ============================================================================
 // MAIN APPLICATION
 // ============================================================================
 
@@ -529,6 +570,8 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             println!("🔧 Setup starting...");
+            process_monitor::start_monitor_loop();
+            println!("✅ Real-time process monitor started");
 
             // If protection was enabled but app started without admin → request UAC
             if !process_protection::ProcessProtection::check_admin_privileges()
@@ -689,7 +732,10 @@ pub fn run() {
             deep_quarantine_remove,
             deep_quarantine_list_backups,
             // Background Upload
-            start_background_upload
+            start_background_upload,
+            enable_runtime_blocking,
+            disable_runtime_blocking,
+            get_runtime_blocking_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
