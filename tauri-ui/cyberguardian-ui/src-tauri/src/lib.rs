@@ -530,13 +530,17 @@ pub fn run() {
         .setup(|app| {
             println!("🔧 Setup starting...");
 
-            // Auto-initialize protection if running as admin
-            if process_protection::ProcessProtection::check_admin_privileges() {
-                println!("🛡️ Admin detected - auto-initializing protection...");
+            // Auto-initialize protection if running as admin OR if was previously enabled
+            if process_protection::ProcessProtection::check_admin_privileges() 
+                || process_protection::load_protection_state() 
+                {
+                 println!("🛡️ Auto-initializing protection...");
                 let _ = process_protection::init_protection();
                 let _ = process_protection::enable_max_protection();
                 println!("✅ Protection auto-enabled");
-            }
+                } 
+
+               
 
             let dashboard_item =
                 MenuItem::with_id(app, "dashboard", "Open Dashboard", true, None::<&str>)?;

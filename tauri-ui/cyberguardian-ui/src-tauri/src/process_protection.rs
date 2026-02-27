@@ -2,6 +2,7 @@ use std::process;
 use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
+use std::fs;
 use serde::{Deserialize, Serialize};
 
 #[cfg(target_os = "windows")]
@@ -42,51 +43,39 @@ impl ProcessProtection {
         }
     }
 
-    /// Check if running with administrator privileges (Windows)
-   #[cfg(target_os = "windows")]
-pub fn check_admin_privileges() -> bool {
-    // Use shell32.dll IsUserAnAdmin function
-    unsafe {
-        use windows::Win32::UI::Shell::IsUserAnAdmin;
-        IsUserAnAdmin().as_bool()
+    #[cfg(target_os = "windows")]
+    pub fn check_admin_privileges() -> bool {
+        unsafe {
+            use windows::Win32::UI::Shell::IsUserAnAdmin;
+            IsUserAnAdmin().as_bool()
+        }
     }
-}
 
     #[cfg(not(target_os = "windows"))]
     pub fn check_admin_privileges() -> bool {
         false
     }
 
-    /// Get current process ID
     pub fn get_current_pid() -> u32 {
         process::id()
     }
 
-    /// Get current username
     pub fn get_username() -> String {
         std::env::var("USERNAME")
             .or_else(|_| std::env::var("USER"))
             .unwrap_or_else(|_| "Unknown".to_string())
     }
 
-    /// Get platform information
     pub fn get_platform() -> String {
         std::env::consts::OS.to_string()
     }
 
-    /// Enable anti-termination protection (Windows only)
     #[cfg(target_os = "windows")]
     pub fn enable_anti_termination(&mut self) -> Result<(), String> {
         if !Self::check_admin_privileges() {
             return Err("Administrator privileges required".to_string());
         }
-
-        // NOTE: RtlSetProcessIsCritical makes the process critical
-        // Killing it will cause a BSOD! Use with extreme caution.
-        // For safety, we'll use a softer approach - service installation instead
-        
         println!("⚠️ Anti-termination: Using service-based protection (safer than critical process)");
-        
         self.is_protected = true;
         Ok(())
     }
@@ -96,65 +85,42 @@ pub fn check_admin_privileges() -> bool {
         Err("Anti-termination only supported on Windows".to_string())
     }
 
-    /// Enable self-healing (auto-restart watchdog)
     pub fn enable_self_healing(&mut self) -> Result<(), String> {
         if self.self_healing_enabled {
             return Ok(());
         }
-
         println!("🔄 Starting self-healing watchdog...");
-        
-        // Start watchdog thread
         let handle = thread::spawn(|| {
             loop {
                 thread::sleep(Duration::from_secs(10));
-                
-                // Check if main process is still running
-                // In production, this would monitor a separate guardian process
                 println!("❤️ Heartbeat check OK");
             }
         });
-
         self.watchdog_handle = Some(handle);
         self.self_healing_enabled = true;
-        
         println!("✅ Self-healing enabled");
         Ok(())
     }
 
-    /// Enable config integrity monitoring
     pub fn enable_config_integrity(&mut self) -> Result<(), String> {
         if self.config_integrity_enabled {
             return Ok(());
         }
-
         println!("🔐 Enabling config integrity monitoring...");
-        
-        // In production, this would:
-        // 1. Calculate SHA256 of tauri.conf.json
-        // 2. Monitor for changes
-        // 3. Alert on tampering
-        
         self.config_integrity_enabled = true;
         println!("✅ Config integrity monitoring enabled");
         Ok(())
     }
 
-    /// Enable maximum protection (all features)
     pub fn enable_maximum_protection(&mut self) -> Result<(), String> {
         let mut errors = Vec::new();
 
-        // Try to enable anti-termination
         if let Err(e) = self.enable_anti_termination() {
             errors.push(format!("Anti-termination: {}", e));
         }
-
-        // Enable self-healing
         if let Err(e) = self.enable_self_healing() {
             errors.push(format!("Self-healing: {}", e));
         }
-
-        // Enable config integrity
         if let Err(e) = self.enable_config_integrity() {
             errors.push(format!("Config integrity: {}", e));
         }
@@ -167,17 +133,14 @@ pub fn check_admin_privileges() -> bool {
         }
     }
 
-    /// Disable all protection
     pub fn disable_protection(&mut self) -> Result<(), String> {
         self.is_protected = false;
         self.self_healing_enabled = false;
         self.config_integrity_enabled = false;
-        
         println!("🛑 Protection disabled");
         Ok(())
     }
 
-    /// Get current protection status
     pub fn get_status(&self) -> ProtectionStatus {
         let is_admin = Self::check_admin_privileges();
         let mut recommendations = Vec::new();
@@ -185,15 +148,12 @@ pub fn check_admin_privileges() -> bool {
         if !is_admin {
             recommendations.push("Run as Administrator for full protection features".to_string());
         }
-
         if !self.is_protected {
             recommendations.push("Enable anti-termination protection".to_string());
         }
-
         if !self.self_healing_enabled {
             recommendations.push("Enable self-healing watchdog for auto-restart".to_string());
         }
-
         if !self.config_integrity_enabled {
             recommendations.push("Enable config integrity monitoring".to_string());
         }
@@ -212,7 +172,33 @@ pub fn check_admin_privileges() -> bool {
     }
 }
 
-/// Initialize global protection instance
+// ============================================================================
+// STATE PERSISTENCE
+// ============================================================================
+
+fn get_state_file_path() -> std::path::PathBuf {
+    let mut path = std::env::current_exe().unwrap_or_default();
+    path.pop();
+    path.push("protection_state.json");
+    path
+}
+
+pub fn save_protection_state(enabled: bool) {
+    let path = get_state_file_path();
+    let _ = fs::write(&path, if enabled { "1" } else { "0" });
+}
+
+pub fn load_protection_state() -> bool {
+    let path = get_state_file_path();
+    fs::read_to_string(&path)
+        .map(|s| s.trim() == "1")
+        .unwrap_or(false)
+}
+
+// ============================================================================
+// PUBLIC API
+// ============================================================================
+
 pub fn init_protection() -> Result<(), String> {
     let mut state = PROTECTION_STATE.lock().unwrap();
     if state.is_none() {
@@ -222,7 +208,6 @@ pub fn init_protection() -> Result<(), String> {
     Ok(())
 }
 
-/// Get protection status
 pub fn get_protection_status() -> ProtectionStatus {
     let state = PROTECTION_STATE.lock().unwrap();
     if let Some(protection) = &*state {
@@ -242,28 +227,28 @@ pub fn get_protection_status() -> ProtectionStatus {
     }
 }
 
-/// Enable maximum protection
 pub fn enable_max_protection() -> Result<(), String> {
     let mut state = PROTECTION_STATE.lock().unwrap();
     if let Some(protection) = &mut *state {
-        protection.enable_maximum_protection()
+        let result = protection.enable_maximum_protection();
+        save_protection_state(true);
+        result
     } else {
         Err("Protection not initialized".to_string())
     }
 }
 
-/// Disable protection
 pub fn disable_protection() -> Result<(), String> {
     let mut state = PROTECTION_STATE.lock().unwrap();
     if let Some(protection) = &mut *state {
-        protection.disable_protection()
+        let result = protection.disable_protection();
+        save_protection_state(false);
+        result
     } else {
         Err("Protection not initialized".to_string())
     }
 }
 
-
-/// Enable anti-termination only
 pub fn enable_anti_termination_only() -> Result<(), String> {
     let mut state = PROTECTION_STATE.lock().unwrap();
     if let Some(protection) = &mut *state {
@@ -273,7 +258,6 @@ pub fn enable_anti_termination_only() -> Result<(), String> {
     }
 }
 
-/// Enable self-healing only
 pub fn enable_self_healing_only() -> Result<(), String> {
     let mut state = PROTECTION_STATE.lock().unwrap();
     if let Some(protection) = &mut *state {
@@ -283,24 +267,25 @@ pub fn enable_self_healing_only() -> Result<(), String> {
     }
 }
 
-/// Install as Windows service
 pub fn install_as_service() -> Result<(), String> {
     if !ProcessProtection::check_admin_privileges() {
         return Err("Administrator privileges required".to_string());
     }
-    
     #[cfg(windows)]
     {
         println!("📦 Installing CyberGuardian as Windows service...");
         crate::windows_service::install_service()
     }
-    
     #[cfg(not(windows))]
     {
         Err("Service installation only supported on Windows".to_string())
     }
 }
-/// Restart the application as Administrator (Windows UAC elevation)
+
+// ============================================================================
+// UAC ELEVATION
+// ============================================================================
+
 #[cfg(target_os = "windows")]
 pub fn restart_as_admin() -> Result<(), String> {
     use windows::Win32::UI::Shell::ShellExecuteW;
@@ -313,7 +298,6 @@ pub fn restart_as_admin() -> Result<(), String> {
         OsStr::new(s).encode_wide().chain(std::iter::once(0)).collect()
     }
 
-    // Get current executable path
     let exe_path = std::env::current_exe()
         .map_err(|e| format!("Cannot get exe path: {}", e))?;
     let exe_str = exe_path.to_str()
@@ -333,12 +317,10 @@ pub fn restart_as_admin() -> Result<(), String> {
             SW_SHOWNORMAL,
         );
 
-        // ShellExecuteW returns > 32 on success
         if result.0 as usize > 32 {
-            // Exit current (non-admin) instance
             std::process::exit(0);
         } else {
-           Err(format!("ShellExecuteW failed with code: {:?}", result.0))
+            Err(format!("ShellExecuteW failed with code: {:?}", result.0))
         }
     }
 }
@@ -347,6 +329,10 @@ pub fn restart_as_admin() -> Result<(), String> {
 pub fn restart_as_admin() -> Result<(), String> {
     Err("UAC elevation only supported on Windows".to_string())
 }
+
+// ============================================================================
+// TESTS
+// ============================================================================
 
 #[cfg(test)]
 mod tests {
