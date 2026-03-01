@@ -48,9 +48,12 @@ windows = { version = "0.58", features = [
     "Win32_System_Diagnostics_ToolHelp",
     "Win32_System_ProcessStatus",
     "Win32_System_Diagnostics_Debug",
+    "Win32_System_Diagnostics_Etw",
     "Wdk_System_Threading",
     "Wdk",
     "Win32_System_SystemServices",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Time",
 ] }
 
 # Windows Service wrapper library

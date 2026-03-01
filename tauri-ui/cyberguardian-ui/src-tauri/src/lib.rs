@@ -8,6 +8,7 @@ mod deep_quarantine;
 #[cfg(windows)]
 mod windows_service;
 mod process_monitor;
+mod etw_monitor;
 mod api_client; 
 mod background_tasks;
 
@@ -571,6 +572,7 @@ pub fn run() {
         .setup(|app| {
             println!("🔧 Setup starting...");
             process_monitor::start_monitor_loop();
+            etw_monitor::start_etw_monitor();
             println!("✅ Real-time process monitor started");
 
             // If protection was enabled but app started without admin → request UAC
