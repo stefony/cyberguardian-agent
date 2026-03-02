@@ -420,6 +420,16 @@
     // RULES ENGINE — Detection patterns за всички TTPs
     // ============================================================================
 
+   /// Събитие за процес — за Event Sequence Engine
+    #[derive(Clone)]
+    pub struct ProcessEvent {
+        pub pid: u32,
+        pub name: String,
+        pub parent_name: String,
+        pub cmdline: String,
+        pub timestamp: std::time::Instant,
+    }
+
     /// Решение от rules engine
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct ThreatDecision {
@@ -660,6 +670,12 @@ for p in &impair {
     }
 
     lazy_static::lazy_static! {
+        // Event Sequence Engine — последните 10 events per process name
+        static ref EVENT_SEQUENCES: Mutex<std::collections::HashMap<String, Vec<ProcessEvent>>> = 
+            Mutex::new(std::collections::HashMap::new());
+    }
+
+    lazy_static::lazy_static! {
         static ref MONITOR_STATE: Mutex<MonitorState> = Mutex::new(MonitorState {
             blocking_enabled: false,
             blocked_processes: Vec::new(),
@@ -725,6 +741,14 @@ for p in &impair {
                         String::new()
                             };
                     let decision = analyze_process(&proc.name, &cmdline, parent_name);
+
+                    // Event Sequence Engine — проверяваме за suspicious chains
+                    let chain_decision = record_process_event(proc.pid, &proc.name, &parent_name, &cmdline);
+                    let decision = if chain_decision.as_ref().map(|d| d.is_threat).unwrap_or(false) {
+                         chain_decision.unwrap()
+                    } else {
+                        decision
+                };  
 
                     if decision.is_threat {
                         println!(
@@ -817,13 +841,94 @@ for p in &impair {
     }
     fn is_suspicious_name(name: &str) -> bool {
         let n = name.to_lowercase();
-        ["powershell", "cmd", "wmic", "mshta", "certutil",
+       ["powershell", "cmd", "wmic", "mshta", "certutil",
         "regsvr32", "rundll32", "bitsadmin", "wscript", "cscript",
-        "mimikatz", "procdump", "pwdump", "reg"].iter().any(|s| n.contains(s))
+        "mimikatz", "procdump", "pwdump", "reg", "net"].iter().any(|s| n.contains(s))
     }
     /// Публична версия на get_process_cmdline за ETW модула
         pub fn get_process_cmdline_pub(pid: u32) -> String {
     get_process_cmdline(pid)
+}
+/// Записва event в sequence buffer и проверява за suspicious chains
+pub fn record_process_event(pid: u32, name: &str, parent_name: &str, cmdline: &str) -> Option<ThreatDecision> {
+    let event = ProcessEvent {
+        pid,
+        name: name.to_string(),
+        parent_name: parent_name.to_string(),
+        cmdline: cmdline.to_string(),
+        timestamp: std::time::Instant::now(),
+    };
+
+    let mut sequences = match EVENT_SEQUENCES.lock() {
+        Ok(s) => s,
+        Err(_) => return None,
+    };
+
+    // Глобален event log — всички events в един списък
+    let seq = sequences.entry("global".to_string()).or_insert_with(Vec::new);
+    seq.push(event);
+
+    // Max 20 global events
+    if seq.len() > 20 {
+        seq.remove(0);
+    }
+
+    // Chain detection — гледаме последните 20 events глобално
+    let names: Vec<String> = seq.iter().map(|e| e.name.to_lowercase()).collect();
+    println!("🔗 Chain buffer: {:?}", names);
+    // Rule 1: Office app → PowerShell (T1566 Phishing)
+    if names.iter().any(|n| n.contains("winword") || n.contains("excel") || n.contains("outlook")) {
+        if names.iter().any(|n| n.contains("powershell") || n.contains("cmd") || n.contains("wscript")) {
+            return Some(ThreatDecision {
+                is_threat: true,
+                reason: format!("Suspicious chain: Office app → {}", name),
+                mitre: "T1566".to_string(),
+                severity: "critical".to_string(),
+            });
+        }
+    }
+
+    // Rule 2: Browser → PowerShell/CMD (T1059)
+    // Проверяваме директния parent, не глобалния буфер
+    let browser_parents = ["chrome", "firefox", "msedge", "brave"];
+    let is_browser_parent = browser_parents.iter().any(|b| parent_name.to_lowercase().contains(b));
+    let is_shell = name.to_lowercase().contains("powershell") || name.to_lowercase().contains("cmd");
+    if is_browser_parent && is_shell {
+        return Some(ThreatDecision {
+            is_threat: true,
+            reason: format!("Suspicious chain: Browser → {}", name),
+            mitre: "T1059".to_string(),
+            severity: "high".to_string(),
+        });
+    }
+
+    // Rule 3: PowerShell → CMD → Net (T1021 Lateral Movement)
+    if names.iter().any(|n| n.contains("powershell")) {
+        if names.iter().any(|n| n.contains("cmd")) {
+            if names.iter().any(|n| n == "net.exe" || n == "net1.exe") {
+                return Some(ThreatDecision {
+                    is_threat: true,
+                    reason: "Suspicious chain: PowerShell → CMD → Net (lateral movement)".to_string(),
+                    mitre: "T1021".to_string(),
+                    severity: "critical".to_string(),
+                });
+            }
+        }
+    }
+
+    // Rule 4: WMI → PowerShell (T1047)
+    if names.iter().any(|n| n.contains("wmiprvse")) {
+        if names.iter().any(|n| n.contains("powershell") || n.contains("cmd")) {
+            return Some(ThreatDecision {
+                is_threat: true,
+                reason: format!("Suspicious chain: WMI → {}", name),
+                mitre: "T1047".to_string(),
+                severity: "critical".to_string(),
+            });
+        }
+    }
+
+    None
 }
 
     /// Записва блокиран процес от ETW монитора
