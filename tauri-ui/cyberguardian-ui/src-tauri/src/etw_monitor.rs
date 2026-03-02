@@ -31,6 +31,14 @@ const WMI_ACTIVITY_GUID: GUID = GUID {
     data4: [0xBF, 0x7E, 0xD7, 0x4A, 0xB4, 0x7B, 0xBD, 0xAA],
 };
 
+// Microsoft-Windows-Kernel-Registry GUID
+const KERNEL_REGISTRY_GUID: GUID = GUID {
+    data1: 0x70EB4F03,
+    data2: 0xC1DE,
+    data3: 0x4F73,
+    data4: [0xA0, 0x51, 0x33, 0xD1, 0x3D, 0x54, 0x13, 0xBD],
+};
+
 pub fn start_etw_monitor() {
     if ETW_RUNNING.load(Ordering::SeqCst) {
         return;
@@ -115,22 +123,40 @@ unsafe fn run_etw_session() {
     println!("✅ ETW Kernel-Process provider enabled");
 
     // Enable WMI Activity provider на същата сесия
-let wmi_result = EnableTraceEx2(
-    session_handle,
-    &WMI_ACTIVITY_GUID,
-    EVENT_CONTROL_CODE_ENABLE_PROVIDER.0,
-    4u8, // TRACE_LEVEL_INFORMATION
-    0xFF,
-    0,
-    0,
-    None,
-);
+    let wmi_result = EnableTraceEx2(
+        session_handle,
+        &WMI_ACTIVITY_GUID,
+        EVENT_CONTROL_CODE_ENABLE_PROVIDER.0,
+        4u8,
+        0xFF,
+        0,
+        0,
+        None,
+    );
 
-if wmi_result.0 != 0 {
-    println!("⚠️ WMI Activity provider failed: {} (non-critical)", wmi_result.0);
-} else {
-    println!("✅ ETW WMI-Activity provider enabled");
-}
+    if wmi_result.0 != 0 {
+        println!("⚠️ WMI Activity provider failed: {} (non-critical)", wmi_result.0);
+    } else {
+        println!("✅ ETW WMI-Activity provider enabled");
+    }
+
+    // Enable Kernel-Registry provider
+    let reg_result = EnableTraceEx2(
+        session_handle,
+        &KERNEL_REGISTRY_GUID,
+        EVENT_CONTROL_CODE_ENABLE_PROVIDER.0,
+        4u8,
+        0xFF, // All registry keywords
+        0,
+        0,
+        None,
+    );
+
+    if reg_result.0 != 0 {
+        println!("⚠️ Kernel-Registry provider failed: {} (non-critical)", reg_result.0);
+    } else {
+        println!("✅ ETW Kernel-Registry provider enabled");
+    }
 
     let mut log_file: EVENT_TRACE_LOGFILEW = std::mem::zeroed();
     log_file.LoggerName = windows::core::PWSTR(session_name_wide.as_ptr() as *mut u16);
@@ -143,7 +169,7 @@ if wmi_result.0 != 0 {
     let ntdll = windows::Win32::System::LibraryLoader::GetModuleHandleW(
         windows::core::w!("sechost.dll")
     );
-    
+
     let open_trace_fn: Option<FnOpenTrace> = match ntdll {
         Ok(h) => {
             let addr = windows::Win32::System::LibraryLoader::GetProcAddress(
@@ -171,7 +197,7 @@ if wmi_result.0 != 0 {
 
     let handles = [trace_handle];
     type FnProcessTrace = unsafe extern "system" fn(*const PROCESSTRACE_HANDLE, u32, *const i64, *const i64) -> u32;
-    
+
     let process_trace_fn: Option<FnProcessTrace> = match windows::Win32::System::LibraryLoader::GetModuleHandleW(
         windows::core::w!("sechost.dll")
     ) {
@@ -226,6 +252,61 @@ unsafe extern "system" fn etw_event_callback(event_record: *mut EVENT_RECORD) {
 
     } else if provider == WMI_ACTIVITY_GUID {
         handle_wmi_event(event);
+    } else if provider == KERNEL_REGISTRY_GUID {
+        handle_registry_event(event);
+    }
+}
+
+fn handle_registry_event(event: &EVENT_RECORD) {
+    use crate::process_monitor;
+
+    let event_id = event.EventHeader.EventDescriptor.Id;
+    // 9=RegSetValue, 13=RegSetValue (x64)
+    if event_id != 9 && event_id != 13 {
+        return;
+    }
+
+    let pid = event.EventHeader.ProcessId;
+    
+    // Вземаме process name
+    let name = get_process_name(pid);
+    if name.is_empty() {
+        return;
+    }
+
+    /// Само suspicious процеси
+    if !is_suspicious_name(&name) {
+        return;
+    }
+
+    // SUSPEND FIRST — преди да е излязъл
+    let suspended = suspend_process(pid);
+
+    // Вземаме cmdline и проверяваме за persistence patterns
+    let cmdline = process_monitor::get_process_cmdline_pub(pid).to_lowercase();
+    
+    let is_persistence = cmdline.contains("currentversion\\run")
+        || cmdline.contains("currentversion/run")
+        || cmdline.contains("winlogon")
+        || cmdline.contains("userinit");
+
+   if is_persistence {
+        println!("🚨 REGISTRY THREAT: {} (PID={}) CMD={}", name, pid, &cmdline[..cmdline.len().min(100)]);
+
+        let parent_name = get_parent_name(pid);
+        let _ = process_monitor::block_process(pid);
+        println!("🚫 REGISTRY BLOCKED: {} (PID {})", name, pid);
+
+        process_monitor::record_blocked_process(
+            pid, &name, &parent_name,
+            "Suspicious registry persistence key write",
+            "T1547",
+            "high",
+            true,
+            None,
+        );
+    } else if suspended {
+        resume_process(pid);
     }
 }
 
@@ -285,7 +366,7 @@ fn handle_wmi_event(event: &EVENT_RECORD) {
             None,
         );
     }
-}    
+}
 
 fn handle_new_process(pid: u32) {
     use crate::process_monitor;
@@ -297,16 +378,15 @@ fn handle_new_process(pid: u32) {
     let name = get_process_name(pid);
     println!("🔬 ETW name for PID {}: '{}'", pid, name);
     if name.is_empty() {
-    if suspended { resume_process(pid); }
-    return;
-}
+        if suspended { resume_process(pid); }
+        return;
+    }
 
     // Само suspicious процеси
     if !is_suspicious_name(&name) {
-    // не логваме — твърде много noise
-    if suspended { resume_process(pid); }
-    return;
-}
+        if suspended { resume_process(pid); }
+        return;
+    }
     println!("🔬 ETW suspicious: {}", name);
 
     // Вземи cmdline
@@ -343,7 +423,7 @@ fn is_suspicious_name(name: &str) -> bool {
     let n = name.to_lowercase();
     ["powershell", "cmd", "wmic", "mshta", "certutil",
      "regsvr32", "rundll32", "bitsadmin", "wscript", "cscript",
-     "mimikatz", "procdump", "pwdump"].iter().any(|s| n.contains(s))
+     "mimikatz", "procdump", "pwdump", "reg"].iter().any(|s| n.contains(s))
 }
 
 fn get_process_name(pid: u32) -> String {
@@ -359,7 +439,6 @@ fn get_process_name(pid: u32) -> String {
         let _ = windows::Win32::Foundation::CloseHandle(handle);
         if ok.is_ok() && size > 0 {
             let full = String::from_utf16_lossy(&buf[..size as usize]);
-            // Вземаме само filename от пълния path
             full.split('\\').last().unwrap_or("").to_string()
         } else {
             String::new()
@@ -395,7 +474,6 @@ fn get_parent_name(pid: u32) -> String {
             return String::from("unknown");
         }
 
-        // Reset
         let mut entry2: PROCESSENTRY32W = std::mem::zeroed();
         entry2.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
         if Process32FirstW(snapshot, &mut entry2).is_ok() {

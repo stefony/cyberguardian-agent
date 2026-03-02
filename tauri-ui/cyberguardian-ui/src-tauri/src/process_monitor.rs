@@ -579,8 +579,9 @@ for p in &impair {
         // ── T1547 / T1053 Persistence ─────────────────────────────────────────
         let persist = [
             "schtasks /create", "schtasks/create",
-            "reg add.*currentversion\\run",
-            "reg add.*winlogon",
+             "currentversion\\run",
+            "currentversion/run",
+            "winlogon",
         ];
         for p in &persist {
             if cmd_l.contains(p) {
@@ -737,7 +738,7 @@ for p in &impair {
                                 .unwrap_or(false)
                         };
 
-                        let (success, error) = if blocking && decision.severity == "critical" {
+                        let (success, error) = if blocking && (decision.severity == "critical" || decision.severity == "high") {
                             match block_process(proc.pid) {
                                 Ok(()) => {
                                     println!("🚫 BLOCKED: {} (PID {})", proc.name, proc.pid);
@@ -818,7 +819,7 @@ for p in &impair {
         let n = name.to_lowercase();
         ["powershell", "cmd", "wmic", "mshta", "certutil",
         "regsvr32", "rundll32", "bitsadmin", "wscript", "cscript",
-        "mimikatz", "procdump", "pwdump"].iter().any(|s| n.contains(s))
+        "mimikatz", "procdump", "pwdump", "reg"].iter().any(|s| n.contains(s))
     }
     /// Публична версия на get_process_cmdline за ETW модула
         pub fn get_process_cmdline_pub(pid: u32) -> String {
