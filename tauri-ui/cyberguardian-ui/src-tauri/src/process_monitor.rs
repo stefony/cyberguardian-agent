@@ -916,16 +916,17 @@ pub fn record_process_event(pid: u32, name: &str, parent_name: &str, cmdline: &s
         }
     }
 
-    // Rule 4: WMI → PowerShell (T1047)
-    if names.iter().any(|n| n.contains("wmiprvse")) {
-        if names.iter().any(|n| n.contains("powershell") || n.contains("cmd")) {
-            return Some(ThreatDecision {
-                is_threat: true,
-                reason: format!("Suspicious chain: WMI → {}", name),
-                mitre: "T1047".to_string(),
-                severity: "critical".to_string(),
-            });
-        }
+  // Rule 4: WMI → PowerShell (T1047)
+    // Само ако директният parent е wmiprvse
+    let is_wmi_parent = parent_name.to_lowercase().contains("wmiprvse");
+    let is_shell = name.to_lowercase().contains("powershell") || name.to_lowercase().contains("cmd");
+    if is_wmi_parent && is_shell {
+        return Some(ThreatDecision {
+            is_threat: true,
+            reason: format!("Suspicious chain: WMI → {}", name),
+            mitre: "T1047".to_string(),
+            severity: "critical".to_string(),
+        });
     }
 
     None
