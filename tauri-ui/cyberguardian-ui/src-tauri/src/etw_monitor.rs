@@ -39,6 +39,14 @@ const KERNEL_REGISTRY_GUID: GUID = GUID {
     data4: [0xA0, 0x51, 0x33, 0xD1, 0x3D, 0x54, 0x13, 0xBD],
 };
 
+// Microsoft-Windows-Kernel-Network GUID
+const KERNEL_NETWORK_GUID: GUID = GUID {
+    data1: 0x7DD42A49,
+    data2: 0x5329,
+    data3: 0x4832,
+    data4: [0x8D, 0xFD, 0x43, 0xD9, 0x79, 0x15, 0x3A, 0x88],
+};
+
 pub fn start_etw_monitor() {
     if ETW_RUNNING.load(Ordering::SeqCst) {
         return;
@@ -158,6 +166,24 @@ unsafe fn run_etw_session() {
         println!("✅ ETW Kernel-Registry provider enabled");
     }
 
+    // Enable Kernel-Network provider
+    let net_result = EnableTraceEx2(
+        session_handle,
+        &KERNEL_NETWORK_GUID,
+        EVENT_CONTROL_CODE_ENABLE_PROVIDER.0,
+        4u8,
+        0x10, // TcpIp connect keyword
+        0,
+        0,
+        None,
+    );
+
+    if net_result.0 != 0 {
+        println!("⚠️ Kernel-Network provider failed: {} (non-critical)", net_result.0);
+    } else {
+        println!("✅ ETW Kernel-Network provider enabled");
+    }
+
     let mut log_file: EVENT_TRACE_LOGFILEW = std::mem::zeroed();
     log_file.LoggerName = windows::core::PWSTR(session_name_wide.as_ptr() as *mut u16);
     log_file.Anonymous1.ProcessTraceMode =
@@ -252,8 +278,69 @@ unsafe extern "system" fn etw_event_callback(event_record: *mut EVENT_RECORD) {
 
     } else if provider == WMI_ACTIVITY_GUID {
         handle_wmi_event(event);
-    } else if provider == KERNEL_REGISTRY_GUID {
+   } else if provider == KERNEL_REGISTRY_GUID {
         handle_registry_event(event);
+    } else if provider == KERNEL_NETWORK_GUID {
+        handle_network_event(event);
+    }
+}
+fn handle_network_event(event: &EVENT_RECORD) {
+    use crate::process_monitor;
+
+    // Event ID 12 = TcpIpConnect, Event ID 15 = TcpIpConnectIPV6
+    let event_id = event.EventHeader.EventDescriptor.Id;
+    if event_id != 12 && event_id != 15 {
+        return;
+    }
+
+    let pid = event.EventHeader.ProcessId;
+    let name = get_process_name(pid);
+
+    if name.is_empty() {
+        return;
+    }
+
+    // Само suspicious процеси
+    if !is_suspicious_name(&name) {
+        return;
+    }
+
+    // Извличаме destination IP от UserData
+    let dest_ip = if !event.UserData.is_null() && event.UserDataLength >= 20 {
+        unsafe {
+            let data = std::slice::from_raw_parts(
+                event.UserData as *const u8,
+                event.UserDataLength as usize,
+            );
+            // Destination IP е на offset 16 (4 bytes)
+            format!("{}.{}.{}.{}", data[16], data[17], data[18], data[19])
+        }
+    } else {
+        String::from("unknown")
+    };
+
+    println!("🔬 NET: {} (PID={}) → {}", name, pid, dest_ip);
+
+    // Засичаме suspicious outbound connections
+    let is_suspicious = !dest_ip.starts_with("127.")
+        && !dest_ip.starts_with("192.168.")
+        && !dest_ip.starts_with("10.")
+        && dest_ip != "unknown";
+
+    if is_suspicious {
+        println!("🚨 NETWORK THREAT: {} (PID={}) → {} [T1071]", name, pid, dest_ip);
+
+        let parent_name = get_parent_name(pid);
+        let reason = format!("Suspicious outbound connection to {}", dest_ip);
+
+        process_monitor::record_blocked_process(
+            pid, &name, &parent_name,
+            &reason,
+            "T1071",
+            "high",
+            false,
+            None,
+        );
     }
 }
 
