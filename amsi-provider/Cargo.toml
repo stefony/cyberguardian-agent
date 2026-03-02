@@ -1,0 +1,21 @@
+[package]
+name = "amsi-provider"
+version = "1.0.0"
+edition = "2021"
+
+[lib]
+name = "CyberGuardianAMSI"
+crate-type = ["cdylib"]
+
+[dependencies]
+winreg = "0.52"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Registry",
+    "Win32_Security",
+    "Win32_System_Com",
+    "Win32_System_Ole",
+] }
