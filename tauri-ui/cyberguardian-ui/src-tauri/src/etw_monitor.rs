@@ -47,6 +47,14 @@ const KERNEL_NETWORK_GUID: GUID = GUID {
     data4: [0x8D, 0xFD, 0x43, 0xD9, 0x79, 0x15, 0x3A, 0x88],
 };
 
+// Microsoft-Windows-DNS-Client GUID
+const DNS_CLIENT_GUID: GUID = GUID {
+    data1: 0x1C95126E,
+    data2: 0x7EEA,
+    data3: 0x49A9,
+    data4: [0xA3, 0xFE, 0xA3, 0x78, 0xB0, 0x3D, 0xDB, 0x4D],
+};
+
 pub fn start_etw_monitor() {
     if ETW_RUNNING.load(Ordering::SeqCst) {
         return;
@@ -184,6 +192,24 @@ unsafe fn run_etw_session() {
         println!("✅ ETW Kernel-Network provider enabled");
     }
 
+    // Enable DNS Client provider
+    let dns_result = EnableTraceEx2(
+        session_handle,
+        &DNS_CLIENT_GUID,
+        EVENT_CONTROL_CODE_ENABLE_PROVIDER.0,
+        4u8,
+        0xFF,
+        0,
+        0,
+        None,
+    );
+
+    if dns_result.0 != 0 {
+        println!("⚠️ DNS-Client provider failed: {} (non-critical)", dns_result.0);
+    } else {
+        println!("✅ ETW DNS-Client provider enabled");
+    }
+
     let mut log_file: EVENT_TRACE_LOGFILEW = std::mem::zeroed();
     log_file.LoggerName = windows::core::PWSTR(session_name_wide.as_ptr() as *mut u16);
     log_file.Anonymous1.ProcessTraceMode =
@@ -282,8 +308,79 @@ unsafe extern "system" fn etw_event_callback(event_record: *mut EVENT_RECORD) {
         handle_registry_event(event);
     } else if provider == KERNEL_NETWORK_GUID {
         handle_network_event(event);
+    } else if provider == DNS_CLIENT_GUID {
+        handle_dns_event(event);
     }
 }
+
+fn handle_dns_event(event: &EVENT_RECORD) {
+    use crate::process_monitor;
+
+   let event_id = event.EventHeader.EventDescriptor.Id;
+    println!("🔬 DNS Event ID={}", event_id);
+    // Event ID 3006 = DNS Query
+    if event_id != 3006 {
+        return;
+    }
+
+    let pid = event.EventHeader.ProcessId;
+
+    // Извличаме domain от UserData (UTF-16)
+    let domain = if !event.UserData.is_null() && event.UserDataLength > 4 {
+        unsafe {
+            let data = std::slice::from_raw_parts(
+                event.UserData as *const u8,
+                event.UserDataLength as usize,
+            );
+            if data.len() >= 8 {
+                let wide: Vec<u16> = data[4..].chunks_exact(2)
+                    .map(|c| u16::from_le_bytes([c[0], c[1]]))
+                    .take_while(|&c| c != 0)
+                    .collect();
+                String::from_utf16_lossy(&wide).to_lowercase()
+            } else {
+                String::new()
+            }
+        }
+    } else {
+        String::new()
+    };
+
+    if domain.is_empty() {
+        return;
+    }
+
+    println!("🔬 DNS: PID={} Query={}", pid, &domain[..domain.len().min(80)]);
+
+    // DGA detection — домейни с много рандомни символи
+    let is_dga = domain.len() > 20
+        && !domain.contains("microsoft")
+        && !domain.contains("windows")
+        && !domain.contains("google")
+        && !domain.contains("cloudflare")
+        && !domain.contains("amazon");
+
+    // DNS tunneling — TXT record abuse (дълги поддомейни)
+    let is_tunneling = domain.split('.').any(|part| part.len() > 30);
+
+    if is_dga || is_tunneling {
+        println!("🚨 DNS THREAT: PID={} Domain={} [T1071.004]", pid, &domain[..domain.len().min(100)]);
+
+        let name = get_process_name(pid);
+        let parent_name = get_parent_name(pid);
+        let reason = format!("Suspicious DNS query: {}", &domain[..domain.len().min(60)]);
+
+        process_monitor::record_blocked_process(
+            pid, &name, &parent_name,
+            &reason,
+            "T1071.004",
+            "high",
+            false,
+            None,
+        );
+    }
+}
+
 fn handle_network_event(event: &EVENT_RECORD) {
     use crate::process_monitor;
 
