@@ -875,7 +875,7 @@ pub fn record_process_event(pid: u32, name: &str, parent_name: &str, cmdline: &s
 
     // Chain detection — гледаме последните 20 events глобално
     let names: Vec<String> = seq.iter().map(|e| e.name.to_lowercase()).collect();
-    println!("🔗 Chain buffer: {:?}", names);
+    
     // Rule 1: Office app → PowerShell (T1566 Phishing)
     if names.iter().any(|n| n.contains("winword") || n.contains("excel") || n.contains("outlook")) {
         if names.iter().any(|n| n.contains("powershell") || n.contains("cmd") || n.contains("wscript")) {
