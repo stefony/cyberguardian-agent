@@ -23,6 +23,14 @@ const KERNEL_PROCESS_GUID: GUID = GUID {
     data4: [0xA0, 0xC7, 0x2F, 0xAD, 0x1F, 0xD0, 0xE7, 0x16],
 };
 
+// Microsoft-Windows-WMI-Activity GUID
+const WMI_ACTIVITY_GUID: GUID = GUID {
+    data1: 0x1418EF04,
+    data2: 0xB0B4,
+    data3: 0x4623,
+    data4: [0xBF, 0x7E, 0xD7, 0x4A, 0xB4, 0x7B, 0xBD, 0xAA],
+};
+
 pub fn start_etw_monitor() {
     if ETW_RUNNING.load(Ordering::SeqCst) {
         return;
@@ -106,6 +114,24 @@ unsafe fn run_etw_session() {
     }
     println!("✅ ETW Kernel-Process provider enabled");
 
+    // Enable WMI Activity provider на същата сесия
+let wmi_result = EnableTraceEx2(
+    session_handle,
+    &WMI_ACTIVITY_GUID,
+    EVENT_CONTROL_CODE_ENABLE_PROVIDER.0,
+    4u8, // TRACE_LEVEL_INFORMATION
+    0xFF,
+    0,
+    0,
+    None,
+);
+
+if wmi_result.0 != 0 {
+    println!("⚠️ WMI Activity provider failed: {} (non-critical)", wmi_result.0);
+} else {
+    println!("✅ ETW WMI-Activity provider enabled");
+}
+
     let mut log_file: EVENT_TRACE_LOGFILEW = std::mem::zeroed();
     log_file.LoggerName = windows::core::PWSTR(session_name_wide.as_ptr() as *mut u16);
     log_file.Anonymous1.ProcessTraceMode =
@@ -178,34 +204,88 @@ unsafe extern "system" fn etw_event_callback(event_record: *mut EVENT_RECORD) {
     }
 
     let event = &*event_record;
+    let provider = event.EventHeader.ProviderId;
 
-    // Event ID 1 = Process Start
-    if event.EventHeader.EventDescriptor.Id != 1 {
-        return;
+    if provider == KERNEL_PROCESS_GUID {
+        // Event ID 1 = Process Start
+        if event.EventHeader.EventDescriptor.Id != 1 {
+            return;
+        }
+        if event.UserDataLength < 4 || event.UserData.is_null() {
+            return;
+        }
+        let data = std::slice::from_raw_parts(
+            event.UserData as *const u8,
+            event.UserDataLength as usize,
+        );
+        let new_pid = u32::from_le_bytes([data[0], data[1], data[2], data[3]]);
+        if new_pid == 0 || new_pid == 4 {
+            return;
+        }
+        handle_new_process(new_pid);
+
+    } else if provider == WMI_ACTIVITY_GUID {
+        handle_wmi_event(event);
     }
-
-    // Новият PID е в UserData[0..4]
-    if event.UserDataLength < 4 || event.UserData.is_null() {
-        return;
-    }
-
-    let data = std::slice::from_raw_parts(
-        event.UserData as *const u8,
-        event.UserDataLength as usize,
-    );
-
-    let new_pid = u32::from_le_bytes([data[0], data[1], data[2], data[3]]);
-
-    println!("🔬 ETW: new process PID={}", new_pid);
-
-    if new_pid == 0 || new_pid == 4 {
-        return;
-    }
-
-    handle_new_process(new_pid);
 }
 
-    
+fn handle_wmi_event(event: &EVENT_RECORD) {
+    use crate::process_monitor;
+
+    let event_id = event.EventHeader.EventDescriptor.Id;
+    let pid = event.EventHeader.ProcessId;
+
+    let operation = if !event.UserData.is_null() && event.UserDataLength > 4 {
+        unsafe {
+            let data = std::slice::from_raw_parts(
+                event.UserData as *const u8,
+                event.UserDataLength as usize,
+            );
+            if data.len() >= 8 {
+                let wide: Vec<u16> = data[4..].chunks_exact(2)
+                    .map(|c| u16::from_le_bytes([c[0], c[1]]))
+                    .take_while(|&c| c != 0)
+                    .collect();
+                String::from_utf16_lossy(&wide).to_lowercase()
+            } else {
+                String::new()
+            }
+        }
+    } else {
+        String::new()
+    };
+
+    if operation.is_empty() {
+        return;
+    }
+
+    println!("🔬 WMI Event ID={} PID={} Op={}", event_id, pid, &operation[..operation.len().min(80)]);
+
+    let is_malicious = (operation.contains("process") && operation.contains("create"))
+        || operation.contains("win32_process")
+        || operation.contains("shadowcopy")
+        || operation.contains("/format:")
+        || operation.contains("select * from win32_process");
+
+    if is_malicious {
+        println!("🚨 WMI THREAT: PID={} Operation={}", pid, &operation[..operation.len().min(100)]);
+
+        let name = get_process_name(pid);
+        let parent_name = get_parent_name(pid);
+
+        let _ = process_monitor::block_process(pid);
+        println!("🚫 WMI BLOCKED: {} (PID {})", name, pid);
+
+        process_monitor::record_blocked_process(
+            pid, &name, &parent_name,
+            "Malicious WMI operation detected",
+            "T1047",
+            "critical",
+            true,
+            None,
+        );
+    }
+}    
 
 fn handle_new_process(pid: u32) {
     use crate::process_monitor;
@@ -267,29 +347,23 @@ fn is_suspicious_name(name: &str) -> bool {
 }
 
 fn get_process_name(pid: u32) -> String {
-    use windows::Win32::System::Diagnostics::ToolHelp::*;
+    use windows::Win32::System::Threading::{OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION};
     unsafe {
-        let snapshot = match CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) {
+        let handle = match OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) {
             Ok(h) => h,
             Err(_) => return String::new(),
         };
-        let mut entry: PROCESSENTRY32W = std::mem::zeroed();
-        entry.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
-        if Process32FirstW(snapshot, &mut entry).is_ok() {
-            loop {
-                if entry.th32ProcessID == pid {
-                    let _ = windows::Win32::Foundation::CloseHandle(snapshot);
-                    return String::from_utf16_lossy(
-                        &entry.szExeFile.iter().take_while(|&&c| c != 0).copied().collect::<Vec<u16>>()
-                    );
-                }
-                if Process32NextW(snapshot, &mut entry).is_err() {
-                    break;
-                }
-            }
+        let mut buf = [0u16; 260];
+        let mut size = 260u32;
+        let ok = QueryFullProcessImageNameW(handle, PROCESS_NAME_WIN32, windows::core::PWSTR(buf.as_mut_ptr()), &mut size);
+        let _ = windows::Win32::Foundation::CloseHandle(handle);
+        if ok.is_ok() && size > 0 {
+            let full = String::from_utf16_lossy(&buf[..size as usize]);
+            // Вземаме само filename от пълния path
+            full.split('\\').last().unwrap_or("").to_string()
+        } else {
+            String::new()
         }
-        let _ = windows::Win32::Foundation::CloseHandle(snapshot);
-        String::new()
     }
 }
 
