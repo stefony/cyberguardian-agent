@@ -902,19 +902,19 @@ pub fn record_process_event(pid: u32, name: &str, parent_name: &str, cmdline: &s
         });
     }
 
-    // Rule 3: PowerShell → CMD → Net (T1021 Lateral Movement)
-    if names.iter().any(|n| n.contains("powershell")) {
-        if names.iter().any(|n| n.contains("cmd")) {
-            if names.iter().any(|n| n == "net.exe" || n == "net1.exe") {
-                return Some(ThreatDecision {
-                    is_threat: true,
-                    reason: "Suspicious chain: PowerShell → CMD → Net (lateral movement)".to_string(),
-                    mitre: "T1021".to_string(),
-                    severity: "critical".to_string(),
-                });
-            }
-        }
-    }
+   // Rule 3: PowerShell → CMD → Net (T1021 Lateral Movement)
+let is_ps_parent = parent_name.to_lowercase().contains("powershell");
+let is_cmd_or_net = name.to_lowercase().contains("cmd") 
+    || name.to_lowercase() == "net.exe" 
+    || name.to_lowercase() == "net1.exe";
+if is_ps_parent && is_cmd_or_net {
+    return Some(ThreatDecision {
+        is_threat: true,
+        reason: "Suspicious chain: PowerShell → CMD → Net (lateral movement)".to_string(),
+        mitre: "T1021".to_string(),
+        severity: "critical".to_string(),
+    });
+}
 
   // Rule 4: WMI → PowerShell (T1047)
     // Само ако директният parent е wmiprvse
