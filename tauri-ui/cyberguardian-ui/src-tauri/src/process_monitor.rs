@@ -533,16 +533,15 @@
                 }
             }
         }
-        // ── Instant block на high-risk LOLBins ───────────────────────────────
+       // ── Instant block на high-risk LOLBins ───────────────────────────────
         if name_l.contains("mshta") {
             return ThreatDecision {
-            is_threat: true,
-            reason: format!("LOLBin execution: mshta.exe"),
-            mitre: "T1218.005".to_string(),
-         severity: "critical".to_string(),
-        };
-    }
-        
+                is_threat: true,
+                reason: format!("LOLBin execution: mshta.exe"),
+                mitre: "T1218.005".to_string(),
+                severity: "critical".to_string(),
+            };
+        }
 
         // ── T1218 LOLBins ─────────────────────────────────────────────────────
         let lolbins: &[(&str, &[&str])] = &[
@@ -564,6 +563,113 @@
                         };
                     }
                 }
+            }
+        }
+
+        // ── T1562 Defense Evasion: Disable Security Services ─────────────────
+        if name_l.contains("sc.exe") || name_l == "sc" {
+            let sc_targets = ["windefend", "sense", "cyberguardian", "mssecflt",
+                              "webthreatdefsvc", "securityhealthservice"];
+            for target in &sc_targets {
+                if cmd_l.contains(target) && (cmd_l.contains("stop") || cmd_l.contains("disabled")) {
+                    return ThreatDecision {
+                        is_threat: true,
+                        reason: format!("Defense tampering: sc stop security service [{}]", target),
+                        mitre: "T1562".to_string(),
+                        severity: "critical".to_string(),
+                    };
+                }
+            }
+        }
+
+        // ── T1562 Defense Evasion: WMIC Defender Exclusion ───────────────────
+        if name_l.contains("wmic") {
+            if cmd_l.contains("defender") && cmd_l.contains("exclusion") {
+                return ThreatDecision {
+                    is_threat: true,
+                    reason: "Defense tampering: WMIC Defender exclusion".to_string(),
+                    mitre: "T1562".to_string(),
+                    severity: "critical".to_string(),
+                };
+            }
+        }
+
+        // ── T1562 Defense Evasion: AMSI Registry Disable ─────────────────────
+        if name_l.contains("powershell") || name_l.contains("reg.exe") {
+            if cmd_l.contains("amsienable") && cmd_l.contains("0") {
+                return ThreatDecision {
+                    is_threat: true,
+                    reason: "AMSI bypass: AmsiEnable registry key disabled".to_string(),
+                    mitre: "T1562".to_string(),
+                    severity: "critical".to_string(),
+                };
+            }
+        }
+
+        // ── T1070 Defense Evasion: Clear Event Logs ───────────────────────────
+        if name_l.contains("wevtutil") {
+            if cmd_l.contains(" cl ") || cmd_l.contains(" cl\t") || cmd_l.ends_with(" cl")
+               || cmd_l.contains("clear-log") {
+                return ThreatDecision {
+                    is_threat: true,
+                    reason: "Defense evasion: wevtutil clearing event logs".to_string(),
+                    mitre: "T1070".to_string(),
+                    severity: "critical".to_string(),
+                };
+            }
+        }
+
+        // ── T1136 Persistence: Create Local Account ───────────────────────────
+        if name_l.contains("net.exe") || name_l.contains("net1.exe") {
+            if cmd_l.contains("user") && cmd_l.contains("/add") {
+                return ThreatDecision {
+                    is_threat: true,
+                    reason: "Persistence: net user /add - creating local account".to_string(),
+                    mitre: "T1136".to_string(),
+                    severity: "critical".to_string(),
+                };
+            }
+            if cmd_l.contains("localgroup") && cmd_l.contains("administrators") && cmd_l.contains("/add") {
+                return ThreatDecision {
+                    is_threat: true,
+                    reason: "Privilege escalation: adding user to Administrators group".to_string(),
+                    mitre: "T1136".to_string(),
+                    severity: "critical".to_string(),
+                };
+            }
+        }
+
+        // ── T1105 Ingress Tool Transfer ───────────────────────────────────────
+        if name_l.contains("certutil") {
+            if cmd_l.contains("-urlcache") || cmd_l.contains("-decode") {
+                return ThreatDecision {
+                    is_threat: true,
+                    reason: "Ingress tool transfer: certutil download/decode".to_string(),
+                    mitre: "T1105".to_string(),
+                    severity: "critical".to_string(),
+                };
+            }
+        }
+
+        // ── T1490 Inhibit Recovery: VSS Deletion ──────────────────────────────
+        if name_l.contains("vssadmin") || name_l.contains("wbadmin") {
+            if cmd_l.contains("delete") && (cmd_l.contains("shadows") || cmd_l.contains("catalog")) {
+                return ThreatDecision {
+                    is_threat: true,
+                    reason: "Ransomware indicator: shadow copy deletion".to_string(),
+                    mitre: "T1490".to_string(),
+                    severity: "critical".to_string(),
+                };
+            }
+        }
+        if name_l.contains("bcdedit") {
+            if cmd_l.contains("recoveryenabled") && cmd_l.contains("no") {
+                return ThreatDecision {
+                    is_threat: true,
+                    reason: "Ransomware indicator: bcdedit disable recovery".to_string(),
+                    mitre: "T1490".to_string(),
+                    severity: "critical".to_string(),
+                };
             }
         }
 
