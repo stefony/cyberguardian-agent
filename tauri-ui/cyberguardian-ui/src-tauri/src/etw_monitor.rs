@@ -300,8 +300,9 @@ unsafe extern "system" fn etw_event_callback(event_record: *mut EVENT_RECORD) {
         if new_pid == 0 || new_pid == 4 {
             return;
         }
-        let image_name = if data.len() > 8 {
-            let wide: Vec<u16> = data[8..].chunks_exact(2)
+        suspend_process(new_pid); // НЕЗАБАВНО suspend преди всичко
+        let image_name = if data.len() > 60 {
+            let wide: Vec<u16> = data[60..].chunks_exact(2)
                 .map(|c| u16::from_le_bytes([c[0], c[1]]))
                 .take_while(|&c| c != 0)
                 .collect();
