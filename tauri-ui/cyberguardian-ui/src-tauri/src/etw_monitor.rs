@@ -580,7 +580,18 @@ fn handle_new_process_with_name(pid: u32, parent_pid: u32, image_name: String) {
 
     let suspended = suspend_process(pid);
 
-    let cmdline = process_monitor::get_process_cmdline_pub(pid);
+    let cmdline = {
+    let mut cmd = process_monitor::get_process_cmdline_pub(pid);
+    if cmd.is_empty() {
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        cmd = process_monitor::get_process_cmdline_pub(pid);
+    }
+    if cmd.is_empty() {
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        cmd = process_monitor::get_process_cmdline_pub(pid);
+    }
+    cmd
+};
     let parent_name = get_process_name(parent_pid);
 
     let decision = process_monitor::analyze_process(&name, &cmdline, &parent_name);

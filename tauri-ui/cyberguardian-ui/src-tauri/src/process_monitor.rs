@@ -745,19 +745,56 @@ for p in &impair {
     }
 
     /// Kill процес по PID
-    #[cfg(target_os = "windows")]
-    pub fn block_process(pid: u32) -> Result<(), String> {
-        use windows::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
-        use windows::Win32::Foundation::CloseHandle;
+   #[cfg(target_os = "windows")]
+pub fn block_process(pid: u32) -> Result<(), String> {
+    use windows::Win32::System::Threading::{
+        OpenProcess, TerminateProcess, PROCESS_TERMINATE,
+        GetCurrentProcess, OpenProcessToken,
+    };
+    use windows::Win32::Foundation::CloseHandle;
+    use windows::Win32::Security::{
+        AdjustTokenPrivileges, LookupPrivilegeValueW,
+        TOKEN_ADJUST_PRIVILEGES, TOKEN_QUERY,
+        TOKEN_PRIVILEGES, SE_PRIVILEGE_ENABLED,
+    };
 
-        unsafe {
-            let handle = OpenProcess(PROCESS_TERMINATE, false, pid)
-                .map_err(|e| format!("OpenProcess failed: {:?}", e))?;
-            let result = TerminateProcess(handle, 1);
-            let _ = CloseHandle(handle);
-            result.map_err(|e| format!("TerminateProcess failed: {:?}", e))
-        }
+    unsafe {
+        // Вземи токена на текущия процес
+        let current = GetCurrentProcess();
+        let mut token = windows::Win32::Foundation::HANDLE::default();
+        let _ = OpenProcessToken(
+            current,
+            TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
+            &mut token,
+        );
+
+        // Вземи LUID за SeDebugPrivilege
+        let mut luid = windows::Win32::Foundation::LUID::default();
+        let _ = LookupPrivilegeValueW(
+            None,
+            windows::core::w!("SeDebugPrivilege"),
+            &mut luid,
+        );
+
+        // Enable SeDebugPrivilege
+        let mut tp = TOKEN_PRIVILEGES {
+            PrivilegeCount: 1,
+            Privileges: [windows::Win32::Security::LUID_AND_ATTRIBUTES {
+                Luid: luid,
+                Attributes: SE_PRIVILEGE_ENABLED,
+            }],
+        };
+        let _ = AdjustTokenPrivileges(token, false, Some(&mut tp), 0, None, None);
+        let _ = CloseHandle(token);
+
+        // Сега terminate
+        let handle = OpenProcess(PROCESS_TERMINATE, false, pid)
+            .map_err(|e| format!("OpenProcess failed: {:?}", e))?;
+        let result = TerminateProcess(handle, 1);
+        let _ = CloseHandle(handle);
+        result.map_err(|e| format!("TerminateProcess failed: {:?}", e))
     }
+}
 
     #[cfg(not(target_os = "windows"))]
     pub fn block_process(pid: u32) -> Result<(), String> {
