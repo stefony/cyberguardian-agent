@@ -948,11 +948,12 @@ for p in &impair {
         }
     }
     fn is_suspicious_name(name: &str) -> bool {
-        let n = name.to_lowercase();
-       ["powershell", "cmd", "wmic", "mshta", "certutil",
-        "regsvr32", "rundll32", "bitsadmin", "wscript", "cscript",
-        "mimikatz", "procdump", "pwdump", "reg", "net"].iter().any(|s| n.contains(s))
-    }
+    let n = name.to_lowercase();
+   ["powershell", "cmd", "wmic", "mshta", "certutil",
+    "regsvr32", "rundll32", "bitsadmin", "wscript", "cscript",
+    "mimikatz", "procdump", "pwdump", "reg", "net",
+    "wevtutil", "vssadmin", "bcdedit", "sc"].iter().any(|s| n.contains(s))
+}
     /// Публична версия на get_process_cmdline за ETW модула
         pub fn get_process_cmdline_pub(pid: u32) -> String {
     get_process_cmdline(pid)

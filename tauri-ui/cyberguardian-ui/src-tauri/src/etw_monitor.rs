@@ -607,7 +607,8 @@ fn is_suspicious_name(name: &str) -> bool {
     let n = name.to_lowercase();
     ["powershell", "cmd", "wmic", "mshta", "certutil",
      "regsvr32", "rundll32", "bitsadmin", "wscript", "cscript",
-     "mimikatz", "procdump", "pwdump", "reg"].iter().any(|s| n.contains(s))
+     "mimikatz", "procdump", "pwdump", "reg",
+     "net", "wevtutil", "vssadmin", "bcdedit", "sc"].iter().any(|s| n.contains(s))
 }
 
 fn get_process_name(pid: u32) -> String {
