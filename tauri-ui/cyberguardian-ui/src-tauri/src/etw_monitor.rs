@@ -285,11 +285,10 @@ unsafe extern "system" fn etw_event_callback(event_record: *mut EVENT_RECORD) {
     let provider = event.EventHeader.ProviderId;
 
     if provider == KERNEL_PROCESS_GUID {
-        // Event ID 1 = Process Start
         if event.EventHeader.EventDescriptor.Id != 1 {
             return;
         }
-        if event.UserDataLength < 4 || event.UserData.is_null() {
+        if event.UserDataLength < 8 || event.UserData.is_null() {
             return;
         }
         let data = std::slice::from_raw_parts(
@@ -297,14 +296,25 @@ unsafe extern "system" fn etw_event_callback(event_record: *mut EVENT_RECORD) {
             event.UserDataLength as usize,
         );
         let new_pid = u32::from_le_bytes([data[0], data[1], data[2], data[3]]);
+        let parent_pid = u32::from_le_bytes([data[4], data[5], data[6], data[7]]);
         if new_pid == 0 || new_pid == 4 {
             return;
         }
-        handle_new_process(new_pid);
+        let image_name = if data.len() > 8 {
+            let wide: Vec<u16> = data[8..].chunks_exact(2)
+                .map(|c| u16::from_le_bytes([c[0], c[1]]))
+                .take_while(|&c| c != 0)
+                .collect();
+            let full = String::from_utf16_lossy(&wide);
+            full.split('\\').last().unwrap_or("").to_string()
+        } else {
+            String::new()
+        };
+        handle_new_process_with_name(new_pid, parent_pid, image_name);
 
     } else if provider == WMI_ACTIVITY_GUID {
         handle_wmi_event(event);
-   } else if provider == KERNEL_REGISTRY_GUID {
+    } else if provider == KERNEL_REGISTRY_GUID {
         handle_registry_event(event);
     } else if provider == KERNEL_NETWORK_GUID {
         handle_network_event(event);
@@ -549,6 +559,41 @@ fn handle_wmi_event(event: &EVENT_RECORD) {
             true,
             None,
         );
+    }
+}
+
+fn handle_new_process_with_name(pid: u32, parent_pid: u32, image_name: String) {
+    use crate::process_monitor;
+
+    let name = if image_name.is_empty() {
+        get_process_name(pid)
+    } else {
+        image_name
+    };
+
+    if name.is_empty() { return; }
+
+    println!("🔬 ETW: {} (PID {})", name, pid);
+
+    if !is_suspicious_name(&name) { return; }
+
+    let suspended = suspend_process(pid);
+
+    let cmdline = process_monitor::get_process_cmdline_pub(pid);
+    let parent_name = get_process_name(parent_pid);
+
+    let decision = process_monitor::analyze_process(&name, &cmdline, &parent_name);
+
+    if decision.is_threat {
+        println!("🚨 ETW THREAT: {} — {} [{}]", name, decision.reason, decision.mitre);
+        let _ = process_monitor::block_process(pid);
+        println!("🚫 ETW BLOCKED: {} (PID {})", name, pid);
+        process_monitor::record_blocked_process(
+            pid, &name, &parent_name, &decision.reason,
+            &decision.mitre, &decision.severity, true, None
+        );
+    } else if suspended {
+        resume_process(pid);
     }
 }
 
