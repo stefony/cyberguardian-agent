@@ -679,18 +679,21 @@ fn enumerate_pids_fast() -> Vec<(u32, String, u32)> {
         }
 
         // ── T1070 Defense Evasion: Clear Event Logs ───────────────────────────
-if name_l.contains("wevtutil") || 
-   (name_l.contains("cmd") && cmd_l.contains("wevtutil")) ||
-   (name_l.contains("powershell") && cmd_l.contains("wevtutil")) {
-    if cmd_l.contains(" cl ") || cmd_l.contains(" cl\t") || cmd_l.ends_with(" cl")
-       || cmd_l.contains("clear-log") || cmd_l.contains("wevtutil") {
-        return ThreatDecision {
-            is_threat: true,
-            reason: "Defense evasion: wevtutil clearing event logs".to_string(),
-            mitre: "T1070".to_string(),
-            severity: "critical".to_string(),
-        };
-    }
+if name_l.contains("wevtutil") {
+    return ThreatDecision {
+        is_threat: true,
+        reason: "Defense evasion: wevtutil clearing event logs".to_string(),
+        mitre: "T1070".to_string(),
+        severity: "critical".to_string(),
+    };
+}
+if name_l.contains("cmd") && cmd_l.contains("wevtutil") {
+    return ThreatDecision {
+        is_threat: true,
+        reason: "Defense evasion: wevtutil clearing event logs".to_string(),
+        mitre: "T1070".to_string(),
+        severity: "critical".to_string(),
+    };
 }
 
         // ── T1136 Persistence: Create Local Account ───────────────────────────
