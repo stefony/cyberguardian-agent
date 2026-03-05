@@ -316,7 +316,41 @@
     fn get_process_cmdline(_pid: u32) -> String {
         String::new()
     }
+      
+#[cfg(target_os = "windows")]
+fn enumerate_pids_fast() -> Vec<(u32, String, u32)> {
+    use std::mem;
+    unsafe {
+        let snapshot = match CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) {
+            Ok(h) => h,
+            Err(_) => return Vec::new(),
+        };
+        let mut result = Vec::new();
+        let mut entry: PROCESSENTRY32W = mem::zeroed();
+        entry.dwSize = mem::size_of::<PROCESSENTRY32W>() as u32;
+        if Process32FirstW(snapshot, &mut entry).is_ok() {
+            loop {
+                let name = String::from_utf16_lossy(
+                    &entry.szExeFile.iter()
+                        .take_while(|&&c| c != 0)
+                        .copied()
+                        .collect::<Vec<u16>>()
+                );
+                result.push((entry.th32ProcessID, name, entry.th32ParentProcessID));
+                if Process32NextW(snapshot, &mut entry).is_err() {
+                    break;
+                }
+            }
+        }
+        let _ = CloseHandle(snapshot);
+        result
+    }
+}
 
+#[cfg(not(target_os = "windows"))]
+fn enumerate_pids_fast() -> Vec<(u32, String, u32)> {
+    Vec::new()
+}
     /// Enumerate all running Windows processes
     #[cfg(target_os = "windows")]
     pub fn enumerate_processes() -> Result<Vec<ProcessInfo>, String> {
@@ -356,11 +390,11 @@
                         name: name.clone(),
                         parent_pid: entry.th32ParentProcessID,
                         thread_count: entry.cntThreads,
-                        exe_path: get_process_cmdline(pid),
+                        exe_path: String::new(),
                         cpu_percent,
                         memory_mb,
                         username,
-                    };
+            };
 
                     processes.push(process);
 
@@ -831,7 +865,7 @@ pub fn block_process(pid: u32) -> Result<(), String> {
         static ref MONITOR_RUNNING: AtomicBool = AtomicBool::new(false);
     }
 
-    /// Стартира background monitoring loop
+ /// Стартира background monitoring loop
     pub fn start_monitor_loop() {
         if MONITOR_RUNNING.load(Ordering::SeqCst) {
             println!("⚠️ Monitor loop already running");
@@ -841,7 +875,7 @@ pub fn block_process(pid: u32) -> Result<(), String> {
         MONITOR_RUNNING.store(true, Ordering::SeqCst);
 
         std::thread::spawn(|| {
-            println!("🔄 Process monitor loop started (100ms interval)");
+            println!("🔄 Process monitor loop started (500ms interval)");
 
             // Вземи snapshot на съществуващите процеси — не ги анализираме
             let mut known_pids: std::collections::HashSet<u32> = std::collections::HashSet::new();
@@ -853,52 +887,50 @@ pub fn block_process(pid: u32) -> Result<(), String> {
             println!("✅ {} existing processes ignored", known_pids.len());
 
             loop {
-                std::thread::sleep(std::time::Duration::from_millis(100));
+                std::thread::sleep(std::time::Duration::from_millis(500));
 
                 if !MONITOR_RUNNING.load(Ordering::SeqCst) {
                     break;
                 }
 
                 // Вземи текущите процеси
-                let current_procs = match get_running_processes() {
-                    Ok(p) => p,
-                    Err(_) => continue,
-                };
+               let current_procs = enumerate_pids_fast();
 
-                // Намери новите
+              // Намери новите
                 let mut new_pids: std::collections::HashSet<u32> = std::collections::HashSet::new();
-                for proc in &current_procs {
-                    new_pids.insert(proc.pid);
+                for (pid, name, parent_pid) in &current_procs {
+                    new_pids.insert(*pid);
 
-                    if known_pids.contains(&proc.pid) {
+                    if known_pids.contains(pid) {
                         continue; // Вече знаем за него
                     }
 
                     // НОВ ПРОЦЕС — анализирай го
                     let parent_name = current_procs.iter()
-                        .find(|p| p.pid == proc.parent_pid)
-                        .map(|p| p.name.as_str())
+                        .find(|(p, _, _)| p == parent_pid)
+                        .map(|(_, n, _)| n.as_str())
                         .unwrap_or("unknown");
 
-                    let cmdline = if is_suspicious_name(&proc.name) {
-                        get_process_cmdline(proc.pid)
+                    let cmdline = if is_suspicious_name(name) {
+                        get_process_cmdline(*pid)
                     } else {
                         String::new()
-                            };
-                    let decision = analyze_process(&proc.name, &cmdline, parent_name);
+                    };
+
+                    let decision = analyze_process(name, &cmdline, parent_name);
 
                     // Event Sequence Engine — проверяваме за suspicious chains
-                    let chain_decision = record_process_event(proc.pid, &proc.name, &parent_name, &cmdline);
+                    let chain_decision = record_process_event(*pid, name, parent_name, &cmdline);
                     let decision = if chain_decision.as_ref().map(|d| d.is_threat).unwrap_or(false) {
-                         chain_decision.unwrap()
+                        chain_decision.unwrap()
                     } else {
                         decision
-                };  
+                    };
 
                     if decision.is_threat {
                         println!(
                             "🚨 THREAT: {} (PID {}) — {} [{}]",
-                            proc.name, proc.pid, decision.reason, decision.mitre
+                            name, pid, decision.reason, decision.mitre
                         );
 
                         let blocking = {
@@ -908,9 +940,9 @@ pub fn block_process(pid: u32) -> Result<(), String> {
                         };
 
                         let (success, error) = if blocking && (decision.severity == "critical" || decision.severity == "high") {
-                            match block_process(proc.pid) {
+                            match block_process(*pid) {
                                 Ok(()) => {
-                                    println!("🚫 BLOCKED: {} (PID {})", proc.name, proc.pid);
+                                    println!("🚫 BLOCKED: {} (PID {})", name, pid);
                                     (true, None)
                                 }
                                 Err(e) => {
@@ -923,8 +955,8 @@ pub fn block_process(pid: u32) -> Result<(), String> {
                         };
 
                         let record = BlockedProcess {
-                            pid: proc.pid,
-                            process_name: proc.name.clone(),
+                            pid: *pid,
+                            process_name: name.clone(),
                             parent_name: parent_name.to_string(),
                             reason: decision.reason.clone(),
                             mitre_technique: decision.mitre.clone(),

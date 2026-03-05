@@ -300,7 +300,7 @@ unsafe extern "system" fn etw_event_callback(event_record: *mut EVENT_RECORD) {
         if new_pid == 0 || new_pid == 4 {
             return;
         }
-        suspend_process(new_pid); // НЕЗАБАВНО suspend преди всичко
+         
         let image_name = if data.len() > 60 {
             let wide: Vec<u16> = data[60..].chunks_exact(2)
                 .map(|c| u16::from_le_bytes([c[0], c[1]]))
@@ -576,7 +576,7 @@ fn handle_new_process_with_name(pid: u32, parent_pid: u32, image_name: String) {
 
     println!("🔬 ETW: {} (PID {})", name, pid);
 
-    if !is_suspicious_name(&name) { return; }
+   if !is_suspicious_name(&name) { return; }
 
     let suspended = suspend_process(pid);
 
