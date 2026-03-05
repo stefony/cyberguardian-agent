@@ -527,7 +527,7 @@ fn enumerate_pids_fast() -> Vec<(u32, String, u32)> {
                 "invoke-mimikatz", "invoke-bloodhound", "sharphound",
                 "frombase64string", "invoke-expression", "iex(",
                 "downloadstring", "-encodedcommand", "-enc ", " -e ", " -e  ",
-                "set-mppreference", "amsiutils", "sekurlsa",
+                "set-mppreference", "amsiutils", "sekurlsa","amsienable",
             ];
             for p in &critical {
                 if cmd_l.contains(p) {
