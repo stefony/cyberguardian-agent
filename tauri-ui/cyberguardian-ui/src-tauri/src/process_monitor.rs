@@ -628,15 +628,29 @@ fn enumerate_pids_fast() -> Vec<(u32, String, u32)> {
             }
         }
 
-        // ── T1562 Defense Evasion: AMSI Registry Disable ─────────────────────
-        if name_l.contains("powershell") || name_l.contains("reg.exe") {
-            if cmd_l.contains("amsienable") && cmd_l.contains("0") {
-                return ThreatDecision {
-                    is_threat: true,
-                    reason: "AMSI bypass: AmsiEnable registry key disabled".to_string(),
-                    mitre: "T1562".to_string(),
-                    severity: "critical".to_string(),
-                };
+        // ── T1562 Defense Evasion: AMSI + Defender Registry Disable ──────────
+        if name_l.contains("powershell") || name_l.contains("reg.exe") || name_l == "reg" {
+            let defender_disable = [
+                "amsienable",
+                "disableantispyware",
+                "disableantivirus",
+                "disablebehaviormonitoring",
+                "disablerealtimemonitoring",
+                "disableioavprotection",
+                "disablescriptscanning",
+                "disableonaccessprotection",
+                "tamperprotection",
+                "disableroutinelytakingaction",
+            ];
+            for pattern in &defender_disable {
+                if cmd_l.contains(pattern) {
+                    return ThreatDecision {
+                        is_threat: true,
+                        reason: format!("Defense tampering via registry: {}", pattern),
+                        mitre: "T1562".to_string(),
+                        severity: "critical".to_string(),
+                    };
+                }
             }
         }
 
