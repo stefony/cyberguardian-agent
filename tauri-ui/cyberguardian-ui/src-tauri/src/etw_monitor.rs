@@ -319,8 +319,9 @@ unsafe extern "system" fn etw_event_callback(event_record: *mut EVENT_RECORD) {
             .iter().any(|s| name_lower.contains(s));
         if is_suspicious {
             suspend_process(new_pid);
-        }   
-        handle_new_process_with_name(new_pid, parent_pid, image_name);
+        }
+        let parent_name_for_handler = get_process_name(parent_pid);
+        handle_new_process_with_name(new_pid, parent_pid, image_name, parent_name_for_handler);
 
     } else if provider == WMI_ACTIVITY_GUID {
         handle_wmi_event(event);
@@ -572,7 +573,7 @@ fn handle_wmi_event(event: &EVENT_RECORD) {
     }
 }
 
-fn handle_new_process_with_name(pid: u32, parent_pid: u32, image_name: String) {
+fn handle_new_process_with_name(pid: u32, parent_pid: u32, image_name: String, known_parent: String) {
     use crate::process_monitor;
 
     let name = if image_name.is_empty() {
@@ -605,10 +606,16 @@ if cmd.is_empty() {
 }
     cmd
 };
-    let parent_name = get_process_name(parent_pid);
+    let parent_name = if !known_parent.is_empty() {
+    known_parent
+    } else {
+    get_process_name(parent_pid)
+    };
 
    
-
+    if name.to_lowercase().contains("rundll32") {
+    println!("🔬 RUNDLL32 DEBUG: cmdline='{}' parent='{}'", &cmdline[..cmdline.len().min(150)], parent_name);
+}
     let decision = process_monitor::analyze_process(&name, &cmdline, &parent_name);
 
     if decision.is_threat {

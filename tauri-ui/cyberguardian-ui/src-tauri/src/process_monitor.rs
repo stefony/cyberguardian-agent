@@ -606,7 +606,7 @@ fn enumerate_pids_fast() -> Vec<(u32, String, u32)> {
             ("certutil.exe",  &["-urlcache", "-decode", "-f http", "-f https"]),
             ("mshta.exe",     &["http://", "https://", "javascript:", "vbscript:"]),
             ("regsvr32.exe",  &["/i:http", "/i:https", "scrobj.dll"]),
-            ("rundll32.exe",  &["javascript:", "vbscript:", "http://"]),
+            ("rundll32.exe",  &["javascript:", "vbscript:", "http://", "comsvcs", "minidump"]),
             ("bitsadmin.exe", &["/transfer", "/download"]),
         ];
         for (lolbin, patterns) in lolbins {
