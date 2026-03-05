@@ -320,8 +320,15 @@ unsafe extern "system" fn etw_event_callback(event_record: *mut EVENT_RECORD) {
         if is_suspicious {
             suspend_process(new_pid);
         }
-        let parent_name_for_handler = get_process_name(parent_pid);
-        handle_new_process_with_name(new_pid, parent_pid, image_name, parent_name_for_handler);
+         let parent_name_for_handler = {
+        let mut pname = get_process_name(parent_pid);
+         if pname.is_empty() {
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        pname = get_process_name(parent_pid);
+        }
+        pname
+    };  
+handle_new_process_with_name(new_pid, parent_pid, image_name, parent_name_for_handler);
 
     } else if provider == WMI_ACTIVITY_GUID {
         handle_wmi_event(event);
@@ -611,11 +618,8 @@ if cmd.is_empty() {
     } else {
     get_process_name(parent_pid)
     };
-
+ 
    
-    if name.to_lowercase().contains("rundll32") {
-    println!("🔬 RUNDLL32 DEBUG: cmdline='{}' parent='{}'", &cmdline[..cmdline.len().min(150)], parent_name);
-}
     let decision = process_monitor::analyze_process(&name, &cmdline, &parent_name);
 
     if decision.is_threat {

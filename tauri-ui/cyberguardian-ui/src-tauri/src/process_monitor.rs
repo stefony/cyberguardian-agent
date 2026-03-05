@@ -555,7 +555,7 @@ fn enumerate_pids_fast() -> Vec<(u32, String, u32)> {
 
        // ── T1047 WMI Abuse via cmd.exe ───────────────────────────────────────
         if name_l.contains("cmd") {
-            let wmi_via_cmd = ["wmic", "/format:", "shadowcopy", "process call create"];
+    let wmi_via_cmd = ["wmic", "/format:", "shadowcopy", "process call create", "wevtutil", "sc config", "binpath"];
             for p in &wmi_via_cmd {
                 if cmd_l.contains(p) {
                     return ThreatDecision {
@@ -623,7 +623,25 @@ fn enumerate_pids_fast() -> Vec<(u32, String, u32)> {
                 }
             }
         }
-
+        // ── T1543.003 Service binPath modification ────────────────────────────
+        if name_l.contains("sc.exe") || name_l == "sc" {
+            if cmd_l.contains("binpath") || cmd_l.contains("config") {
+                return ThreatDecision {
+                    is_threat: true,
+                    reason: "Service tampering: sc config binPath modification".to_string(),
+                    mitre: "T1543".to_string(),
+                    severity: "critical".to_string(),
+                };
+            }
+            if parent_l.contains("cmd") || parent_l.contains("powershell") {
+                return ThreatDecision {
+                    is_threat: true,
+                    reason: "Service tampering: sc.exe launched from shell".to_string(),
+                    mitre: "T1543".to_string(),
+                    severity: "critical".to_string(),
+                };
+            }
+        }
         // ── T1562 Defense Evasion: Disable Security Services ─────────────────
         if name_l.contains("sc.exe") || name_l == "sc" {
             let sc_targets = ["windefend", "sense", "cyberguardian", "mssecflt",
