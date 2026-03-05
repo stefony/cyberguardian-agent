@@ -307,10 +307,19 @@ unsafe extern "system" fn etw_event_callback(event_record: *mut EVENT_RECORD) {
                 .take_while(|&c| c != 0)
                 .collect();
             let full = String::from_utf16_lossy(&wide);
-            full.split('\\').last().unwrap_or("").to_string()
+             full.split('\\').last().unwrap_or("").to_string()
         } else {
             String::new()
         };
+        // Suspend САМО suspicious процеси — не всички
+        let name_lower = image_name.to_lowercase();
+        let is_suspicious = ["powershell", "cmd", "wmic", "mshta", "certutil",
+            "regsvr32", "rundll32", "wscript", "cscript", "mimikatz",
+             "net", "wevtutil", "vssadmin", "bcdedit", "sc"]
+            .iter().any(|s| name_lower.contains(s));
+        if is_suspicious {
+            suspend_process(new_pid);
+        }   
         handle_new_process_with_name(new_pid, parent_pid, image_name);
 
     } else if provider == WMI_ACTIVITY_GUID {
@@ -469,7 +478,7 @@ fn handle_registry_event(event: &EVENT_RECORD) {
         return;
     }
 
-    /// Само suspicious процеси
+    // Само suspicious процеси 
     if !is_suspicious_name(&name) {
         return;
     }
@@ -578,7 +587,7 @@ fn handle_new_process_with_name(pid: u32, parent_pid: u32, image_name: String) {
 
    if !is_suspicious_name(&name) { return; }
 
-    let suspended = suspend_process(pid);
+    let suspended = true; // suspend вече е направен в ETW callback-а
 
     let cmdline = {
     let mut cmd = process_monitor::get_process_cmdline_pub(pid);

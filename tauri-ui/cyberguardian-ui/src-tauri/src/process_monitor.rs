@@ -526,7 +526,7 @@ fn enumerate_pids_fast() -> Vec<(u32, String, u32)> {
             let critical = [
                 "invoke-mimikatz", "invoke-bloodhound", "sharphound",
                 "frombase64string", "invoke-expression", "iex(",
-                "downloadstring", "-encodedcommand", "-enc ",
+                "downloadstring", "-encodedcommand", "-enc ", " -e ", " -e  ",
                 "set-mppreference", "amsiutils", "sekurlsa",
             ];
             for p in &critical {
