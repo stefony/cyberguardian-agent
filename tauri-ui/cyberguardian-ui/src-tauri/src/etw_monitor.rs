@@ -2,6 +2,7 @@
 //! Засича всеки нов процес при стартиране чрез Event Tracing for Windows
 
 use std::sync::atomic::{AtomicBool, Ordering};
+use crate::process_monitor::get_process_exe_path;
 use windows::Win32::System::Diagnostics::Etw::{
     EVENT_TRACE_PROPERTIES, EVENT_TRACE_REAL_TIME_MODE,
     WNODE_FLAG_TRACED_GUID, CONTROLTRACE_HANDLE, PROCESSTRACE_HANDLE,
@@ -591,9 +592,27 @@ fn handle_new_process_with_name(pid: u32, parent_pid: u32, image_name: String, k
 
     if name.is_empty() { return; }
 
-    println!("🔬 ETW: {} (PID {})", name, pid);
+println!("🔬 ETW: {} (PID {})", name, pid);
 
-   if !is_suspicious_name(&name) { return; }
+// Засичаме процеси стартирани от suspicious locations
+let exe_path = get_process_exe_path(pid);
+let path_lower = exe_path.to_lowercase();
+let suspicious_path = path_lower.contains("\\appdata\\") 
+    || path_lower.contains("\\temp\\")
+    || path_lower.contains("\\tmp\\");
+
+if suspicious_path && !name.to_lowercase().contains("setup") {
+    println!("🚨 ETW THREAT: {} — Suspicious execution path: {} [T1574]", name, exe_path);
+    let _ = process_monitor::block_process(pid);
+    process_monitor::record_blocked_process(
+        pid, &name, "", "Suspicious execution path",
+        "T1574", "high", true, None
+    );
+    resume_process(pid);
+    return;
+}
+
+if !is_suspicious_name(&name) { return; }
 
     let suspended = true; // suspend вече е направен в ETW callback-а
 

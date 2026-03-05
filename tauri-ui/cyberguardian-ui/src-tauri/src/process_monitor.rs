@@ -555,7 +555,7 @@ fn enumerate_pids_fast() -> Vec<(u32, String, u32)> {
 
        // ── T1047 WMI Abuse via cmd.exe ───────────────────────────────────────
         if name_l.contains("cmd") {
-    let wmi_via_cmd = ["wmic", "/format:", "shadowcopy", "process call create", "wevtutil", "sc config", "binpath"];
+    let wmi_via_cmd = ["wmic", "/format:", "shadowcopy", "process call create", "wevtutil", "sc config", "binpath", "\\appdata\\", "%appdata%"];
             for p in &wmi_via_cmd {
                 if cmd_l.contains(p) {
                     return ThreatDecision {
@@ -1083,9 +1083,39 @@ pub fn block_process(pid: u32) -> Result<(), String> {
     "wevtutil", "vssadmin", "bcdedit", "sc"].iter().any(|s| n.contains(s))
 }
     /// Публична версия на get_process_cmdline за ETW модула
-        pub fn get_process_cmdline_pub(pid: u32) -> String {
+pub fn get_process_cmdline_pub(pid: u32) -> String {
     get_process_cmdline(pid)
 }
+
+pub fn get_process_exe_path(pid: u32) -> String {
+    use windows::Win32::System::Threading::{OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION};
+    use windows::Win32::Foundation::CloseHandle;
+    use windows::core::PWSTR;
+    unsafe {
+        let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+        match handle {
+            Ok(h) => {
+                let mut buf = vec![0u16; 1024];
+                let mut size = buf.len() as u32;
+                let result = QueryFullProcessImageNameW(
+                    h,
+                    PROCESS_NAME_WIN32,
+                    PWSTR(buf.as_mut_ptr()),
+                    &mut size,
+                );
+                CloseHandle(h).ok();
+                if result.is_ok() {
+                    String::from_utf16_lossy(&buf[..size as usize])
+                } else {
+                    String::new()
+                }
+            }
+            Err(_) => String::new(),
+        }
+    }
+}
+
+
 /// Записва event в sequence buffer и проверява за suspicious chains
 pub fn record_process_event(pid: u32, name: &str, parent_name: &str, cmdline: &str) -> Option<ThreatDecision> {
     let event = ProcessEvent {
