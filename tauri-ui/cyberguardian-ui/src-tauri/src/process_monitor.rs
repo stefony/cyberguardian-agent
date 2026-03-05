@@ -553,8 +553,32 @@ fn enumerate_pids_fast() -> Vec<(u32, String, u32)> {
             }
         }
 
+       // ── T1047 WMI Abuse via cmd.exe ───────────────────────────────────────
+        if name_l.contains("cmd") {
+            let wmi_via_cmd = ["wmic", "/format:", "shadowcopy", "process call create"];
+            for p in &wmi_via_cmd {
+                if cmd_l.contains(p) {
+                    return ThreatDecision {
+                        is_threat: true,
+                        reason: format!("WMI abuse via cmd: {}", p),
+                        mitre: "T1047".to_string(),
+                        severity: "critical".to_string(),
+                    };
+                }
+            }
+        }
+
         // ── T1047 WMI Abuse ───────────────────────────────────────────────────
         if name_l.contains("wmic") {
+            // Блокираме wmic стартиран от cmd/powershell (винаги suspicious)
+            if parent_l.contains("cmd") || parent_l.contains("powershell") {
+                return ThreatDecision {
+                    is_threat: true,
+                    reason: "WMI abuse: wmic.exe launched from shell".to_string(),
+                    mitre: "T1047".to_string(),
+                    severity: "critical".to_string(),
+                };
+            }
             let wmi = ["process call create", "shadowcopy delete", "/node:", "/format:"];
             for p in &wmi {
                 if cmd_l.contains(p) {
