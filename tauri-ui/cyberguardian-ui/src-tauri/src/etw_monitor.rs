@@ -601,7 +601,13 @@ let suspicious_path = path_lower.contains("\\appdata\\")
     || path_lower.contains("\\temp\\")
     || path_lower.contains("\\tmp\\");
 
-if suspicious_path && !name.to_lowercase().contains("setup") {
+let appdata_whitelist = ["code.exe", "chrome.exe", "firefox.exe", "msedge.exe",
+    "discord.exe", "slack.exe", "teams.exe", "zoom.exe", "lightshot.exe",
+    "cursor.exe", "windsurf.exe", "spotify.exe", "telegram.exe", "signal.exe",
+    "inno_updater.exe", "update.exe", "installer.exe"];
+let is_whitelisted = appdata_whitelist.iter().any(|w| name.to_lowercase().contains(w));
+
+if suspicious_path && !name.to_lowercase().contains("setup") && !is_whitelisted {
     println!("🚨 ETW THREAT: {} — Suspicious execution path: {} [T1574]", name, exe_path);
     let _ = process_monitor::block_process(pid);
     process_monitor::record_blocked_process(

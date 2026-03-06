@@ -624,7 +624,7 @@ fn enumerate_pids_fast() -> Vec<(u32, String, u32)> {
             }
         }
         // ── T1543.003 Service binPath modification ────────────────────────────
-        if name_l.contains("sc.exe") || name_l == "sc" {
+        if name_l == "sc.exe" || name_l == "sc" {
             if cmd_l.contains("binpath") || cmd_l.contains("config") {
                 return ThreatDecision {
                     is_threat: true,
@@ -643,7 +643,7 @@ fn enumerate_pids_fast() -> Vec<(u32, String, u32)> {
             }
         }
         // ── T1562 Defense Evasion: Disable Security Services ─────────────────
-        if name_l.contains("sc.exe") || name_l == "sc" {
+        if name_l == "sc.exe" || name_l == "sc" {
             let sc_targets = ["windefend", "sense", "cyberguardian", "mssecflt",
                               "webthreatdefsvc", "securityhealthservice"];
             for target in &sc_targets {
