@@ -28,10 +28,17 @@ export default function AuditPage() {
   const [exporting, setExporting]         = useState<string | null>(null);
   const [error, setError]                 = useState<string | null>(null);
 
+  const getAuthHeaders = () => ({
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${localStorage.getItem("access_token") || ""}`,
+  });
+
   // Load evidence from backend threats
   const fetchEvidence = useCallback(async () => {
     try {
-      const response = await httpFetch(`/api/threats?limit=100`, {});
+      const response = await httpFetch(`/api/threats?limit=100`, {
+        headers: getAuthHeaders(),
+      });
       const data = await response.json();
       if (data.success && data.threats) {
         const mapped: EvidenceRecord[] = data.threats.map((t: any, i: number) => ({
@@ -73,9 +80,7 @@ export default function AuditPage() {
     try {
       const response = await httpFetch(`/api/reports/audit/export`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           export_format:   format,
           severity_filter: filterSeverity === "all" ? null : filterSeverity,

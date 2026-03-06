@@ -53,6 +53,11 @@ export default function NIS2Page() {
   const [generating, setGenerating]   = useState<GeneratingState>(null);
   const [error, setError]             = useState<string | null>(null);
 
+  const getAuthHeaders = () => ({
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${localStorage.getItem("access_token") || ""}`,
+  });
+
   const overallScore = Math.round(
     NIS2_CONTROLS.reduce((sum, c) => sum + c.score, 0) / NIS2_CONTROLS.length
   );
@@ -69,9 +74,7 @@ export default function NIS2Page() {
     try {
       const response = await httpFetch(`/api${endpoint}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ export_format: format }),
       });
 
