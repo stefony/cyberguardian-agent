@@ -32,6 +32,7 @@ import MITREPage from "./threats/mitre/page";
 import FeedsPage from "./threats/feeds/page";
 import IncidentsPage from "./incidents/page";
 import NIS2Page from "./nis2/page";
+import AuditPage from "./audit/page";
 import FPControlPage from "./fp-control/page";
 
 import LoginPage from "./auth/login/page";
@@ -106,6 +107,7 @@ export default function App() {
           <Route path="incidents" element={<IncidentsPage />} />
           <Route path="fp-control" element={<FPControlPage />} />
           <Route path="nis2" element={<NIS2Page />} />
+          <Route path="audit" element={<AuditPage />} />
         </Route>
 
         {/* fallback */}

@@ -30,6 +30,7 @@ import {
   GitBranch,
   FilterX,
   BookCheck,
+  ShieldCheck,
 } from 'lucide-react'
 
 interface SubItem {
@@ -60,6 +61,11 @@ const navItems: NavItem[] = [
     label: 'NIS2 Compliance',
     href: '/nis2',
     icon: BookCheck,
+  },
+  {
+    label: 'Audit Evidence',
+    href: '/audit',
+    icon: ShieldCheck,
   },
   {
     label: 'Threats',
