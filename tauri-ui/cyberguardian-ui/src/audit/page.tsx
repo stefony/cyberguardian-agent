@@ -1,6 +1,7 @@
 "use client";
 
 import { httpFetch } from "@/lib/api";
+import { toast } from "sonner";
 import { useState, useEffect, useCallback } from "react";
 import { Shield, Download, Search, Clock, CheckCircle, AlertTriangle, FileText, Lock, Loader2 } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -115,9 +116,17 @@ export default function AuditPage() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      toast.success("Export downloaded successfully", {
+        description: `${filename} saved to Downloads folder`,
+        duration: 5000,
+      });
 
     } catch (err: any) {
       setError(err.message || "Export failed");
+      toast.error("Export failed", {
+        description: err.message,
+        duration: 5000,
+      });
     } finally {
       setExporting(null);
     }

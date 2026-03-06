@@ -1,6 +1,7 @@
 "use client";
 
 import { httpFetch } from "@/lib/api";
+import { toast } from "sonner";
 import { useState } from "react";
 import { Shield, FileText, AlertTriangle, CheckCircle, XCircle, Clock, Download, ChevronRight, Loader2 } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -98,9 +99,17 @@ export default function NIS2Page() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      toast.success("Report downloaded successfully", {
+        description: `${filename} saved to Downloads folder`,
+        duration: 5000,
+      });
 
     } catch (err: any) {
       setError(err.message || "Failed to generate report");
+      toast.error("Failed to generate report", {
+        description: err.message,
+        duration: 5000,
+      });
     } finally {
       setGenerating(null);
     }
