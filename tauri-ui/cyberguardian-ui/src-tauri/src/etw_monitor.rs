@@ -314,10 +314,10 @@ unsafe extern "system" fn etw_event_callback(event_record: *mut EVENT_RECORD) {
         };
         // Suspend САМО suspicious процеси — не всички
         let name_lower = image_name.to_lowercase();
-        let is_suspicious = ["powershell", "cmd", "wmic", "mshta", "certutil",
-            "regsvr32", "rundll32", "wscript", "cscript", "mimikatz",
-             "net", "wevtutil", "vssadmin", "bcdedit", "sc"]
-            .iter().any(|s| name_lower.contains(s));
+       let is_suspicious = ["powershell", "cmd", "wmic", "mshta", "certutil",
+    "regsvr32", "rundll32", "wscript", "cscript", "mimikatz",
+     "net", "wevtutil", "vssadmin", "bcdedit", "sc", "schtasks"]
+    .iter().any(|s| name_lower.contains(s));
         if is_suspicious {
             suspend_process(new_pid);
         }
@@ -604,7 +604,8 @@ let suspicious_path = path_lower.contains("\\appdata\\")
 let appdata_whitelist = ["code.exe", "chrome.exe", "firefox.exe", "msedge.exe",
     "discord.exe", "slack.exe", "teams.exe", "zoom.exe", "lightshot.exe",
     "cursor.exe", "windsurf.exe", "spotify.exe", "telegram.exe", "signal.exe",
-    "inno_updater.exe", "update.exe", "installer.exe"];
+    "inno_updater.exe", "update.exe", "installer.exe", "qtwebengineprocess.exe",
+    "viber.exe", "whatsapp.exe", "skype.exe"];
 let is_whitelisted = appdata_whitelist.iter().any(|w| name.to_lowercase().contains(w));
 
 if suspicious_path && !name.to_lowercase().contains("setup") && !is_whitelisted {
@@ -714,9 +715,9 @@ fn handle_new_process(pid: u32) {
 fn is_suspicious_name(name: &str) -> bool {
     let n = name.to_lowercase();
     ["powershell", "cmd", "wmic", "mshta", "certutil",
-     "regsvr32", "rundll32", "bitsadmin", "wscript", "cscript",
-     "mimikatz", "procdump", "pwdump", "reg",
-     "net", "wevtutil", "vssadmin", "bcdedit", "sc"].iter().any(|s| n.contains(s))
+ "regsvr32", "rundll32", "bitsadmin", "wscript", "cscript",
+ "mimikatz", "procdump", "pwdump", "reg",
+ "net", "wevtutil", "vssadmin", "bcdedit", "sc", "schtasks"].iter().any(|s| n.contains(s))
 }
 
 fn get_process_name(pid: u32) -> String {

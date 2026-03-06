@@ -786,6 +786,25 @@ for p in &impair {
                 };
             }
         }
+       // ── T1053.005 Scheduled Task Creation ────────────────────────────────
+if name_l.contains("schtasks") {
+    if cmd_l.contains("/create") || cmd_l.contains("-create") {
+        return ThreatDecision {
+            is_threat: true,
+            reason: "Persistence: schtasks /create - scheduled task creation".to_string(),
+            mitre: "T1053.005".to_string(),
+            severity: "critical".to_string(),
+        };
+    }
+    if parent_l.contains("cmd") || parent_l.contains("powershell") {
+        return ThreatDecision {
+            is_threat: true,
+            reason: "Persistence: schtasks launched from shell".to_string(),
+            mitre: "T1053.005".to_string(),
+            severity: "critical".to_string(),
+        };
+    }
+}
 
         // ── T1547 / T1053 Persistence ─────────────────────────────────────────
         let persist = [
@@ -1078,9 +1097,9 @@ pub fn block_process(pid: u32) -> Result<(), String> {
     fn is_suspicious_name(name: &str) -> bool {
     let n = name.to_lowercase();
    ["powershell", "cmd", "wmic", "mshta", "certutil",
-    "regsvr32", "rundll32", "bitsadmin", "wscript", "cscript",
-    "mimikatz", "procdump", "pwdump", "reg", "net",
-    "wevtutil", "vssadmin", "bcdedit", "sc"].iter().any(|s| n.contains(s))
+ "regsvr32", "rundll32", "bitsadmin", "wscript", "cscript",
+ "mimikatz", "procdump", "pwdump", "reg", "net",
+ "wevtutil", "vssadmin", "bcdedit", "sc", "schtasks"].iter().any(|s| n.contains(s))
 }
     /// Публична версия на get_process_cmdline за ETW модула
 pub fn get_process_cmdline_pub(pid: u32) -> String {
