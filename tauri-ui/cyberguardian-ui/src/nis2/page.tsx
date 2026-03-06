@@ -1,5 +1,6 @@
 "use client";
 
+import { httpFetch } from "@/lib/api";
 import { useState } from "react";
 import { Shield, FileText, AlertTriangle, CheckCircle, XCircle, Clock, Download, ChevronRight, Loader2 } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -56,8 +57,6 @@ export default function NIS2Page() {
     NIS2_CONTROLS.reduce((sum, c) => sum + c.score, 0) / NIS2_CONTROLS.length
   );
 
-  const apiBase = import.meta.env.VITE_API_URL || "";
-  const token   = localStorage.getItem("access_token");
 
   const handleGenerateReport = async (
     endpoint: string,
@@ -68,11 +67,10 @@ export default function NIS2Page() {
     setError(null);
 
     try {
-      const response = await fetch(`${apiBase}/api${endpoint}`, {
+      const response = await httpFetch(`/api${endpoint}`, {
         method: "POST",
         headers: {
-          "Content-Type":  "application/json",
-          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ export_format: format }),
       });

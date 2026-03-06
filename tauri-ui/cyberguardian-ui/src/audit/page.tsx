@@ -1,5 +1,6 @@
 "use client";
 
+import { httpFetch } from "@/lib/api";
 import { useState, useEffect, useCallback } from "react";
 import { Shield, Download, Search, Clock, CheckCircle, AlertTriangle, FileText, Lock, Loader2 } from "lucide-react";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -27,15 +28,10 @@ export default function AuditPage() {
   const [exporting, setExporting]         = useState<string | null>(null);
   const [error, setError]                 = useState<string | null>(null);
 
-  const apiBase = import.meta.env.VITE_API_URL || "";
-  const token   = localStorage.getItem("access_token");
-
   // Load evidence from backend threats
   const fetchEvidence = useCallback(async () => {
     try {
-      const response = await fetch(`${apiBase}/api/threats?limit=100`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await httpFetch(`/api/threats?limit=100`, {});
       const data = await response.json();
       if (data.success && data.threats) {
         const mapped: EvidenceRecord[] = data.threats.map((t: any, i: number) => ({
@@ -55,7 +51,7 @@ export default function AuditPage() {
     } catch (err) {
       console.error("Failed to fetch evidence:", err);
     }
-  }, [apiBase, token]);
+  }, []);
 
   useEffect(() => {
     fetchEvidence();
@@ -75,11 +71,10 @@ export default function AuditPage() {
     setError(null);
 
     try {
-      const response = await fetch(`${apiBase}/api/reports/audit/export`, {
+      const response = await httpFetch(`/api/reports/audit/export`, {
         method: "POST",
         headers: {
-          "Content-Type":  "application/json",
-          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           export_format:   format,
