@@ -29,6 +29,7 @@ import {
   TrendingUp,
   GitBranch,
   FilterX,
+  BookCheck,
 } from 'lucide-react'
 
 interface SubItem {
@@ -54,6 +55,11 @@ const navItems: NavItem[] = [
     label: 'Executive',
     href: '/executive',
     icon: TrendingUp,
+  },
+  {
+    label: 'NIS2 Compliance',
+    href: '/nis2',
+    icon: BookCheck,
   },
   {
     label: 'Threats',
