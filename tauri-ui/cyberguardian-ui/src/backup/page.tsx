@@ -273,7 +273,7 @@ export default function BackupSecurityPage() {
         )}
 
         {/* Ransomware Alert */}
-        {displayData && displayData.ransomware_threats.length > 0 && (
+        {displayData && (displayData.ransomware_threats?.length ?? 0) > 0 && (
           <div className="page-container mt-4">
             <div className="p-4 rounded-lg bg-red-500/10 border-2 border-red-500/50 animate-pulse">
               <div className="flex items-center gap-3">
@@ -283,7 +283,7 @@ export default function BackupSecurityPage() {
                     🚨 RANSOMWARE BACKUP ATTACK DETECTED
                   </div>
                   <div className="text-sm text-red-300 mt-1">
-                    {displayData.ransomware_threats.map((t, i) => (
+                    {(displayData.ransomware_threats ?? []).map((t, i) => (
                       <div key={i}>{t.threat_type}: <code className="text-xs">{t.command_detected}</code></div>
                     ))}
                   </div>
@@ -380,7 +380,7 @@ export default function BackupSecurityPage() {
                   <Database className="h-5 w-5 text-blue-500" />
                   Detected Backup Solutions
                 </h2>
-                {displayData.solutions.length === 0 ? (
+                {(displayData.solutions?.length ?? 0) === 0 ? (
                   <div className="p-4 rounded-lg bg-red-500/5 border border-red-500/20">
                     <p className="text-sm text-red-400">
                       ⚠ No backup solution detected — critical NIS2 Art. 21(2)(c) gap
@@ -388,7 +388,7 @@ export default function BackupSecurityPage() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {displayData.solutions.map((sol, i) => (
+                    {(displayData.solutions ?? []).map((sol, i) => (
                       <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/10 border border-border">
                         <div className="flex items-center gap-3">
                           {getStatusIcon(sol.status)}
@@ -452,7 +452,7 @@ export default function BackupSecurityPage() {
                   NIS2 Art. 21(2)(c) — Compliance Details
                 </h2>
                 <div className="space-y-3">
-                  {displayData.compliance_details.map((detail, i) => (
+                  {(displayData.compliance_details ?? []).map((detail, i) => (
                     <div key={i} className="flex items-start gap-4">
                       {getStatusIcon(detail.status)}
                       <div className="flex-1">
@@ -479,14 +479,14 @@ export default function BackupSecurityPage() {
               </div>
 
               {/* Recommendations */}
-              {displayData.recommendations.length > 0 && (
+              {(displayData.recommendations?.length ?? 0) > 0 && (
                 <div className="card-premium p-6">
                   <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                     <AlertTriangle className="h-5 w-5 text-yellow-500" />
                     Recommendations
                   </h2>
                   <div className="space-y-3">
-                    {displayData.recommendations.map((rec, i) => {
+                    {(displayData.recommendations ?? []).map((rec, i) => {
                       const isCritical = rec.startsWith("CRITICAL");
                       const isHigh     = rec.startsWith("HIGH");
                       return (
