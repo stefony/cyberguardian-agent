@@ -32,6 +32,7 @@ import {
   BookCheck,
   ShieldCheck,
   HardDrive,
+  Bug,
 } from 'lucide-react'
 
 interface SubItem {
@@ -72,6 +73,11 @@ const navItems: NavItem[] = [
     label: 'Backup Security',
     href: '/backup',
     icon: HardDrive,
+  },
+  {
+    label: 'Vulnerabilities',
+    href: '/vulnerabilities',
+    icon: Bug,
   },
   {
     label: 'Threats',
