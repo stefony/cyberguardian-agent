@@ -171,9 +171,9 @@ export default function BackupSecurityPage() {
         });
 
         // Alert if ransomware threats detected
-        if (report.ransomware_threats.length > 0) {
+        if ((report.ransomware_threats?.length ?? 0) > 0) {
           toast.error("🚨 Ransomware backup attack detected!", {
-            description: `${report.ransomware_threats.length} threat(s) found — immediate action required`,
+            description: `${report.ransomware_threats?.length ?? 0} threat(s) found — immediate action required`,
             duration: 10000,
           });
         }
@@ -322,10 +322,10 @@ export default function BackupSecurityPage() {
                     <span className="text-sm text-muted-foreground">Solutions</span>
                   </div>
                   <div className="text-2xl font-bold text-blue-400">
-                    {displayData.solutions.length}
+                    {(displayData.solutions?.length ?? 0)}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {displayData.solutions.length > 0 ? "Detected" : "None found"}
+                    {(displayData.solutions?.length ?? 0) > 0 ? "Detected" : "None found"}
                   </div>
                 </div>
 
@@ -364,12 +364,12 @@ export default function BackupSecurityPage() {
                     <span className="text-sm text-muted-foreground">Ransomware Threats</span>
                   </div>
                   <div className={`text-2xl font-bold ${
-                    displayData.ransomware_threats.length === 0 ? "text-green-400" : "text-red-400"
+                    (displayData.ransomware_threats?.length ?? 0) === 0 ? "text-green-400" : "text-red-400"
                   }`}>
-                    {displayData.ransomware_threats.length}
+                    {(displayData.ransomware_threats?.length ?? 0)}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {displayData.ransomware_threats.length === 0 ? "Clean" : "Detected!"}
+                    {(displayData.ransomware_threats?.length ?? 0) === 0 ? "Clean" : "Detected!"}
                   </div>
                 </div>
               </div>
