@@ -10,6 +10,7 @@ mod windows_service;
 mod process_monitor;
 mod etw_monitor;
 mod backup_monitor;
+mod vuln_scanner;
 mod api_client; 
 mod background_tasks;
 
@@ -738,6 +739,7 @@ pub fn run() {
             start_background_upload,
             // Backup Security Monitor
             backup_monitor::scan_backup_security,
+            vuln_scanner::scan_vulnerabilities,
             enable_runtime_blocking,
             disable_runtime_blocking,
             get_runtime_blocking_status,

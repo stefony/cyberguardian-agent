@@ -34,6 +34,7 @@ import IncidentsPage from "./incidents/page";
 import NIS2Page from "./nis2/page";
 import AuditPage from "./audit/page";
 import BackupPage from "./backup/page";
+import VulnerabilitiesPage from "./vulnerabilities/page";
 import FPControlPage from "./fp-control/page";
 
 import LoginPage from "./auth/login/page";
@@ -110,6 +111,7 @@ export default function App() {
           <Route path="nis2" element={<NIS2Page />} />
           <Route path="audit" element={<AuditPage />} />
           <Route path="/backup" element={<BackupPage />} />
+          <Route path="/vulnerabilities" element={<VulnerabilitiesPage />} />
         </Route>
 
         {/* fallback */}
