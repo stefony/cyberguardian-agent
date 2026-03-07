@@ -335,10 +335,10 @@ export default function BackupSecurityPage() {
                     <span className="text-sm text-muted-foreground">VSS Snapshots</span>
                   </div>
                   <div className="text-2xl font-bold text-purple-400">
-                    {displayData.vss_status.snapshot_count}
+                    {displayData.vss_status?.snapshot_count ?? 0}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {displayData.vss_status.service_running ? "Service running" : "Service stopped"}
+                    {displayData.vss_status?.service_running ?? false ? "Service running" : "Service stopped"}
                   </div>
                 </div>
 
@@ -348,13 +348,13 @@ export default function BackupSecurityPage() {
                     <span className="text-sm text-muted-foreground">Backup Status</span>
                   </div>
                   <div className={`text-2xl font-bold ${
-                    displayData.freshness.status === "fresh" ? "text-green-400" :
-                    displayData.freshness.status === "stale" ? "text-yellow-400" : "text-red-400"
+                    String(displayData.freshness?.status ?? "unknown") === "fresh" ? "text-green-400" :
+                    String(displayData.freshness?.status ?? "unknown") === "stale" ? "text-yellow-400" : "text-red-400"
                   }`}>
-                    {displayData.freshness.status.toUpperCase()}
+                    {String(displayData.freshness?.status ?? "unknown").toUpperCase()}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {displayData.freshness.frequency}
+                    {displayData.freshness?.frequency ?? "unknown"}
                   </div>
                 </div>
 
@@ -416,31 +416,31 @@ export default function BackupSecurityPage() {
                   <div className="p-4 rounded-lg bg-muted/10 border border-border">
                     <div className="text-xs text-muted-foreground mb-1">VSS Service</div>
                     <div className="flex items-center gap-2">
-                      {displayData.vss_status.service_running
+                      {displayData.vss_status?.service_running ?? false
                         ? <CheckCircle className="h-4 w-4 text-green-400" />
                         : <XCircle className="h-4 w-4 text-red-400" />
                       }
-                      <span className={`font-semibold ${displayData.vss_status.service_running ? "text-green-400" : "text-red-400"}`}>
-                        {displayData.vss_status.service_running ? "Running" : "Stopped"}
+                      <span className={`font-semibold ${displayData.vss_status?.service_running ?? false ? "text-green-400" : "text-red-400"}`}>
+                        {displayData.vss_status?.service_running ?? false ? "Running" : "Stopped"}
                       </span>
                     </div>
                   </div>
                   <div className="p-4 rounded-lg bg-muted/10 border border-border">
                     <div className="text-xs text-muted-foreground mb-1">Shadow Copies</div>
                     <div className="font-semibold text-purple-400">
-                      {displayData.vss_status.snapshot_count} snapshots
+                      {displayData.vss_status?.snapshot_count ?? 0} snapshots
                     </div>
                   </div>
                   <div className="p-4 rounded-lg bg-muted/10 border border-border">
                     <div className="text-xs text-muted-foreground mb-1">Protection Status</div>
-                    <span className={getStatusBadge(displayData.vss_status.protection_status)}>
-                      {displayData.vss_status.protection_status}
+                    <span className={getStatusBadge(displayData.vss_status?.protection_status ?? "unknown")}>
+                      {displayData.vss_status?.protection_status ?? "unknown"}
                     </span>
                   </div>
                 </div>
-                {displayData.vss_status.last_snapshot && (
+                {displayData.vss_status?.last_snapshot && (
                   <div className="mt-3 text-xs text-muted-foreground">
-                    Last snapshot: {displayData.vss_status.last_snapshot}
+                    Last snapshot: {displayData.vss_status?.last_snapshot}
                   </div>
                 )}
               </div>
