@@ -31,6 +31,7 @@ import {
   FilterX,
   BookCheck,
   ShieldCheck,
+  HardDrive,
 } from 'lucide-react'
 
 interface SubItem {
@@ -66,6 +67,11 @@ const navItems: NavItem[] = [
     label: 'Audit Evidence',
     href: '/audit',
     icon: ShieldCheck,
+  },
+  {
+    label: 'Backup Security',
+    href: '/backup',
+    icon: HardDrive,
   },
   {
     label: 'Threats',
